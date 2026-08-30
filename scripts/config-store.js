@@ -52,5 +52,8 @@ export function refreshPreparedData() {
     actor.render?.(false);
     for (const item of actor.items?.contents ?? []) item.render?.(false);
   }
-  for (const item of game.items?.contents ?? []) item.render?.(false);
+  for (const item of game.items?.contents ?? []) {
+    item.reset?.();
+    item.render?.(false);
+  }
 }

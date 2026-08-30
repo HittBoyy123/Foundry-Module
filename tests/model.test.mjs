@@ -148,7 +148,7 @@ test("version 1 rules migrate without discarding customized materials", () => {
   delete legacy.tierPricesGp;
   legacy.materials.metal.label = "Custom Metal";
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.schemaVersion, 6);
   assert.equal(migrated.materials.metal.label, "Custom Metal");
   assert.equal(migrated.tierLabels[3], "Rare");
   assert.equal(migrated.tierPricesGp[3], 25);
@@ -169,7 +169,7 @@ test("version 2 defaults migrate while existing material-specific overrides are 
   legacy.materials.metal.tierPricesGp = { 4: 777 };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.schemaVersion, 6);
   assert.equal(migrated.tierLabels[4], "Epic");
   assert.equal(migrated.tierPricesGp[4], 100);
   assert.equal(migrated.materials.metal.tierLabels[4], "Moonsteel");
@@ -199,7 +199,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   const metal = migrated.materials.metal;
   const weaponEffect = metal.effects.find((effect) => effect.id === "weapon-attack");
   const armorEffect = metal.effects.find((effect) => effect.id === "armor-ac");
-  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.schemaVersion, 6);
   assert.deepEqual(migrated.tierRarities, {
     1: "common",
     2: "uncommon",
@@ -222,9 +222,28 @@ test("version 4 flanking rules migrate to PF2e-managed two-sided flanking", () =
   delete legacy.flanking.pf2eHandlesTwoSidedFlanking;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.schemaVersion, 6);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
+});
+
+test("version 5 rules migrate with both in-game systems enabled", () => {
+  const legacy = cloneDefaultRulesConfig();
+  legacy.schemaVersion = 5;
+  delete legacy.crafting;
+
+  const migrated = normalizeRulesConfig(legacy);
+  assert.equal(migrated.schemaVersion, 6);
+  assert.equal(migrated.crafting.enabled, true);
+  assert.equal(migrated.flanking.enabled, true);
+});
+
+test("crafting master switch hides controls and disables prepared effects", () => {
+  const disabled = cloneDefaultRulesConfig();
+  disabled.crafting.enabled = false;
+  const normalized = normalizeRulesConfig(disabled);
+  assert.equal(itemTypeIsSupported(normalized, "weapon"), false);
+  assert.equal(calculate({ material: "metal", tier: 6 }, { config: normalized }).active, false);
 });
 
 test("rarity schedule can be configured globally or per material", () => {

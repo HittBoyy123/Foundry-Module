@@ -10,18 +10,57 @@
     },
     "Settings": {
       "Rules": {
-        "Name": "Material rules",
-        "Hint": "Versioned Wrathmaker definitions for material tiers, PF2e effects, and automatic multi-side flanking."
+        "Name": "Wrathmaker world rules",
+        "Hint": "World-level Wrathmaker settings for crafting materials, tiers, and enhanced flanking."
       },
       "Menu": {
         "Title": "Wrathmaker Rules",
         "Name": "Wrathmaker rules",
-        "Label": "Configure Rules",
-        "Hint": "Configure material tiers, their effects, and the custom flanking rule."
+        "Label": "Open Control Panel",
+        "Hint": "Open the in-game control panel for crafting materials, tier progression, and enhanced flanking."
+      },
+      "Dashboard": {
+        "Heading": "Wrathmaker Game Settings",
+        "Intro": "These settings apply to the whole world and can be changed by a GM while the game is running.",
+        "Crafting": "Crafting material rules",
+        "CraftingHint": "Show Material and Tier on supported item sheets and apply their names, prices, rarities, and bonuses.",
+        "Flanking": "Enhanced flanking",
+        "FlankingHint": "Add Wrathmaker's extra penalty at three and four qualifying sides. PF2e still handles ordinary two-sided flanking.",
+        "FlankingOptions": "Enhanced Flanking Options",
+        "FlankingOptionsHint": "The three- and four-side values are the final AC totals after PF2e's normal -2 Off-guard penalty.",
+        "ThreeSides": "Total AC penalty at 3 sides",
+        "FourSides": "Total AC penalty at 4 sides",
+        "SizeDifference": "Normal size difference",
+        "OversizedCount": "Flankers required per side when oversized",
+        "Materials": "Crafting Materials",
+        "MaterialsHint": "Open a material to rename it, enable or disable it, and edit all six tiers.",
+        "Edit": "Edit",
+        "Advanced": "Advanced JSON"
+      },
+      "Material": {
+        "Title": "Edit Crafting Material",
+        "Heading": "Edit Material",
+        "Intro": "Each tier can have its own crafted name, bonus, added price, and Pathfinder rarity.",
+        "Name": "Material name",
+        "Enabled": "Material enabled",
+        "EnabledHint": "Disabled materials no longer appear as choices on item sheets.",
+        "AppliesTo": "Available on",
+        "Weapons": "Weapons",
+        "Armor": "Armor",
+        "Tiers": "Material tiers",
+        "Tier": "Tier",
+        "CraftedName": "Crafted name",
+        "Bonus": "Custom bonus",
+        "Price": "Added price",
+        "Rarity": "PF2e rarity",
+        "Save": "Save Material"
+      },
+      "Advanced": {
+        "Title": "Advanced Wrathmaker Rules",
+        "Intro": "This editor exposes the complete versioned rules data for advanced customization.",
+        "Hint": "Most settings are easier and safer to change from the main control panel and material pop-outs. Invalid data will not be saved."
       },
       "Editor": {
-        "Intro": "Materials can target one or more PF2e item types and grant separate effects. Tiers control prepared item names, prices, rarity, weapon attacks, and armor AC. The flanking section controls additional multi-side AC penalties beyond PF2e's normal Off-guard rule.",
-        "Hint": "The configuration is validated before it is saved. Wrathmaker leaves ordinary two-sided flanking to PF2e, then uses untyped adjustments to reach the configured three- and four-side totals.",
         "Label": "Rules JSON",
         "Format": "Format JSON",
         "Reset": "Restore Defaults",
@@ -33,7 +72,8 @@
       }
     },
     "Notifications": {
-      "RulesSaved": "Crafting material rules saved.",
+      "RulesSaved": "Wrathmaker game settings saved.",
+      "MaterialSaved": "{material} settings saved.",
       "RulesReset": "Default crafting material rules restored.",
       "InvalidJson": "The rules are not valid JSON.",
       "UpdateFailed": "The crafting material could not be saved."

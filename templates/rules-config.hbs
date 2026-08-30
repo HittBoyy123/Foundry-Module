@@ -1,14 +1,80 @@
-<div class="cmt-config-body">
-  <p>{{localize "CMT.Settings.Editor.Intro"}}</p>
-  <p class="hint">{{localize "CMT.Settings.Editor.Hint"}}</p>
+<div class="cmt-config-body cmt-dashboard">
+  <header class="cmt-config-header">
+    <h2>{{localize "CMT.Settings.Dashboard.Heading"}}</h2>
+    <p class="hint">{{localize "CMT.Settings.Dashboard.Intro"}}</p>
+  </header>
 
-  <label for="cmt-rules-json">{{localize "CMT.Settings.Editor.Label"}}</label>
-  <textarea id="cmt-rules-json" name="config" spellcheck="false">{{configJson}}</textarea>
+  <section class="cmt-switch-grid">
+    <label class="cmt-setting-card">
+      <span class="cmt-setting-icon"><i class="fa-solid fa-hammer" aria-hidden="true"></i></span>
+      <span class="cmt-setting-copy">
+        <strong>{{localize "CMT.Settings.Dashboard.Crafting"}}</strong>
+        <small>{{localize "CMT.Settings.Dashboard.CraftingHint"}}</small>
+      </span>
+      <input type="checkbox" name="crafting.enabled" {{#if craftingEnabled}}checked{{/if}}>
+    </label>
 
-  <div class="cmt-config-actions">
-    <button type="button" data-action="format">
-      <i class="fa-solid fa-align-left" aria-hidden="true"></i>
-      {{localize "CMT.Settings.Editor.Format"}}
+    <label class="cmt-setting-card">
+      <span class="cmt-setting-icon"><i class="fa-solid fa-people-arrows-left-right" aria-hidden="true"></i></span>
+      <span class="cmt-setting-copy">
+        <strong>{{localize "CMT.Settings.Dashboard.Flanking"}}</strong>
+        <small>{{localize "CMT.Settings.Dashboard.FlankingHint"}}</small>
+      </span>
+      <input type="checkbox" name="flanking.enabled" {{#if flankingEnabled}}checked{{/if}}>
+    </label>
+  </section>
+
+  <section class="cmt-panel">
+    <h3><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.FlankingOptions"}}</h3>
+    <p class="hint">{{localize "CMT.Settings.Dashboard.FlankingOptionsHint"}}</p>
+    <div class="cmt-flanking-grid">
+      <label>
+        <span>{{localize "CMT.Settings.Dashboard.ThreeSides"}}</span>
+        <input type="number" name="flanking.penalties.3" value="{{penaltyThree}}" max="-2" step="1">
+      </label>
+      <label>
+        <span>{{localize "CMT.Settings.Dashboard.FourSides"}}</span>
+        <input type="number" name="flanking.penalties.4" value="{{penaltyFour}}" max="-2" step="1">
+      </label>
+      <label>
+        <span>{{localize "CMT.Settings.Dashboard.SizeDifference"}}</span>
+        <input type="number" name="flanking.maxNormalSizeDifference" value="{{maxNormalSizeDifference}}" min="0" max="5" step="1">
+      </label>
+      <label>
+        <span>{{localize "CMT.Settings.Dashboard.OversizedCount"}}</span>
+        <input type="number" name="flanking.oversizedParticipantsPerSide" value="{{oversizedParticipantsPerSide}}" min="2" max="8" step="1">
+      </label>
+    </div>
+  </section>
+
+  <section class="cmt-materials-section">
+    <div class="cmt-section-heading">
+      <div>
+        <h3><i class="fa-solid fa-gem" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Materials"}}</h3>
+        <p class="hint">{{localize "CMT.Settings.Dashboard.MaterialsHint"}}</p>
+      </div>
+    </div>
+    <div class="cmt-material-list">
+      {{#each materials}}
+        <article class="cmt-material-card {{#unless enabled}}is-disabled{{/unless}}">
+          <div class="cmt-material-summary">
+            <strong>{{label}}</strong>
+            <span>{{itemTypes}}</span>
+            <small>{{tiers}}</small>
+          </div>
+          <button type="button" data-action="editMaterial" data-material-id="{{id}}">
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            {{localize "CMT.Settings.Dashboard.Edit"}}
+          </button>
+        </article>
+      {{/each}}
+    </div>
+  </section>
+
+  <footer class="cmt-config-actions">
+    <button type="button" data-action="advanced">
+      <i class="fa-solid fa-code" aria-hidden="true"></i>
+      {{localize "CMT.Settings.Dashboard.Advanced"}}
     </button>
     <button type="button" data-action="reset" class="cmt-danger">
       <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
@@ -18,5 +84,5 @@
       <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
       {{localize "CMT.Settings.Editor.Save"}}
     </button>
-  </div>
+  </footer>
 </div>

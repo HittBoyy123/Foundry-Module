@@ -1,6 +1,6 @@
 # Wrathmaker
 
-A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapon and armor sheets, then turns those choices into separate prepared modifiers without replacing core PF2e bonuses. It also automates Wrathmaker's escalating multi-side flanking penalties.
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapon and armor sheets, then turns those choices into separate prepared modifiers without replacing core PF2e bonuses. It also automates Wrathmaker's escalating multi-side flanking penalties and provides a GM-facing control panel for changing both systems during play.
 
 ## Compatibility
 
@@ -8,6 +8,7 @@ A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and 
 - Pathfinder Second Edition 7.1 or newer
 - Material-tier item support: weapons and armor
 - Automatic token-based custom flanking
+- In-game world settings and per-material tier editors
 - Extensible through world configuration and a public module API
 
 The visible module name is **Wrathmaker**. Its internal id remains `pf2e-crafting-material-tiers` so existing worlds keep their saved settings and item selections during the rename.
@@ -30,9 +31,22 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.2.1.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.3.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
-The settings panel is under **Configure Settings → Module Settings → Wrathmaker → Configure Rules**.
+The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
+
+## In-game control panel
+
+The Wrathmaker control panel stores world-level settings and applies changes immediately to prepared actors and items.
+
+- **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
+- **Enhanced flanking** turns only Wrathmaker's three- and four-side adjustments on or off. PF2e's ordinary two-sided flanking remains unchanged.
+- The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
+- Every crafting material has an **Edit** button that opens its own pop-out.
+- The material pop-out edits the material name, enabled state, weapon/armor availability, and all six tier names, bonuses, added prices, and PF2e rarities.
+- **Advanced JSON** remains available for custom effects and future item types that are not represented by the friendly controls.
+
+Only a GM can open this world-settings menu. Turning a system off is reversible and does not remove saved item flags or custom definitions.
 
 ## Publishing a new version
 
@@ -116,6 +130,8 @@ Version 1 item flags are read automatically. The former per-item enable and over
 
 ## Configuring material effects
 
+For ordinary changes, use the in-game material pop-outs. The JSON structure below documents the Advanced editor and public API.
+
 The GM rules editor stores validated, versioned JSON. Top-level `tierLabels`, `tierPricesGp`, and `tierRarities` hold the shared fallback names, prices, and PF2e rarities. Each supplied material can override these values independently.
 
 Every material has:
@@ -126,6 +142,7 @@ Every material has:
 - `effects`: one or more generated PF2e flat modifiers.
 - Optional effect `itemTypes`: limits an effect to weapons, armor, or future item types.
 - Optional `tierLabels`: per-tier names that override the shared labels for this material.
+- Optional `tierBonuses`: per-tier custom bonuses that override the shared bonus schedule for this material.
 - Optional `tierPricesGp`: per-tier prices that override the shared prices for this material.
 - Optional `tierRarities`: per-tier PF2e rarities that override the shared rarity schedule.
 

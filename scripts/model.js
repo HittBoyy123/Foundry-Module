@@ -106,6 +106,18 @@ function normalizeTierLabels(source, path, { partial = false } = {}) {
   return labels;
 }
 
+function normalizeTierBonuses(source, path, { partial = false } = {}) {
+  if (!isPlainObject(source)) {
+    throw new ConfigValidationError(`${path} must be an object.`);
+  }
+  const bonuses = {};
+  for (let tier = 1; tier <= 6; tier += 1) {
+    if (source[tier] === undefined && partial) continue;
+    bonuses[tier] = finiteNumber(source[tier], `${path}.${tier}`);
+  }
+  return bonuses;
+}
+
 function normalizeTierPrices(source, path, { partial = false } = {}) {
   if (!isPlainObject(source)) {
     throw new ConfigValidationError(`${path} must be an object.`);
@@ -294,14 +306,13 @@ export function normalizeRulesConfig(input) {
     throw new ConfigValidationError(`Unsupported rules schema version ${sourceSchemaVersion}.`);
   }
 
-  const tierSource = parsed.tierBonuses;
-  if (!isPlainObject(tierSource)) {
-    throw new ConfigValidationError("tierBonuses must be an object with entries for tiers 1 through 6.");
+  if (parsed.crafting !== undefined && !isPlainObject(parsed.crafting)) {
+    throw new ConfigValidationError("crafting must be an object.");
   }
-  const tierBonuses = {};
-  for (let tier = 1; tier <= 6; tier += 1) {
-    tierBonuses[tier] = finiteNumber(tierSource[tier], `tierBonuses.${tier}`);
-  }
+  const crafting = {
+    enabled: parsed.crafting?.enabled !== false,
+  };
+  const tierBonuses = normalizeTierBonuses(parsed.tierBonuses, "tierBonuses");
   const useNewTierLabels = sourceSchemaVersion < 3 && (
     parsed.tierLabels === undefined || tierMapMatches(parsed.tierLabels, LEGACY_TIER_LABELS)
   );
@@ -385,6 +396,13 @@ export function normalizeRulesConfig(input) {
         `materials.${materialId}.tierRarities`,
         { partial: true },
       );
+    const tierBonusOverrides = material.tierBonuses === undefined
+      ? {}
+      : normalizeTierBonuses(
+        material.tierBonuses,
+        `materials.${materialId}.tierBonuses`,
+        { partial: true },
+      );
     const legacyLabel = LEGACY_MATERIAL_LABELS[materialId];
     const migratedLabel = sourceSchemaVersion < 3 && material.label === legacyLabel
       ? defaultMaterial?.label
@@ -394,6 +412,7 @@ export function normalizeRulesConfig(input) {
       enabled: material.enabled !== false,
       itemTypes,
       effects,
+      ...(Object.keys(tierBonusOverrides).length > 0 ? { tierBonuses: tierBonusOverrides } : {}),
       ...(Object.keys(tierLabelOverrides).length > 0 ? { tierLabels: tierLabelOverrides } : {}),
       ...(Object.keys(tierPriceOverrides).length > 0 ? { tierPricesGp: tierPriceOverrides } : {}),
       ...(Object.keys(tierRarityOverrides).length > 0 ? { tierRarities: tierRarityOverrides } : {}),
@@ -402,6 +421,7 @@ export function normalizeRulesConfig(input) {
 
   return {
     schemaVersion: RULES_SCHEMA_VERSION,
+    crafting,
     tierBonuses,
     tierLabels,
     tierPricesGp,
@@ -426,6 +446,7 @@ export function normalizeItemFlags(input, config = null) {
 }
 
 export function materialsForItemType(config, itemType) {
+  if (config.crafting?.enabled === false) return [];
   return Object.entries(config.materials)
     .filter(([, material]) => material.enabled && material.itemTypes.includes(itemType))
     .map(([id, material]) => ({ id, label: material.label }));
@@ -485,9 +506,14 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
   const configured = isPlainObject(flags) && (typeof flags.material === "string" || flags.tier !== undefined);
   const normalizedFlags = normalizeItemFlags(flags, config);
   const material = config.materials[normalizedFlags.material] ?? null;
-  const tierBonus = config.tierBonuses[normalizedFlags.tier] ?? 0;
+  const tierBonus = material?.tierBonuses?.[normalizedFlags.tier]
+    ?? config.tierBonuses[normalizedFlags.tier]
+    ?? 0;
   const presentation = getTierPresentation(config, normalizedFlags.material, normalizedFlags.tier);
-  const inactive = !configured || !material?.enabled || !material?.itemTypes.includes(itemType);
+  const inactive = config.crafting?.enabled === false
+    || !configured
+    || !material?.enabled
+    || !material?.itemTypes.includes(itemType);
   if (inactive) {
     return { active: false, flags: normalizedFlags, material, tierBonus, presentation, previews: [], rules: [] };
   }

@@ -1,0 +1,62 @@
+<div class="cmt-config-body cmt-material-editor">
+  <header class="cmt-config-header">
+    <h2>{{localize "CMT.Settings.Material.Heading"}}: {{label}}</h2>
+    <p class="hint">{{localize "CMT.Settings.Material.Intro"}}</p>
+  </header>
+
+  <section class="cmt-panel cmt-material-basics">
+    <div class="form-group">
+      <label for="cmt-material-label">{{localize "CMT.Settings.Material.Name"}}</label>
+      <div class="form-fields">
+        <input id="cmt-material-label" type="text" name="material.label" value="{{label}}" required>
+      </div>
+    </div>
+
+    <label class="cmt-switch-row">
+      <span>
+        <strong>{{localize "CMT.Settings.Material.Enabled"}}</strong>
+        <small>{{localize "CMT.Settings.Material.EnabledHint"}}</small>
+      </span>
+      <input type="checkbox" name="material.enabled" {{#if enabled}}checked{{/if}}>
+    </label>
+
+    <fieldset class="cmt-item-types">
+      <legend>{{localize "CMT.Settings.Material.AppliesTo"}}</legend>
+      <label><input type="checkbox" name="itemTypes.weapon" {{#if supportsWeapon}}checked{{/if}}> {{localize "CMT.Settings.Material.Weapons"}}</label>
+      <label><input type="checkbox" name="itemTypes.armor" {{#if supportsArmor}}checked{{/if}}> {{localize "CMT.Settings.Material.Armor"}}</label>
+    </fieldset>
+  </section>
+
+  <section class="cmt-tier-editor" aria-label="{{localize 'CMT.Settings.Material.Tiers'}}">
+    <div class="cmt-tier-row cmt-tier-head">
+      <span>{{localize "CMT.Settings.Material.Tier"}}</span>
+      <span>{{localize "CMT.Settings.Material.CraftedName"}}</span>
+      <span>{{localize "CMT.Settings.Material.Bonus"}}</span>
+      <span>{{localize "CMT.Settings.Material.Price"}}</span>
+      <span>{{localize "CMT.Settings.Material.Rarity"}}</span>
+    </div>
+    {{#each tiers}}
+      <div class="cmt-tier-row">
+        <strong class="cmt-tier-number">{{tier}}</strong>
+        <input type="text" name="tiers.{{tier}}.label" value="{{label}}" aria-label="Tier {{tier}} crafted name" required>
+        <input type="number" name="tiers.{{tier}}.bonus" value="{{bonus}}" step="any" aria-label="Tier {{tier}} bonus" required>
+        <div class="cmt-price-input">
+          <input type="number" name="tiers.{{tier}}.priceGp" value="{{priceGp}}" min="0" step="0.01" aria-label="Tier {{tier}} added price" required>
+          <span>gp</span>
+        </div>
+        <select name="tiers.{{tier}}.rarity" aria-label="Tier {{tier}} PF2e rarity">
+          {{#each rarities}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+    {{/each}}
+  </section>
+
+  <footer class="cmt-config-actions cmt-two-actions">
+    <button type="submit">
+      <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+      {{localize "CMT.Settings.Material.Save"}}
+    </button>
+  </footer>
+</div>

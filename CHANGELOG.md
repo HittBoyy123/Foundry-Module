@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — In-game control panel
+
+- Replaced the primary raw-JSON settings screen with a GM-facing Wrathmaker control panel.
+- Added master switches for crafting-material rules and enhanced flanking.
+- Added editable three- and four-side flanking totals plus size and oversized-creature requirements.
+- Added an Edit pop-out for every material.
+- Made each material's display name, enabled state, weapon/armor availability, and all six tiers editable during play.
+- Made tier crafted names, custom bonuses, added prices, and PF2e rarity mappings independently configurable per material.
+- Kept the complete JSON editor available as an Advanced option.
+- Refreshed prepared actors and world items immediately after settings changes.
+- Added rules-schema version 6 migration; existing world and item settings remain intact.
+
 ## 0.2.1 — Additive flanking
 
 - Left ordinary two-sided flanking entirely to PF2e's normal Off-guard automation.

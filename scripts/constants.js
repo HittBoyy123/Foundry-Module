@@ -1,6 +1,6 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 5;
+export const RULES_SCHEMA_VERSION = 6;
 export const ITEM_SCHEMA_VERSION = 2;
 
 export const DEFAULT_ITEM_FLAGS = Object.freeze({
@@ -103,6 +103,9 @@ const WOOD_TIER_LABELS = Object.freeze({
 
 export const DEFAULT_RULES_CONFIG = Object.freeze({
   schemaVersion: RULES_SCHEMA_VERSION,
+  crafting: Object.freeze({
+    enabled: true,
+  }),
   tierBonuses: Object.freeze({
     1: 0,
     2: 1,
