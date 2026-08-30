@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 — Additive flanking
+
+- Left ordinary two-sided flanking entirely to PF2e's normal Off-guard automation.
+- Changed Wrathmaker to add no modifier at two sides, -1 AC at three sides, and -2 AC at four sides.
+- Preserved the intended combined totals of -2, -3, and -4 AC.
+- Kept the three- and four-side adjustments untyped so they stack with PF2e's circumstance penalty from Off-guard.
+- Added rules-schema version 5 migration and validation for escalating total penalties.
+
 ## 0.2.0 — Wrathmaker
 
 - Renamed the visible module from PF2e Crafting Material Tiers to Wrathmaker.

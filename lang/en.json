@@ -6,7 +6,7 @@
       "Unavailable": "Unavailable material"
     },
     "Flanking": {
-      "Modifier": "Wrathmaker Flanking ({sides} sides)"
+      "Modifier": "Wrathmaker Flanking Extra ({sides} sides)"
     },
     "Settings": {
       "Rules": {
@@ -20,8 +20,8 @@
         "Hint": "Configure material tiers, their effects, and the custom flanking rule."
       },
       "Editor": {
-        "Intro": "Materials can target one or more PF2e item types and grant separate effects. Tiers control prepared item names, prices, rarity, weapon attacks, and armor AC. The flanking section controls automatic multi-side AC penalties.",
-        "Hint": "The configuration is validated before it is saved. Untyped material and flanking modifiers stay separate from normal PF2e item, potency, rune, and Off-guard modifiers.",
+        "Intro": "Materials can target one or more PF2e item types and grant separate effects. Tiers control prepared item names, prices, rarity, weapon attacks, and armor AC. The flanking section controls additional multi-side AC penalties beyond PF2e's normal Off-guard rule.",
+        "Hint": "The configuration is validated before it is saved. Wrathmaker leaves ordinary two-sided flanking to PF2e, then uses untyped adjustments to reach the configured three- and four-side totals.",
         "Label": "Rules JSON",
         "Format": "Format JSON",
         "Reset": "Restore Defaults",

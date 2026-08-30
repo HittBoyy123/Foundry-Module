@@ -148,7 +148,7 @@ test("version 1 rules migrate without discarding customized materials", () => {
   delete legacy.tierPricesGp;
   legacy.materials.metal.label = "Custom Metal";
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.equal(migrated.materials.metal.label, "Custom Metal");
   assert.equal(migrated.tierLabels[3], "Rare");
   assert.equal(migrated.tierPricesGp[3], 25);
@@ -169,7 +169,7 @@ test("version 2 defaults migrate while existing material-specific overrides are 
   legacy.materials.metal.tierPricesGp = { 4: 777 };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.equal(migrated.tierLabels[4], "Epic");
   assert.equal(migrated.tierPricesGp[4], 100);
   assert.equal(migrated.materials.metal.tierLabels[4], "Moonsteel");
@@ -199,7 +199,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   const metal = migrated.materials.metal;
   const weaponEffect = metal.effects.find((effect) => effect.id === "weapon-attack");
   const armorEffect = metal.effects.find((effect) => effect.id === "armor-ac");
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.deepEqual(migrated.tierRarities, {
     1: "common",
     2: "uncommon",
@@ -212,7 +212,19 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   assert.deepEqual(weaponEffect.itemTypes, ["weapon"]);
   assert.deepEqual(armorEffect.itemTypes, ["armor"]);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
+  assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
   assert.equal(migrated.flanking.stackWithOffGuard, true);
+});
+
+test("version 4 flanking rules migrate to PF2e-managed two-sided flanking", () => {
+  const legacy = cloneDefaultRulesConfig();
+  legacy.schemaVersion = 4;
+  delete legacy.flanking.pf2eHandlesTwoSidedFlanking;
+
+  const migrated = normalizeRulesConfig(legacy);
+  assert.equal(migrated.schemaVersion, 5);
+  assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
+  assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
 });
 
 test("rarity schedule can be configured globally or per material", () => {
@@ -230,11 +242,18 @@ test("rarity schedule can be configured globally or per material", () => {
 test("custom flanking configuration is validated", () => {
   const customized = cloneDefaultRulesConfig();
   customized.flanking.penalties[3] = -5;
+  customized.flanking.penalties[4] = -6;
   customized.flanking.oversizedParticipantsPerSide = 3;
   const normalized = normalizeRulesConfig(customized);
   assert.equal(normalized.flanking.penalties[3], -5);
+  assert.equal(normalized.flanking.penalties[4], -6);
   assert.equal(normalized.flanking.oversizedParticipantsPerSide, 3);
+  assert.equal(normalized.flanking.pf2eHandlesTwoSidedFlanking, true);
 
   customized.flanking.penalties[2] = 2;
   assert.throws(() => normalizeRulesConfig(customized), ConfigValidationError);
+
+  const nonEscalating = cloneDefaultRulesConfig();
+  nonEscalating.flanking.penalties[3] = -1;
+  assert.throws(() => normalizeRulesConfig(nonEscalating), ConfigValidationError);
 });

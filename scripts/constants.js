@@ -1,6 +1,6 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 4;
+export const RULES_SCHEMA_VERSION = 5;
 export const ITEM_SCHEMA_VERSION = 2;
 
 export const DEFAULT_ITEM_FLAGS = Object.freeze({
@@ -79,6 +79,7 @@ export const DEFAULT_FLANKING_CONFIG = Object.freeze({
   maxNormalSizeDifference: 1,
   oversizedParticipantsPerSide: 2,
   requireOppositeSidesForTwo: true,
+  pf2eHandlesTwoSidedFlanking: true,
   stackWithOffGuard: true,
 });
 

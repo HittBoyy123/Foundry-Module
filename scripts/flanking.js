@@ -76,11 +76,17 @@ export function calculateFlankingState({ targetSize, flankers, config }) {
   let sides = Math.min(qualifiedSides.length, 4);
   if (sides === 2 && config.requireOppositeSidesForTwo && !hasOppositePair(qualifiedSides)) sides = 0;
   if (sides < 2) {
-    return { active: false, penalty: 0, sides: 0, qualifiedSides, sideWeights };
+    return { active: false, penalty: 0, wrathmakerPenalty: 0, sides: 0, qualifiedSides, sideWeights };
   }
+  const penalty = numeric(config.penalties[sides]);
+  const basePenalty = numeric(config.penalties[2]);
+  const wrathmakerPenalty = config.pf2eHandlesTwoSidedFlanking
+    ? Math.min(penalty - basePenalty, 0)
+    : penalty;
   return {
     active: true,
-    penalty: numeric(config.penalties[sides]),
+    penalty,
+    wrathmakerPenalty,
     sides,
     qualifiedSides,
     sideWeights,
@@ -176,7 +182,7 @@ export function calculateActorFlankingState(actor, config, environment = {}) {
 
 export function injectFlankingModifier(actor, config, environment = {}) {
   const state = calculateActorFlankingState(actor, config, environment);
-  if (!state?.active || state.penalty === 0) return false;
+  if (!state?.active || state.wrathmakerPenalty === 0) return false;
   const Modifier = globalThis.game?.pf2e?.Modifier;
   if (typeof Modifier !== "function") {
     if (!warnedAboutModifier) {
@@ -192,8 +198,8 @@ export function injectFlankingModifier(actor, config, environment = {}) {
   modifiers.push(() => new Modifier({
     slug: "wrathmaker-flanking",
     label,
-    modifier: state.penalty,
-    type: config.stackWithOffGuard ? "untyped" : "circumstance",
+    modifier: state.wrathmakerPenalty,
+    type: config.pf2eHandlesTwoSidedFlanking || config.stackWithOffGuard ? "untyped" : "circumstance",
     domains: ["ac"],
   }));
   return true;

@@ -166,6 +166,9 @@ function normalizeFlankingConfig(source) {
     }
     penalties[sides] = penalty;
   }
+  if (penalties[3] > penalties[2] || penalties[4] > penalties[3]) {
+    throw new ConfigValidationError("flanking.penalties must stay the same or become more severe as sides increase.");
+  }
   const maxNormalSizeDifference = finiteNumber(
     source.maxNormalSizeDifference ?? 1,
     "flanking.maxNormalSizeDifference",
@@ -188,6 +191,7 @@ function normalizeFlankingConfig(source) {
     maxNormalSizeDifference,
     oversizedParticipantsPerSide,
     requireOppositeSidesForTwo: source.requireOppositeSidesForTwo !== false,
+    pf2eHandlesTwoSidedFlanking: source.pf2eHandlesTwoSidedFlanking !== false,
     stackWithOffGuard: source.stackWithOffGuard !== false,
   };
 }
