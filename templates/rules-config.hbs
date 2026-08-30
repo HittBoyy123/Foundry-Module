@@ -1,0 +1,22 @@
+<div class="cmt-config-body">
+  <p>{{localize "CMT.Settings.Editor.Intro"}}</p>
+  <p class="hint">{{localize "CMT.Settings.Editor.Hint"}}</p>
+
+  <label for="cmt-rules-json">{{localize "CMT.Settings.Editor.Label"}}</label>
+  <textarea id="cmt-rules-json" name="config" spellcheck="false">{{configJson}}</textarea>
+
+  <div class="cmt-config-actions">
+    <button type="button" data-action="format">
+      <i class="fa-solid fa-align-left" aria-hidden="true"></i>
+      {{localize "CMT.Settings.Editor.Format"}}
+    </button>
+    <button type="button" data-action="reset" class="cmt-danger">
+      <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
+      {{localize "CMT.Settings.Editor.Reset"}}
+    </button>
+    <button type="submit">
+      <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+      {{localize "CMT.Settings.Editor.Save"}}
+    </button>
+  </div>
+</div>

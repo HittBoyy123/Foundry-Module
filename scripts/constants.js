@@ -1,0 +1,179 @@
+export const MODULE_ID = "pf2e-crafting-material-tiers";
+export const MODULE_TITLE = "Wrathmaker";
+export const RULES_SCHEMA_VERSION = 4;
+export const ITEM_SCHEMA_VERSION = 2;
+
+export const DEFAULT_ITEM_FLAGS = Object.freeze({
+  schemaVersion: ITEM_SCHEMA_VERSION,
+  material: "metal",
+  tier: 1,
+});
+
+const defaultWeaponEffect = () => ({
+  id: "weapon-attack",
+  kind: "flatModifier",
+  label: "Crafted {material} ({tierLabel})",
+  itemTypes: ["weapon"],
+  selectors: ["{item|_id}-attack"],
+  modifierType: "untyped",
+  value: {
+    mode: "tierBonus",
+    multiplier: 1,
+    offset: 0,
+  },
+});
+
+const defaultArmorEffect = () => ({
+  id: "armor-ac",
+  kind: "flatModifier",
+  label: "Crafted {material} Armor ({tierLabel})",
+  itemTypes: ["armor"],
+  selectors: ["ac"],
+  modifierType: "untyped",
+  value: {
+    mode: "tierBonus",
+    multiplier: 1,
+    offset: 0,
+  },
+});
+
+const defaultEffects = () => Object.freeze([
+  Object.freeze(defaultWeaponEffect()),
+  Object.freeze(defaultArmorEffect()),
+]);
+
+export const DEFAULT_TIER_LABELS = Object.freeze({
+  1: "Common",
+  2: "Uncommon",
+  3: "Rare",
+  4: "Epic",
+  5: "Legendary",
+  6: "Mythical",
+});
+
+export const DEFAULT_TIER_PRICES_GP = Object.freeze({
+  1: 0,
+  2: 10,
+  3: 25,
+  4: 100,
+  5: 1000,
+  6: 5000,
+});
+
+export const DEFAULT_TIER_RARITIES = Object.freeze({
+  1: "common",
+  2: "uncommon",
+  3: "rare",
+  4: "unique",
+  5: "unique",
+  6: "unique",
+});
+
+export const DEFAULT_FLANKING_CONFIG = Object.freeze({
+  enabled: true,
+  penalties: Object.freeze({
+    2: -2,
+    3: -3,
+    4: -4,
+  }),
+  maxNormalSizeDifference: 1,
+  oversizedParticipantsPerSide: 2,
+  requireOppositeSidesForTwo: true,
+  stackWithOffGuard: true,
+});
+
+const METAL_TIER_LABELS = Object.freeze({
+  1: "Iron",
+  2: "Steel",
+  3: "Cold Iron",
+  4: "Mithril",
+  5: "Adamantium",
+  6: "Dark Iron",
+});
+
+const WOOD_TIER_LABELS = Object.freeze({
+  1: "Softwood",
+  2: "Hardwood",
+  3: "Blackwood",
+  4: "Darkmoon",
+  5: "Starwood",
+  6: "Godwood",
+});
+
+export const DEFAULT_RULES_CONFIG = Object.freeze({
+  schemaVersion: RULES_SCHEMA_VERSION,
+  tierBonuses: Object.freeze({
+    1: 0,
+    2: 1,
+    3: 2,
+    4: 3,
+    5: 4,
+    6: 5,
+  }),
+  tierLabels: DEFAULT_TIER_LABELS,
+  tierPricesGp: DEFAULT_TIER_PRICES_GP,
+  tierRarities: DEFAULT_TIER_RARITIES,
+  flanking: DEFAULT_FLANKING_CONFIG,
+  materials: Object.freeze({
+    metal: Object.freeze({
+      label: "Metal",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: METAL_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    wood: Object.freeze({
+      label: "Wood",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: WOOD_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    stone: Object.freeze({
+      label: "Stone",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: DEFAULT_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    leather: Object.freeze({
+      label: "Leather / Hide",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: DEFAULT_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    "dragon-scale": Object.freeze({
+      label: "Dragon Scales",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: DEFAULT_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    herbs: Object.freeze({
+      label: "Herbs / Mushrooms",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: DEFAULT_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    "mana-crystals": Object.freeze({
+      label: "Mana Crystals",
+      enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor"]),
+      effects: defaultEffects(),
+      tierLabels: DEFAULT_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+  }),
+});
+
+export function cloneDefaultRulesConfig() {
+  return JSON.parse(JSON.stringify(DEFAULT_RULES_CONFIG));
+}

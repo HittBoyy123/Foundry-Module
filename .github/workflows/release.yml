@@ -1,0 +1,60 @@
+name: Release Wrathmaker
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate version tag
+        shell: bash
+        run: |
+          MODULE_VERSION="$(node -p "require('./module.json').version")"
+          if [[ "${GITHUB_REF_NAME}" != "v${MODULE_VERSION}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match module version ${MODULE_VERSION}."
+            exit 1
+          fi
+
+      - name: Run automated tests
+        run: node --test
+
+      - name: Build Foundry release archive
+        id: package
+        shell: bash
+        run: |
+          MODULE_VERSION="$(node -p "require('./module.json').version")"
+          ARCHIVE_NAME="wrathmaker-v${MODULE_VERSION}.zip"
+          mkdir -p release
+          cp module.json LICENSE README.md CHANGELOG.md release/
+          cp -R scripts styles templates lang release/
+          node - <<'NODE'
+          const fs = require("fs");
+          const manifestPath = "release/module.json";
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+          manifest.download = `https://github.com/HittBoyy123/Foundry-Module/releases/download/v${manifest.version}/wrathmaker-v${manifest.version}.zip`;
+          fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+          (cd release && zip -r "../${ARCHIVE_NAME}" .)
+          echo "archive=${ARCHIVE_NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCHIVE_NAME: ${{ steps.package.outputs.archive }}
+        shell: bash
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" "${ARCHIVE_NAME}" release/module.json --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" "${ARCHIVE_NAME}" release/module.json --generate-notes --title "Wrathmaker ${GITHUB_REF_NAME}"
+          fi

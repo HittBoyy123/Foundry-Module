@@ -1,0 +1,528 @@
+import {
+  DEFAULT_ITEM_FLAGS,
+  DEFAULT_FLANKING_CONFIG,
+  DEFAULT_RULES_CONFIG,
+  DEFAULT_TIER_LABELS,
+  DEFAULT_TIER_PRICES_GP,
+  DEFAULT_TIER_RARITIES,
+  ITEM_SCHEMA_VERSION,
+  RULES_SCHEMA_VERSION,
+  cloneDefaultRulesConfig,
+} from "./constants.js";
+
+const MODIFIER_TYPES = new Set([
+  "ability",
+  "circumstance",
+  "item",
+  "potency",
+  "proficiency",
+  "status",
+  "untyped",
+]);
+
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ITEM_TYPE_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/;
+const RARITIES = new Set(["common", "uncommon", "rare", "unique"]);
+const MIN_VALUE = -100;
+const MAX_VALUE = 100;
+const MAX_PRICE_GP = 1_000_000_000;
+const LEGACY_TIER_LABELS = Object.freeze({
+  1: "Tier 1",
+  2: "Tier 2",
+  3: "Tier 3",
+  4: "Tier 4",
+  5: "Tier 5",
+  6: "Tier 6",
+});
+const LEGACY_TIER_PRICES_GP = Object.freeze({ 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6 });
+const LEGACY_MATERIAL_LABELS = Object.freeze({
+  metal: "Metal",
+  wood: "Wood",
+  stone: "Stone",
+  leather: "Leather",
+  "dragon-scale": "Dragon Scale",
+  herbs: "Herbs",
+  "mana-crystals": "Mana Crystals",
+});
+
+export class ConfigValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ConfigValidationError";
+  }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function copyJson(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+function finiteNumber(value, path, { integer = false, fallback } = {}) {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number)) {
+    if (fallback !== undefined) return fallback;
+    throw new ConfigValidationError(`${path} must be a finite number.`);
+  }
+  if (integer && !Number.isInteger(number)) {
+    throw new ConfigValidationError(`${path} must be an integer.`);
+  }
+  if (number < MIN_VALUE || number > MAX_VALUE) {
+    throw new ConfigValidationError(`${path} must be between ${MIN_VALUE} and ${MAX_VALUE}.`);
+  }
+  return number;
+}
+
+function nonBlankString(value, path) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new ConfigValidationError(`${path} must be a non-blank string.`);
+  }
+  return value.trim();
+}
+
+function nonNegativePrice(value, path) {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number) || number < 0 || number > MAX_PRICE_GP) {
+    throw new ConfigValidationError(`${path} must be a number between 0 and ${MAX_PRICE_GP}.`);
+  }
+  const copper = Math.round(number * 100);
+  if (Math.abs(number - (copper / 100)) > Number.EPSILON) {
+    throw new ConfigValidationError(`${path} cannot use fractions smaller than one copper piece (0.01 gp).`);
+  }
+  return copper / 100;
+}
+
+function normalizeTierLabels(source, path, { partial = false } = {}) {
+  if (!isPlainObject(source)) {
+    throw new ConfigValidationError(`${path} must be an object.`);
+  }
+  const labels = {};
+  for (let tier = 1; tier <= 6; tier += 1) {
+    if (source[tier] === undefined && partial) continue;
+    labels[tier] = nonBlankString(source[tier], `${path}.${tier}`);
+  }
+  return labels;
+}
+
+function normalizeTierPrices(source, path, { partial = false } = {}) {
+  if (!isPlainObject(source)) {
+    throw new ConfigValidationError(`${path} must be an object.`);
+  }
+  const prices = {};
+  for (let tier = 1; tier <= 6; tier += 1) {
+    if (source[tier] === undefined && partial) continue;
+    prices[tier] = nonNegativePrice(source[tier], `${path}.${tier}`);
+  }
+  return prices;
+}
+
+function normalizeTierRarities(source, path, { partial = false } = {}) {
+  if (!isPlainObject(source)) {
+    throw new ConfigValidationError(`${path} must be an object.`);
+  }
+  const rarities = {};
+  for (let tier = 1; tier <= 6; tier += 1) {
+    if (source[tier] === undefined && partial) continue;
+    const rarity = nonBlankString(source[tier], `${path}.${tier}`).toLowerCase();
+    if (!RARITIES.has(rarity)) {
+      throw new ConfigValidationError(`${path}.${tier} must be common, uncommon, rare, or unique.`);
+    }
+    rarities[tier] = rarity;
+  }
+  return rarities;
+}
+
+function normalizeItemTypes(value, path) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new ConfigValidationError(`${path} must contain at least one item type.`);
+  }
+  return [...new Set(value.map((itemType, index) => {
+    const normalized = nonBlankString(itemType, `${path}[${index}]`);
+    if (!ITEM_TYPE_PATTERN.test(normalized)) {
+      throw new ConfigValidationError(`${path}[${index}] is not a valid item type.`);
+    }
+    return normalized;
+  }))];
+}
+
+function tierMapMatches(source, expected) {
+  return isPlainObject(source) && [1, 2, 3, 4, 5, 6].every((tier) => source[tier] === expected[tier]);
+}
+
+function normalizeFlankingConfig(source) {
+  if (!isPlainObject(source)) {
+    throw new ConfigValidationError("flanking must be an object.");
+  }
+  if (!isPlainObject(source.penalties)) {
+    throw new ConfigValidationError("flanking.penalties must contain entries for 2, 3, and 4 sides.");
+  }
+  const penalties = {};
+  for (let sides = 2; sides <= 4; sides += 1) {
+    const penalty = finiteNumber(source.penalties[sides], `flanking.penalties.${sides}`, { integer: true });
+    if (penalty > 0) {
+      throw new ConfigValidationError(`flanking.penalties.${sides} must be zero or negative.`);
+    }
+    penalties[sides] = penalty;
+  }
+  const maxNormalSizeDifference = finiteNumber(
+    source.maxNormalSizeDifference ?? 1,
+    "flanking.maxNormalSizeDifference",
+    { integer: true },
+  );
+  if (maxNormalSizeDifference < 0 || maxNormalSizeDifference > 5) {
+    throw new ConfigValidationError("flanking.maxNormalSizeDifference must be between 0 and 5.");
+  }
+  const oversizedParticipantsPerSide = finiteNumber(
+    source.oversizedParticipantsPerSide ?? 2,
+    "flanking.oversizedParticipantsPerSide",
+    { integer: true },
+  );
+  if (oversizedParticipantsPerSide < 2 || oversizedParticipantsPerSide > 8) {
+    throw new ConfigValidationError("flanking.oversizedParticipantsPerSide must be between 2 and 8.");
+  }
+  return {
+    enabled: source.enabled !== false,
+    penalties,
+    maxNormalSizeDifference,
+    oversizedParticipantsPerSide,
+    requireOppositeSidesForTwo: source.requireOppositeSidesForTwo !== false,
+    stackWithOffGuard: source.stackWithOffGuard !== false,
+  };
+}
+
+function normalizeSelectors(value, path) {
+  const selectors = typeof value === "string" ? [value] : value;
+  if (!Array.isArray(selectors) || selectors.length === 0) {
+    throw new ConfigValidationError(`${path} must contain at least one selector.`);
+  }
+  return [...new Set(selectors.map((selector, index) => nonBlankString(selector, `${path}[${index}]`)))];
+}
+
+function normalizeValue(value, path) {
+  if (value === undefined || value === "tierBonus") {
+    return { mode: "tierBonus", multiplier: 1, offset: 0 };
+  }
+  if (value === "tier") {
+    return { mode: "tier", multiplier: 1, offset: 0 };
+  }
+  if (typeof value === "number") {
+    return { mode: "fixed", value: finiteNumber(value, path) };
+  }
+  if (!isPlainObject(value)) {
+    throw new ConfigValidationError(`${path} must be a number, "tierBonus", "tier", or a value object.`);
+  }
+
+  const mode = value.mode ?? "tierBonus";
+  if (mode === "fixed") {
+    return { mode, value: finiteNumber(value.value, `${path}.value`) };
+  }
+  if (!new Set(["tierBonus", "tier"]).has(mode)) {
+    throw new ConfigValidationError(`${path}.mode must be "tierBonus", "tier", or "fixed".`);
+  }
+  return {
+    mode,
+    multiplier: finiteNumber(value.multiplier ?? 1, `${path}.multiplier`),
+    offset: finiteNumber(value.offset ?? 0, `${path}.offset`),
+  };
+}
+
+function normalizeEffect(effect, path) {
+  if (!isPlainObject(effect)) {
+    throw new ConfigValidationError(`${path} must be an object.`);
+  }
+  const kind = effect.kind ?? "flatModifier";
+  if (kind !== "flatModifier") {
+    throw new ConfigValidationError(`${path}.kind currently supports only "flatModifier".`);
+  }
+  const id = nonBlankString(effect.id, `${path}.id`);
+  if (!SLUG_PATTERN.test(id)) {
+    throw new ConfigValidationError(`${path}.id must be a lowercase slug (for example, "weapon-attack").`);
+  }
+  const modifierType = effect.modifierType ?? "untyped";
+  if (!MODIFIER_TYPES.has(modifierType)) {
+    throw new ConfigValidationError(`${path}.modifierType is not a PF2e modifier type.`);
+  }
+
+  const normalized = {
+    id,
+    kind,
+    enabled: effect.enabled !== false,
+    label: typeof effect.label === "string" && effect.label.trim()
+      ? effect.label.trim()
+      : "Crafted {material} (Tier {tier})",
+    selectors: normalizeSelectors(effect.selectors ?? effect.selector, `${path}.selectors`),
+    modifierType,
+    value: normalizeValue(effect.value, `${path}.value`),
+  };
+
+  if (effect.itemTypes !== undefined) {
+    normalized.itemTypes = normalizeItemTypes(effect.itemTypes, `${path}.itemTypes`);
+  }
+
+  if (effect.predicate !== undefined) {
+    if (!Array.isArray(effect.predicate) && !isPlainObject(effect.predicate)) {
+      throw new ConfigValidationError(`${path}.predicate must be an array or object.`);
+    }
+    normalized.predicate = copyJson(effect.predicate);
+  }
+  if (typeof effect.force === "boolean") normalized.force = effect.force;
+  if (typeof effect.hideIfDisabled === "boolean") normalized.hideIfDisabled = effect.hideIfDisabled;
+  return normalized;
+}
+
+export function normalizeRulesConfig(input) {
+  if (input === undefined || input === null || input === "") return cloneDefaultRulesConfig();
+  const parsed = typeof input === "string" ? (() => {
+    try {
+      return JSON.parse(input);
+    } catch (error) {
+      throw new ConfigValidationError(`The rules configuration is not valid JSON: ${error.message}`);
+    }
+  })() : input;
+
+  if (!isPlainObject(parsed)) {
+    throw new ConfigValidationError("The rules configuration must be an object.");
+  }
+  const sourceSchemaVersion = Number(parsed.schemaVersion ?? 1);
+  if (!Number.isInteger(sourceSchemaVersion) || sourceSchemaVersion < 1 || sourceSchemaVersion > RULES_SCHEMA_VERSION) {
+    throw new ConfigValidationError(`Unsupported rules schema version ${sourceSchemaVersion}.`);
+  }
+
+  const tierSource = parsed.tierBonuses;
+  if (!isPlainObject(tierSource)) {
+    throw new ConfigValidationError("tierBonuses must be an object with entries for tiers 1 through 6.");
+  }
+  const tierBonuses = {};
+  for (let tier = 1; tier <= 6; tier += 1) {
+    tierBonuses[tier] = finiteNumber(tierSource[tier], `tierBonuses.${tier}`);
+  }
+  const useNewTierLabels = sourceSchemaVersion < 3 && (
+    parsed.tierLabels === undefined || tierMapMatches(parsed.tierLabels, LEGACY_TIER_LABELS)
+  );
+  const useNewTierPrices = sourceSchemaVersion < 3 && (
+    parsed.tierPricesGp === undefined || tierMapMatches(parsed.tierPricesGp, LEGACY_TIER_PRICES_GP)
+  );
+  const tierLabels = normalizeTierLabels(
+    useNewTierLabels ? DEFAULT_TIER_LABELS : parsed.tierLabels,
+    "tierLabels",
+  );
+  const tierPricesGp = normalizeTierPrices(
+    useNewTierPrices ? DEFAULT_TIER_PRICES_GP : parsed.tierPricesGp,
+    "tierPricesGp",
+  );
+  const tierRarities = normalizeTierRarities(
+    parsed.tierRarities ?? DEFAULT_TIER_RARITIES,
+    "tierRarities",
+  );
+  const flanking = normalizeFlankingConfig(parsed.flanking ?? DEFAULT_FLANKING_CONFIG);
+
+  if (!isPlainObject(parsed.materials) || Object.keys(parsed.materials).length === 0) {
+    throw new ConfigValidationError("materials must contain at least one material definition.");
+  }
+  const materials = {};
+  for (const [materialId, material] of Object.entries(parsed.materials)) {
+    if (!SLUG_PATTERN.test(materialId)) {
+      throw new ConfigValidationError(`Material id "${materialId}" must be a lowercase slug.`);
+    }
+    if (!isPlainObject(material)) {
+      throw new ConfigValidationError(`materials.${materialId} must be an object.`);
+    }
+    const originalItemTypes = normalizeItemTypes(material.itemTypes, `materials.${materialId}.itemTypes`);
+    const defaultMaterial = DEFAULT_RULES_CONFIG.materials[materialId];
+    const itemTypes = sourceSchemaVersion < 4 && defaultMaterial
+      ? [...new Set([...originalItemTypes, "armor"])]
+      : originalItemTypes;
+    if (!Array.isArray(material.effects)) {
+      throw new ConfigValidationError(`materials.${materialId}.effects must be an array.`);
+    }
+    const effectSources = material.effects.map((effect) => (
+      sourceSchemaVersion < 4 && isPlainObject(effect) && effect.itemTypes === undefined
+        ? { ...effect, itemTypes: originalItemTypes }
+        : effect
+    ));
+    const hasArmorEffect = effectSources.some((effect) => (
+      isPlainObject(effect) && (
+        effect.id === "armor-ac" ||
+        [effect.selector, effect.selectors].flat().some((selector) => selector === "ac")
+      )
+    ));
+    const defaultArmorEffect = defaultMaterial?.effects.find((effect) => effect.id === "armor-ac");
+    if (sourceSchemaVersion < 4 && defaultArmorEffect && !hasArmorEffect) {
+      effectSources.push(copyJson(defaultArmorEffect));
+    }
+    const effects = effectSources.map((effect, index) =>
+      normalizeEffect(effect, `materials.${materialId}.effects[${index}]`));
+    const duplicateEffect = effects.find((effect, index) => effects.findIndex((other) => other.id === effect.id) !== index);
+    if (duplicateEffect) {
+      throw new ConfigValidationError(`materials.${materialId} contains duplicate effect id "${duplicateEffect.id}".`);
+    }
+    const migratedTierLabels = sourceSchemaVersion < 3 ? defaultMaterial?.tierLabels : undefined;
+    const migratedTierPrices = sourceSchemaVersion < 3 ? defaultMaterial?.tierPricesGp : undefined;
+    const tierLabelOverrides = material.tierLabels === undefined && migratedTierLabels === undefined
+      ? {}
+      : normalizeTierLabels(
+        material.tierLabels ?? migratedTierLabels,
+        `materials.${materialId}.tierLabels`,
+        { partial: true },
+      );
+    const tierPriceOverrides = material.tierPricesGp === undefined && migratedTierPrices === undefined
+      ? {}
+      : normalizeTierPrices(
+        material.tierPricesGp ?? migratedTierPrices,
+        `materials.${materialId}.tierPricesGp`,
+        { partial: true },
+      );
+    const tierRarityOverrides = material.tierRarities === undefined
+      ? {}
+      : normalizeTierRarities(
+        material.tierRarities,
+        `materials.${materialId}.tierRarities`,
+        { partial: true },
+      );
+    const legacyLabel = LEGACY_MATERIAL_LABELS[materialId];
+    const migratedLabel = sourceSchemaVersion < 3 && material.label === legacyLabel
+      ? defaultMaterial?.label
+      : material.label;
+    materials[materialId] = {
+      label: nonBlankString(migratedLabel ?? materialId, `materials.${materialId}.label`),
+      enabled: material.enabled !== false,
+      itemTypes,
+      effects,
+      ...(Object.keys(tierLabelOverrides).length > 0 ? { tierLabels: tierLabelOverrides } : {}),
+      ...(Object.keys(tierPriceOverrides).length > 0 ? { tierPricesGp: tierPriceOverrides } : {}),
+      ...(Object.keys(tierRarityOverrides).length > 0 ? { tierRarities: tierRarityOverrides } : {}),
+    };
+  }
+
+  return {
+    schemaVersion: RULES_SCHEMA_VERSION,
+    tierBonuses,
+    tierLabels,
+    tierPricesGp,
+    tierRarities,
+    flanking,
+    materials,
+  };
+}
+
+export function normalizeItemFlags(input, config = null) {
+  const source = isPlainObject(input) ? input : {};
+  const tierNumber = Number(source.tier ?? DEFAULT_ITEM_FLAGS.tier);
+  const tier = Number.isInteger(tierNumber) ? Math.min(6, Math.max(1, tierNumber)) : DEFAULT_ITEM_FLAGS.tier;
+  const material = typeof source.material === "string" && source.material.trim()
+    ? source.material.trim()
+    : DEFAULT_ITEM_FLAGS.material;
+  return {
+    schemaVersion: ITEM_SCHEMA_VERSION,
+    material,
+    tier,
+  };
+}
+
+export function materialsForItemType(config, itemType) {
+  return Object.entries(config.materials)
+    .filter(([, material]) => material.enabled && material.itemTypes.includes(itemType))
+    .map(([id, material]) => ({ id, label: material.label }));
+}
+
+export function itemTypeIsSupported(config, itemType) {
+  return materialsForItemType(config, itemType).length > 0;
+}
+
+export function getTierPresentation(config, materialId, tier) {
+  const normalizedTier = Math.min(6, Math.max(1, Number(tier) || 1));
+  const material = config.materials[materialId] ?? null;
+  return {
+    label: material?.tierLabels?.[normalizedTier] ?? config.tierLabels[normalizedTier],
+    priceGp: material?.tierPricesGp?.[normalizedTier] ?? config.tierPricesGp[normalizedTier],
+    rarity: material?.tierRarities?.[normalizedTier] ?? config.tierRarities[normalizedTier],
+  };
+}
+
+export function insertTierLabel(generatedName, baseName, tierLabel) {
+  const generated = String(generatedName ?? "").trim();
+  const base = String(baseName ?? "").trim();
+  const label = String(tierLabel ?? "").trim();
+  if (!generated || !base || !label) return generated;
+
+  const escapedBase = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const suffix = new RegExp(`${escapedBase}$`, "iu");
+  if (!suffix.test(generated)) return `${label} ${generated}`;
+
+  const prefix = generated.replace(suffix, "").trim();
+  if (prefix.endsWith(label)) return generated;
+  return [prefix, label, base].filter(Boolean).join(" ");
+}
+
+function resolveValue(valueConfig, tier, tierBonus) {
+  if (valueConfig.mode === "fixed") return valueConfig.value;
+  const base = valueConfig.mode === "tier" ? tier : tierBonus;
+  return (base * valueConfig.multiplier) + valueConfig.offset;
+}
+
+function formatLabel(template, context) {
+  return template.replace(
+    /\{(material|materialId|tier|tierLabel|bonus|item)\}/g,
+    (_match, key) => String(context[key]),
+  );
+}
+
+function slugify(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "material-bonus";
+}
+
+export function calculateItemEffects({ itemType, itemId, itemName, flags, config }) {
+  const configured = isPlainObject(flags) && (typeof flags.material === "string" || flags.tier !== undefined);
+  const normalizedFlags = normalizeItemFlags(flags, config);
+  const material = config.materials[normalizedFlags.material] ?? null;
+  const tierBonus = config.tierBonuses[normalizedFlags.tier] ?? 0;
+  const presentation = getTierPresentation(config, normalizedFlags.material, normalizedFlags.tier);
+  const inactive = !configured || !material?.enabled || !material?.itemTypes.includes(itemType);
+  if (inactive) {
+    return { active: false, flags: normalizedFlags, material, tierBonus, presentation, previews: [], rules: [] };
+  }
+
+  const previews = material.effects
+    .filter((effect) => effect.enabled && (!effect.itemTypes || effect.itemTypes.includes(itemType)))
+    .map((effect) => {
+      const value = resolveValue(effect.value, normalizedFlags.tier, tierBonus);
+      const context = {
+        material: material.label,
+        materialId: normalizedFlags.material,
+        tier: normalizedFlags.tier,
+        tierLabel: presentation.label,
+        bonus: value >= 0 ? `+${value}` : value,
+        item: itemName,
+      };
+      return {
+        ...effect,
+        value,
+        resolvedLabel: formatLabel(effect.label, context),
+      };
+    });
+
+  const rules = previews
+    .filter((effect) => effect.kind === "flatModifier" && effect.value !== 0)
+    .map((effect) => {
+      const rule = {
+        key: "FlatModifier",
+        slug: slugify(`craft-material-${normalizedFlags.material}-${effect.id}-${itemId}`),
+        label: effect.resolvedLabel,
+        selector: [...effect.selectors],
+        type: effect.modifierType,
+        value: effect.value,
+      };
+      if (effect.predicate !== undefined) rule.predicate = copyJson(effect.predicate);
+      if (effect.force !== undefined) rule.force = effect.force;
+      if (effect.hideIfDisabled !== undefined) rule.hideIfDisabled = effect.hideIfDisabled;
+      return rule;
+    });
+
+  return { active: true, flags: normalizedFlags, material, tierBonus, presentation, previews, rules };
+}

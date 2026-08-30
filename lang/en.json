@@ -1,0 +1,42 @@
+{
+  "CMT": {
+    "ItemSheet": {
+      "Material": "Material",
+      "Tier": "Tier",
+      "Unavailable": "Unavailable material"
+    },
+    "Flanking": {
+      "Modifier": "Wrathmaker Flanking ({sides} sides)"
+    },
+    "Settings": {
+      "Rules": {
+        "Name": "Material rules",
+        "Hint": "Versioned Wrathmaker definitions for material tiers, PF2e effects, and automatic multi-side flanking."
+      },
+      "Menu": {
+        "Title": "Wrathmaker Rules",
+        "Name": "Wrathmaker rules",
+        "Label": "Configure Rules",
+        "Hint": "Configure material tiers, their effects, and the custom flanking rule."
+      },
+      "Editor": {
+        "Intro": "Materials can target one or more PF2e item types and grant separate effects. Tiers control prepared item names, prices, rarity, weapon attacks, and armor AC. The flanking section controls automatic multi-side AC penalties.",
+        "Hint": "The configuration is validated before it is saved. Untyped material and flanking modifiers stay separate from normal PF2e item, potency, rune, and Off-guard modifiers.",
+        "Label": "Rules JSON",
+        "Format": "Format JSON",
+        "Reset": "Restore Defaults",
+        "Save": "Save Rules"
+      },
+      "Reset": {
+        "Title": "Restore Default Wrathmaker Rules",
+        "Confirm": "Replace the current material, tier, and flanking rules with the module defaults? Item flags will not be removed."
+      }
+    },
+    "Notifications": {
+      "RulesSaved": "Crafting material rules saved.",
+      "RulesReset": "Default crafting material rules restored.",
+      "InvalidJson": "The rules are not valid JSON.",
+      "UpdateFailed": "The crafting material could not be saved."
+    }
+  }
+}

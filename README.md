@@ -1,0 +1,203 @@
+# Wrathmaker
+
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapon and armor sheets, then turns those choices into separate prepared modifiers without replacing core PF2e bonuses. It also automates Wrathmaker's escalating multi-side flanking penalties.
+
+## Compatibility
+
+- Foundry VTT 13 and 14
+- Pathfinder Second Edition 7.1 or newer
+- Material-tier item support: weapons and armor
+- Automatic token-based custom flanking
+- Extensible through world configuration and a public module API
+
+The visible module name is **Wrathmaker**. Its internal id remains `pf2e-crafting-material-tiers` so existing worlds keep their saved settings and item selections during the rename.
+
+## Installation
+
+### Install from Foundry
+
+1. Open Foundry's **Add-on Modules** screen and choose **Install Module**.
+2. Paste this Manifest URL:
+
+   ```text
+   https://github.com/HittBoyy123/Foundry-Module/releases/latest/download/module.json
+   ```
+
+3. Select **Install**, then enable **Wrathmaker** in the world's Manage Modules screen.
+4. Open a weapon or armor sheet and choose **Material** and **Tier** directly below **Quantity**.
+
+This same link lets Foundry detect future Wrathmaker releases automatically.
+
+### Manual installation
+
+Download `wrathmaker-v0.2.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+
+The settings panel is under **Configure Settings → Module Settings → Wrathmaker → Configure Rules**.
+
+## Publishing a new version
+
+1. Update the version in `module.json` and `package.json`.
+2. Commit and push the changes.
+3. Create and push a matching tag such as `v0.3.0`.
+
+The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
+
+## Default rules
+
+| Tier | Metal | Wood | Other materials | Custom bonus | Added price | PF2e rarity |
+| ---: | --- | --- | --- | ---: | ---: | --- |
+| 1 | Iron | Softwood | Common | +0 | 0 gp | Common |
+| 2 | Steel | Hardwood | Uncommon | +1 | 10 gp | Uncommon |
+| 3 | Cold Iron | Blackwood | Rare | +2 | 25 gp | Rare |
+| 4 | Mithril | Darkmoon | Epic | +3 | 100 gp | Unique |
+| 5 | Adamantium | Starwood | Legendary | +4 | 1,000 gp | Unique |
+| 6 | Dark Iron | Godwood | Mythical | +5 | 5,000 gp | Unique |
+
+Metal, wood, stone, leather/hide, dragon scales, herbs/mushrooms, and mana crystals are available to both weapons and armor. Weapon bonuses apply only to the selected weapon's attack selector. Armor bonuses apply only to AC and only while that armor is equipped. Both are **untyped** PF2e flat modifiers, so they stay separate from ordinary PF2e item, potency, and rune bonuses.
+
+Tier 1 creates no zero-value rule element, keeping roll breakdowns uncluttered. Selecting either field saves both choices and activates the configured tier rule for that item.
+
+PF2e first generates the ordinary rune-aware item name and price. Wrathmaker then inserts the selected material's tier name immediately before the source item name, adds the configured tier price, and applies the tier rarity. For example, a Tier 2 metal weapon is prepared as `+1 Striking Steel Bastard Sword`, valued at 110 gp when PF2e calculates 100 gp, and categorized as Uncommon. Armor uses the same naming, price, and rarity process.
+
+## Custom flanking
+
+Wrathmaker calculates flanking from creature tokens on the active scene and updates AC automatically when tokens move or relevant actor state changes.
+
+- One qualifying side means no penalty.
+- Two opposite qualifying sides impose **-2 AC**.
+- Three qualifying sides impose **-3 AC**.
+- All four qualifying sides impose **-4 AC**.
+- Two adjacent sides alone do not flank; the two-side case must surround the target on north/south or east/west sides.
+- If the target is more than one size category larger than a flanker, that flanker contributes half a side. Two such flankers are therefore required on that side.
+- A conscious, living flanker must be opposed to the target, able to flank under PF2e's prepared data, and have attack reach to the target.
+- A target that PF2e marks as unflankable or immune to Off-guard receives no Wrathmaker flanking penalty.
+
+The penalty is an **untyped** PF2e AC modifier by default. It therefore stacks with the normal circumstance penalty from Off-guard instead of replacing or altering that condition. The AC breakdown labels it `Wrathmaker Flanking (2 sides)`, `Wrathmaker Flanking (3 sides)`, or `Wrathmaker Flanking (4 sides)`.
+
+The default configuration is:
+
+```json
+{
+  "flanking": {
+    "enabled": true,
+    "penalties": { "2": -2, "3": -3, "4": -4 },
+    "maxNormalSizeDifference": 1,
+    "oversizedParticipantsPerSide": 2,
+    "requireOppositeSidesForTwo": true,
+    "stackWithOffGuard": true
+  }
+}
+```
+
+These fields are part of the same validated world rules JSON as the material definitions, so the GM can change the penalties or thresholds later without changing the module code.
+
+## Data safety
+
+Item choices are stored only here:
+
+```json
+{
+  "flags": {
+    "pf2e-crafting-material-tiers": {
+      "schemaVersion": 2,
+      "material": "metal",
+      "tier": 2
+    }
+  }
+}
+```
+
+The module never persists changes to the item's source `name`, `system.price`, `system.traits.rarity`, `system.runes`, `system.material`, `system.rules`, or any other PF2e source field. During data preparation it layers the display name, price, and rarity onto PF2e's prepared values. During actor preparation it temporarily presents generated `FlatModifier` rule sources to PF2e, then removes those sources immediately. The prepared presentation and modifiers remain available to sheets and rolls while the original item data stays intact.
+
+Disabling or uninstalling the module leaves inert flags on previously configured items. All PF2e item and rune data remains intact.
+
+Version 1 item flags are read automatically. The former per-item enable and override values are ignored, leaving Material and Tier as the only item-level choices.
+
+## Configuring material effects
+
+The GM rules editor stores validated, versioned JSON. Top-level `tierLabels`, `tierPricesGp`, and `tierRarities` hold the shared fallback names, prices, and PF2e rarities. Each supplied material can override these values independently.
+
+Every material has:
+
+- `label`: the name shown on item sheets.
+- `enabled`: whether the material is available.
+- `itemTypes`: PF2e item types on which it appears.
+- `effects`: one or more generated PF2e flat modifiers.
+- Optional effect `itemTypes`: limits an effect to weapons, armor, or future item types.
+- Optional `tierLabels`: per-tier names that override the shared labels for this material.
+- Optional `tierPricesGp`: per-tier prices that override the shared prices for this material.
+- Optional `tierRarities`: per-tier PF2e rarities that override the shared rarity schedule.
+
+For example, this can later rename and reprice only Metal's Tier 2 without changing other materials:
+
+```json
+{
+  "tierLabels": { "2": "Tempered Steel" },
+  "tierPricesGp": { "2": 20 }
+}
+```
+
+Place those two properties inside the `metal` material definition. Partial per-material maps are accepted; omitted tiers continue using the shared values.
+
+The default weapon effect is:
+
+```json
+{
+  "id": "weapon-attack",
+  "kind": "flatModifier",
+  "label": "Crafted {material} ({tierLabel})",
+  "itemTypes": ["weapon"],
+  "selectors": ["{item|_id}-attack"],
+  "modifierType": "untyped",
+  "value": {
+    "mode": "tierBonus",
+    "multiplier": 1,
+    "offset": 0
+  }
+}
+```
+
+Supported value modes are:
+
+- `tierBonus`: the configured bonus for the item's tier.
+- `tier`: the item's tier number itself.
+- `fixed`: a fixed number in `value.value`.
+
+`multiplier` and `offset` may modify `tierBonus` or `tier`. Effect labels can use `{material}`, `{materialId}`, `{tier}`, `{tierLabel}`, `{bonus}`, and `{item}` placeholders. Optional PF2e `predicate`, `force`, and `hideIfDisabled` fields are also accepted.
+
+The default armor effect is scoped separately from weapon attacks:
+
+```json
+{
+  "id": "armor-ac",
+  "kind": "flatModifier",
+  "label": "Crafted {material} Armor ({tierLabel})",
+  "itemTypes": ["armor"],
+  "selectors": ["ac"],
+  "modifierType": "untyped",
+  "value": "tierBonus"
+}
+```
+
+Use a test actor when creating new PF2e selectors. A valid JSON definition can still have no visible effect if its selector is not meaningful to the chosen item type.
+
+## Public API
+
+Other modules can access:
+
+```js
+const api = game.modules.get("pf2e-crafting-material-tiers").api;
+```
+
+Available methods:
+
+- `getRulesConfig()` / `setRulesConfig(config)` / `resetRulesConfig()`
+- `validateRulesConfig(config)`
+- `registerMaterial(id, definition)`
+- `getItemData(item)` / `calculateItem(item)` / `updateItem(item, changes)`
+
+The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry is ready.
+
+## Current scope
+
+Wrathmaker currently automates crafting-material modifiers for weapons and armor, tier-based names/prices/rarity, and the custom multi-side flanking rule. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, and flanking thresholds so further house rules can be added without rewriting PF2e core data.

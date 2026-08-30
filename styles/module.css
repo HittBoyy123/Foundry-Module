@@ -1,0 +1,42 @@
+.cmt-inline-field > select {
+  margin: 0;
+  min-width: 0;
+}
+
+.cmt-rules-config .window-content {
+  overflow: hidden;
+}
+
+.cmt-rules-config .cmt-config-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cmt-rules-config textarea[name="config"] {
+  flex: 1 1 auto;
+  font-family: var(--font-monospace, monospace);
+  font-size: var(--font-size-13, 0.8125rem);
+  line-height: 1.35;
+  min-height: 420px;
+  resize: none;
+  white-space: pre;
+}
+
+.cmt-config-actions {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0.65rem;
+}
+
+.cmt-config-actions .cmt-danger {
+  color: var(--color-level-error, #b3261e);
+}
+
+@media (max-width: 600px) {
+  .cmt-config-actions {
+    grid-template-columns: 1fr;
+  }
+}
