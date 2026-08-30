@@ -148,7 +148,7 @@ test("version 1 rules migrate without discarding customized materials", () => {
   delete legacy.tierPricesGp;
   legacy.materials.metal.label = "Custom Metal";
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 6);
+  assert.equal(migrated.schemaVersion, 7);
   assert.equal(migrated.materials.metal.label, "Custom Metal");
   assert.equal(migrated.tierLabels[3], "Rare");
   assert.equal(migrated.tierPricesGp[3], 25);
@@ -169,7 +169,7 @@ test("version 2 defaults migrate while existing material-specific overrides are 
   legacy.materials.metal.tierPricesGp = { 4: 777 };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 6);
+  assert.equal(migrated.schemaVersion, 7);
   assert.equal(migrated.tierLabels[4], "Epic");
   assert.equal(migrated.tierPricesGp[4], 100);
   assert.equal(migrated.materials.metal.tierLabels[4], "Moonsteel");
@@ -199,7 +199,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   const metal = migrated.materials.metal;
   const weaponEffect = metal.effects.find((effect) => effect.id === "weapon-attack");
   const armorEffect = metal.effects.find((effect) => effect.id === "armor-ac");
-  assert.equal(migrated.schemaVersion, 6);
+  assert.equal(migrated.schemaVersion, 7);
   assert.deepEqual(migrated.tierRarities, {
     1: "common",
     2: "uncommon",
@@ -222,7 +222,7 @@ test("version 4 flanking rules migrate to PF2e-managed two-sided flanking", () =
   delete legacy.flanking.pf2eHandlesTwoSidedFlanking;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 6);
+  assert.equal(migrated.schemaVersion, 7);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
 });
@@ -233,9 +233,27 @@ test("version 5 rules migrate with both in-game systems enabled", () => {
   delete legacy.crafting;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 6);
+  assert.equal(migrated.schemaVersion, 7);
+  assert.equal(migrated.hexploration.enabled, true);
   assert.equal(migrated.crafting.enabled, true);
   assert.equal(migrated.flanking.enabled, true);
+});
+
+test("version 6 control-panel rules migrate with Hexploration enabled", () => {
+  const legacy = cloneDefaultRulesConfig();
+  legacy.schemaVersion = 6;
+  delete legacy.hexploration;
+
+  const migrated = normalizeRulesConfig(legacy);
+  assert.equal(migrated.schemaVersion, 7);
+  assert.equal(migrated.hexploration.enabled, true);
+  assert.deepEqual(migrated.hexploration.activityThresholds, [
+    { maxSpeed: 10, activities: 0.5 },
+    { maxSpeed: 25, activities: 1 },
+    { maxSpeed: 40, activities: 2 },
+    { maxSpeed: 55, activities: 3 },
+    { maxSpeed: null, activities: 4 },
+  ]);
 });
 
 test("crafting master switch hides controls and disables prepared effects", () => {
@@ -275,4 +293,16 @@ test("custom flanking configuration is validated", () => {
   const nonEscalating = cloneDefaultRulesConfig();
   nonEscalating.flanking.penalties[3] = -1;
   assert.throws(() => normalizeRulesConfig(nonEscalating), ConfigValidationError);
+});
+
+test("custom Hexploration thresholds are validated", () => {
+  const customized = cloneDefaultRulesConfig();
+  customized.hexploration.activityThresholds[1].activities = 1.5;
+  customized.hexploration.milesPerDayMultiplier = 1;
+  const normalized = normalizeRulesConfig(customized);
+  assert.equal(normalized.hexploration.activityThresholds[1].activities, 1.5);
+  assert.equal(normalized.hexploration.milesPerDayMultiplier, 1);
+
+  customized.hexploration.activityThresholds[2].maxSpeed = 20;
+  assert.throws(() => normalizeRulesConfig(customized), ConfigValidationError);
 });

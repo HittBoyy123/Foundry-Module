@@ -1,6 +1,8 @@
 import { ITEM_SCHEMA_VERSION, MODULE_ID, RULES_SCHEMA_VERSION } from "./constants.js";
 import { getRulesConfig, resetRulesConfig, setRulesConfig } from "./config-store.js";
 import { calculateItemEffects, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
+import { buildPartyTravelState } from "./hexploration.js";
+import { normalizeHexplorationPlan } from "./hexploration-model.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -11,12 +13,20 @@ function requireItem(item) {
   return item;
 }
 
+function requireParty(actor) {
+  if (actor?.documentName !== "Actor" || actor.type !== "party") {
+    throw new TypeError("Expected a PF2e Party actor document.");
+  }
+  return actor;
+}
+
 export function createPublicApi() {
   return Object.freeze({
     moduleId: MODULE_ID,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
     flagsPath: `flags.${MODULE_ID}`,
+    hexplorationFlagsPath: `flags.${MODULE_ID}.hexploration`,
 
     getRulesConfig() {
       return clone(getRulesConfig());
@@ -62,6 +72,24 @@ export function createPublicApi() {
       const next = normalizeItemFlags({ ...current, ...changes }, getRulesConfig());
       await item.update({ [`flags.${MODULE_ID}`]: next });
       return next;
+    },
+
+    getHexplorationPlan(party) {
+      requireParty(party);
+      return normalizeHexplorationPlan(party.getFlag(MODULE_ID, "hexploration"));
+    },
+
+    calculateHexploration(party) {
+      requireParty(party);
+      return clone(buildPartyTravelState(party, getRulesConfig().hexploration));
+    },
+
+    async updateHexplorationPlan(party, changes) {
+      requireParty(party);
+      const current = normalizeHexplorationPlan(party.getFlag(MODULE_ID, "hexploration"));
+      const next = normalizeHexplorationPlan({ ...current, ...clone(changes) });
+      await party.setFlag(MODULE_ID, "hexploration", next);
+      return clone(next);
     },
   });
 }

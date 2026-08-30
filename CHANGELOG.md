@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 — Party Hexploration travel
+
+- Added a Hexploration tab directly to the PF2e party sheet.
+- Added on-foot, self-propelled vehicle, and creature-pulled cart/vehicle travel modes.
+- Added world-vehicle selection, automatic PF2e vehicle Speed reading, an optional vehicle Speed limit, and pulling-creature selection.
+- Added per-party-member Riding controls so walkers, riders, and haulers all contribute correctly to one shared party travel Speed.
+- Applied the shared value to the party's prepared overland travel Speed without changing any creature's combat Speed or PF2e source data.
+- Added the GM Core Hexploration activity progression: 1/2 activity at Speed 10 or less, then 1, 2, 3, and 4 activities at the standard thresholds.
+- Added four daily planning rows for Travel, Reconnoiter, Fortify Camp, Map the Area, Subsist, and custom activities.
+- Added Save Travel Plan and Begin Day & Share buttons; the latter posts the calculated plan to chat.
+- Added a Hexploration master switch to the GM control panel.
+- Added rules-schema version 7 migration and public API methods for reading, calculating, and updating party travel plans.
+
 ## 0.3.1 — PF2e control-panel styling
 
 - Reworked the control panel and material pop-outs with opaque PF2e-inspired parchment, crimson, charcoal, and gold surfaces.

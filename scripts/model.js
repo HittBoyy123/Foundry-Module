@@ -1,6 +1,7 @@
 import {
   DEFAULT_ITEM_FLAGS,
   DEFAULT_FLANKING_CONFIG,
+  DEFAULT_HEXPLORATION_CONFIG,
   DEFAULT_RULES_CONFIG,
   DEFAULT_TIER_LABELS,
   DEFAULT_TIER_PRICES_GP,
@@ -208,6 +209,55 @@ function normalizeFlankingConfig(source) {
   };
 }
 
+function normalizeHexplorationConfig(source) {
+  if (!isPlainObject(source)) {
+    throw new ConfigValidationError("hexploration must be an object.");
+  }
+  if (!Array.isArray(source.activityThresholds) || source.activityThresholds.length === 0) {
+    throw new ConfigValidationError("hexploration.activityThresholds must contain at least one row.");
+  }
+  let previousMax = -Infinity;
+  const activityThresholds = source.activityThresholds.map((entry, index, entries) => {
+    if (!isPlainObject(entry)) {
+      throw new ConfigValidationError(`hexploration.activityThresholds[${index}] must be an object.`);
+    }
+    const isFinal = index === entries.length - 1;
+    const maxSpeed = entry.maxSpeed === null ? null : Number(entry.maxSpeed);
+    if (maxSpeed === null && !isFinal) {
+      throw new ConfigValidationError("Only the final Hexploration speed threshold can have no maximum.");
+    }
+    if (maxSpeed !== null && (!Number.isInteger(maxSpeed) || maxSpeed < 0 || maxSpeed > 1000)) {
+      throw new ConfigValidationError(`hexploration.activityThresholds[${index}].maxSpeed must be 0–1000 or null.`);
+    }
+    if (maxSpeed !== null && maxSpeed <= previousMax) {
+      throw new ConfigValidationError("Hexploration speed thresholds must be in ascending order.");
+    }
+    if (maxSpeed !== null) previousMax = maxSpeed;
+    const activities = Number(entry.activities);
+    if (!Number.isFinite(activities) || activities <= 0 || activities > 10) {
+      throw new ConfigValidationError(`hexploration.activityThresholds[${index}].activities must be between 0 and 10.`);
+    }
+    return { maxSpeed, activities };
+  });
+  if (activityThresholds.at(-1)?.maxSpeed !== null) {
+    throw new ConfigValidationError("The final Hexploration speed threshold must have maxSpeed set to null.");
+  }
+  const milesPerHourDivisor = Number(source.milesPerHourDivisor ?? 10);
+  const milesPerDayMultiplier = Number(source.milesPerDayMultiplier ?? 0.8);
+  if (!Number.isFinite(milesPerHourDivisor) || milesPerHourDivisor <= 0 || milesPerHourDivisor > 100) {
+    throw new ConfigValidationError("hexploration.milesPerHourDivisor must be greater than 0 and no more than 100.");
+  }
+  if (!Number.isFinite(milesPerDayMultiplier) || milesPerDayMultiplier < 0 || milesPerDayMultiplier > 100) {
+    throw new ConfigValidationError("hexploration.milesPerDayMultiplier must be between 0 and 100.");
+  }
+  return {
+    enabled: source.enabled !== false,
+    activityThresholds,
+    milesPerHourDivisor,
+    milesPerDayMultiplier,
+  };
+}
+
 function normalizeSelectors(value, path) {
   const selectors = typeof value === "string" ? [value] : value;
   if (!Array.isArray(selectors) || selectors.length === 0) {
@@ -332,6 +382,7 @@ export function normalizeRulesConfig(input) {
     "tierRarities",
   );
   const flanking = normalizeFlankingConfig(parsed.flanking ?? DEFAULT_FLANKING_CONFIG);
+  const hexploration = normalizeHexplorationConfig(parsed.hexploration ?? DEFAULT_HEXPLORATION_CONFIG);
 
   if (!isPlainObject(parsed.materials) || Object.keys(parsed.materials).length === 0) {
     throw new ConfigValidationError("materials must contain at least one material definition.");
@@ -427,6 +478,7 @@ export function normalizeRulesConfig(input) {
     tierPricesGp,
     tierRarities,
     flanking,
+    hexploration,
     materials,
   };
 }

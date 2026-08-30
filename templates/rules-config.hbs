@@ -22,6 +22,15 @@
       </span>
       <input type="checkbox" name="flanking.enabled" {{#if flankingEnabled}}checked{{/if}}>
     </label>
+
+    <label class="cmt-setting-card">
+      <span class="cmt-setting-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+      <span class="cmt-setting-copy">
+        <strong>{{localize "CMT.Settings.Dashboard.Hexploration"}}</strong>
+        <small>{{localize "CMT.Settings.Dashboard.HexplorationHint"}}</small>
+      </span>
+      <input type="checkbox" name="hexploration.enabled" {{#if hexplorationEnabled}}checked{{/if}}>
+    </label>
   </section>
 
   <section class="cmt-panel">

@@ -1,7 +1,8 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 6;
+export const RULES_SCHEMA_VERSION = 7;
 export const ITEM_SCHEMA_VERSION = 2;
+export const HEXPLORATION_PLAN_SCHEMA_VERSION = 1;
 
 export const DEFAULT_ITEM_FLAGS = Object.freeze({
   schemaVersion: ITEM_SCHEMA_VERSION,
@@ -83,6 +84,19 @@ export const DEFAULT_FLANKING_CONFIG = Object.freeze({
   stackWithOffGuard: true,
 });
 
+export const DEFAULT_HEXPLORATION_CONFIG = Object.freeze({
+  enabled: true,
+  activityThresholds: Object.freeze([
+    Object.freeze({ maxSpeed: 10, activities: 0.5 }),
+    Object.freeze({ maxSpeed: 25, activities: 1 }),
+    Object.freeze({ maxSpeed: 40, activities: 2 }),
+    Object.freeze({ maxSpeed: 55, activities: 3 }),
+    Object.freeze({ maxSpeed: null, activities: 4 }),
+  ]),
+  milesPerHourDivisor: 10,
+  milesPerDayMultiplier: 0.8,
+});
+
 const METAL_TIER_LABELS = Object.freeze({
   1: "Iron",
   2: "Steel",
@@ -118,6 +132,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
   tierPricesGp: DEFAULT_TIER_PRICES_GP,
   tierRarities: DEFAULT_TIER_RARITIES,
   flanking: DEFAULT_FLANKING_CONFIG,
+  hexploration: DEFAULT_HEXPLORATION_CONFIG,
   materials: Object.freeze({
     metal: Object.freeze({
       label: "Metal",

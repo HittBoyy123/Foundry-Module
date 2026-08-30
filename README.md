@@ -1,6 +1,6 @@
 # Wrathmaker
 
-A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapon and armor sheets, then turns those choices into separate prepared modifiers without replacing core PF2e bonuses. It also automates Wrathmaker's escalating multi-side flanking penalties and provides a GM-facing control panel for changing both systems during play.
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapon and armor sheets, automates Wrathmaker's escalating multi-side flanking penalties, and adds shared vehicle-aware Hexploration travel to the PF2e party sheet. A GM-facing control panel can toggle all three systems during play.
 
 ## Compatibility
 
@@ -8,6 +8,7 @@ A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and 
 - Pathfinder Second Edition 7.1 or newer
 - Material-tier item support: weapons and armor
 - Automatic token-based custom flanking
+- Party-sheet Hexploration, vehicles, haulers, riders, and daily activity planning
 - In-game world settings and per-material tier editors
 - Extensible through world configuration and a public module API
 
@@ -31,7 +32,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.3.1.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.4.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -41,6 +42,7 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 
 - **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
 - **Enhanced flanking** turns only Wrathmaker's three- and four-side adjustments on or off. PF2e's ordinary two-sided flanking remains unchanged.
+- **Hexploration travel** turns the Wrathmaker party-sheet tab and shared prepared travel Speed on or off.
 - The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
 - Every crafting material has an **Edit** button that opens its own pop-out.
 - The material pop-out edits the material name, enabled state, weapon/armor availability, and all six tier names, bonuses, added prices, and PF2e rarities.
@@ -52,7 +54,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.3.1`.
+3. Create and push a matching tag such as `v0.4.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -106,6 +108,30 @@ The default configuration is:
 
 The `penalties` values are the intended final totals after normal PF2e Off-guard. With `pf2eHandlesTwoSidedFlanking` enabled, Wrathmaker subtracts the two-side total and applies only the remaining adjustment. These fields are part of the same validated world rules JSON as the material definitions, so the GM can change the penalties or thresholds later without changing the module code.
 
+## Hexploration travel
+
+Open a PF2e party sheet and select the **Hexploration** tab. The tab stores one shared travel plan on that party and presents the calculated Speed in the same PF2e-inspired parchment, crimson, charcoal, and gold style as the Wrathmaker control panel.
+
+- **On foot** uses the slowest ground Speed among all party members.
+- **Self-propelled vehicle** reads the selected world Vehicle actor's prepared drive Speed, falling back to the numeric Speed in its PF2e details. Party members marked **Riding** use that Speed; members left on foot can still slow the group.
+- **Creature-pulled cart or vehicle** uses the slowest selected pulling creature's ground Speed. Pulling party members cannot also count as riders. An optional vehicle Speed limit can cap unusually fast haulers or supply a manual value for custom vehicle actors.
+- **Save Travel Plan** persists the selections to the party's Wrathmaker flags.
+- **Begin Day & Share** saves the plan and posts its Speed, distance, vehicle, haulers, and chosen activities to chat.
+
+The daily allowance follows the Hexploration table used by PF2e:
+
+| Shared Speed | Activities per day |
+| ---: | ---: |
+| 10 feet or less | 1/2 |
+| 15–25 feet | 1 |
+| 30–40 feet | 2 |
+| 45–55 feet | 3 |
+| 60 feet or more | 4 |
+
+The four planning rows include Travel, Reconnoiter, Fortify Camp, Map the Area, Subsist, and Other. The optional note can identify a character or describe a custom activity. At Speed 10 or less, one planned activity is accepted and shown as requiring 2 days.
+
+Wrathmaker applies the result only to the party actor's **prepared overland travel Speed**. It never rewrites the party source or any member's land, encounter, or combat Speed. Players who can update at least one member of the PF2e party can use the shared planner; other observers see it read-only.
+
 ## Data safety
 
 Item choices are stored only here:
@@ -125,6 +151,8 @@ Item choices are stored only here:
 The module never persists changes to the item's source `name`, `system.price`, `system.traits.rarity`, `system.runes`, `system.material`, `system.rules`, or any other PF2e source field. During data preparation it layers the display name, price, and rarity onto PF2e's prepared values. During actor preparation it temporarily presents generated `FlatModifier` rule sources to PF2e, then removes those sources immediately. The prepared presentation and modifiers remain available to sheets and rolls while the original item data stays intact.
 
 Disabling or uninstalling the module leaves inert flags on previously configured items. All PF2e item and rune data remains intact.
+
+Party travel plans are likewise stored only under `flags.pf2e-crafting-material-tiers.hexploration` on the party actor. Vehicle and creature actors are referenced by id and are never modified.
 
 Version 1 item flags are read automatically. The former per-item enable and override values are ignored, leaving Material and Tier as the only item-level choices.
 
@@ -213,9 +241,10 @@ Available methods:
 - `validateRulesConfig(config)`
 - `registerMaterial(id, definition)`
 - `getItemData(item)` / `calculateItem(item)` / `updateItem(item, changes)`
+- `getHexplorationPlan(party)` / `calculateHexploration(party)` / `updateHexplorationPlan(party, changes)`
 
 The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry is ready.
 
 ## Current scope
 
-Wrathmaker currently automates crafting-material modifiers for weapons and armor, tier-based names/prices/rarity, and the custom multi-side flanking rule. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, and flanking thresholds so further house rules can be added without rewriting PF2e core data.
+Wrathmaker currently automates crafting-material modifiers for weapons and armor, tier-based names/prices/rarity, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.

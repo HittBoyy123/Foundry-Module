@@ -11,13 +11,13 @@
     "Settings": {
       "Rules": {
         "Name": "Wrathmaker world rules",
-        "Hint": "World-level Wrathmaker settings for crafting materials, tiers, and enhanced flanking."
+        "Hint": "World-level Wrathmaker settings for crafting materials, tiers, enhanced flanking, and Hexploration."
       },
       "Menu": {
         "Title": "Wrathmaker Rules",
         "Name": "Wrathmaker rules",
         "Label": "Open Control Panel",
-        "Hint": "Open the in-game control panel for crafting materials, tier progression, and enhanced flanking."
+        "Hint": "Open the in-game control panel for crafting materials, tier progression, enhanced flanking, and Hexploration."
       },
       "Dashboard": {
         "Heading": "Wrathmaker Game Settings",
@@ -26,6 +26,8 @@
         "CraftingHint": "Show Material and Tier on supported item sheets and apply their names, prices, rarities, and bonuses.",
         "Flanking": "Enhanced flanking",
         "FlankingHint": "Add Wrathmaker's extra penalty at three and four qualifying sides. PF2e still handles ordinary two-sided flanking.",
+        "Hexploration": "Hexploration travel",
+        "HexplorationHint": "Add the party-sheet travel planner for shared Speed, vehicles, haulers, and daily activities.",
         "FlankingOptions": "Enhanced Flanking Options",
         "FlankingOptionsHint": "The three- and four-side values are the final AC totals after PF2e's normal -2 Off-guard penalty.",
         "ThreeSides": "Total AC penalty at 3 sides",
@@ -68,6 +70,67 @@
       "MaterialSaved": "{material} settings saved.",
       "RulesReset": "Default crafting material rules restored.",
       "UpdateFailed": "The crafting material could not be saved."
+    },
+    "Hexploration": {
+      "Tab": "Hexploration",
+      "Heading": "Overland Travel Planner",
+      "Intro": "Choose how the party is travelling. Wrathmaker applies one shared overland Speed without changing anyone's combat Speed.",
+      "Summary": "Travel summary",
+      "SharedSpeed": "Shared travel Speed",
+      "ActivitiesPerDay": "Activities per day",
+      "MilesPerHour": "Miles per hour",
+      "MilesPerDay": "Miles per day",
+      "FeetPerMinute": "Feet per minute",
+      "SlowTravel": "At this Speed, one Hexploration activity takes 2 days.",
+      "TravelSetup": "Travel Setup",
+      "TravelMode": "Travel mode",
+      "Vehicle": "Vehicle",
+      "SelectVehicle": "Select a world vehicle",
+      "NoVehicle": "No vehicle selected",
+      "CustomVehicle": "Custom cart, carriage, wagon, or vehicle",
+      "CustomVehicleName": "Custom vehicle name",
+      "CustomVehicleDefault": "Custom Vehicle",
+      "SpeedOverride": "Vehicle Speed override / maximum (optional)",
+      "Automatic": "Automatic",
+      "TransportSpeed": "Calculated transport Speed",
+      "Haulers": "Pulling creatures",
+      "NoHaulers": "No visible creatures with a ground Speed are available.",
+      "PartyTravelers": "Party Travellers",
+      "Riding": "Riding",
+      "NoMembers": "Add members to the PF2e party before planning travel.",
+      "DailyActivities": "Daily Hexploration Activities",
+      "DailyActivitiesHint": "Plan up to the number allowed by the shared Speed. Notes can identify the character performing an individual activity.",
+      "ActivityNote": "Optional character or activity note",
+      "Save": "Save Travel Plan",
+      "BeginDay": "Begin Day & Share",
+      "Saved": "The party's Hexploration travel plan was saved.",
+      "Announced": "The Hexploration day was posted to chat.",
+      "NotEditable": "You do not have permission to change this party's travel plan.",
+      "InvalidPlan": "Complete the highlighted travel requirements and stay within the daily activity allowance before saving.",
+      "ChatTitle": "Hexploration Day",
+      "NoActivitiesPlanned": "No activities have been assigned.",
+      "Modes": {
+        "foot": "On foot",
+        "vehicle": "Self-propelled vehicle",
+        "hauled": "Creature-pulled cart or vehicle"
+      },
+      "Activities": {
+        "none": "Unassigned",
+        "travel": "Travel",
+        "reconnoiter": "Reconnoiter",
+        "fortify-camp": "Fortify Camp",
+        "map-area": "Map the Area",
+        "subsist": "Subsist",
+        "other": "Other"
+      },
+      "Warnings": {
+        "vehicle-required": "Select a vehicle for this travel mode.",
+        "vehicle-speed-required": "The selected vehicle has no readable Speed; enter a Speed limit manually.",
+        "hauler-required": "Select at least one creature to pull this vehicle.",
+        "hauler-speed-required": "The selected pulling creature needs a ground Speed greater than 0.",
+        "members-required": "The PF2e party has no members.",
+        "activity-limit": "The planned activities exceed the allowance for this shared Speed."
+      }
     }
   }
 }

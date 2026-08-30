@@ -1,0 +1,129 @@
+<div class="cmt-hex-shell">
+  <header class="cmt-hex-header">
+    <div>
+      <h2><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> {{localize "CMT.Hexploration.Heading"}}</h2>
+      <p>{{localize "CMT.Hexploration.Intro"}}</p>
+    </div>
+    <div class="cmt-hex-speed-seal">
+      <strong>{{sharedSpeed}} ft.</strong>
+      <span>{{localize "CMT.Hexploration.SharedSpeed"}}</span>
+    </div>
+  </header>
+
+  <section class="cmt-hex-summary" aria-label="{{localize 'CMT.Hexploration.Summary'}}">
+    <article><strong>{{activitiesPerDay}}</strong><span>{{localize "CMT.Hexploration.ActivitiesPerDay"}}</span></article>
+    <article><strong>{{milesPerHour}}</strong><span>{{localize "CMT.Hexploration.MilesPerHour"}}</span></article>
+    <article><strong>{{milesPerDay}}</strong><span>{{localize "CMT.Hexploration.MilesPerDay"}}</span></article>
+    <article><strong>{{feetPerMinute}}</strong><span>{{localize "CMT.Hexploration.FeetPerMinute"}}</span></article>
+  </section>
+
+  {{#if slowTravel}}
+    <p class="cmt-hex-notice"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> {{localize "CMT.Hexploration.SlowTravel"}}</p>
+  {{/if}}
+  {{#if hasWarnings}}
+    <ul class="cmt-hex-warnings">
+      {{#each warnings}}<li>{{this}}</li>{{/each}}
+    </ul>
+  {{/if}}
+
+  <div class="cmt-hex-columns">
+    <section class="cmt-hex-panel">
+      <h3><i class="fa-solid fa-route" aria-hidden="true"></i> {{localize "CMT.Hexploration.TravelSetup"}}</h3>
+      <label class="cmt-hex-field">
+        <span>{{localize "CMT.Hexploration.TravelMode"}}</span>
+        <select data-cmt-field="mode" {{#unless canEdit}}disabled{{/unless}}>
+          {{#each modeOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </label>
+
+      {{#if usingVehicle}}
+        <label class="cmt-hex-field">
+          <span>{{localize "CMT.Hexploration.Vehicle"}}</span>
+          <select data-cmt-field="vehicle" {{#unless canEdit}}disabled{{/unless}}>
+            <option value="">{{localize "CMT.Hexploration.SelectVehicle"}}</option>
+            {{#each vehicles}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}} — {{speed}} ft.</option>{{/each}}
+            <option value="custom" {{#if customVehicleSelected}}selected{{/if}}>{{localize "CMT.Hexploration.CustomVehicle"}}</option>
+          </select>
+        </label>
+        {{#if customVehicleSelected}}
+          <label class="cmt-hex-field">
+            <span>{{localize "CMT.Hexploration.CustomVehicleName"}}</span>
+            <input type="text" maxlength="80" value="{{customVehicleName}}" data-cmt-field="custom-vehicle" {{#unless canEdit}}disabled{{/unless}}>
+          </label>
+        {{/if}}
+        <label class="cmt-hex-field">
+          <span>{{localize "CMT.Hexploration.SpeedOverride"}}</span>
+          <input type="number" min="1" max="1000" step="5" value="{{manualSpeed}}" placeholder="{{localize 'CMT.Hexploration.Automatic'}}" data-cmt-field="manual-speed" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        {{#if hasTransportSpeed}}
+          <p class="cmt-hex-readout">{{localize "CMT.Hexploration.TransportSpeed"}}: <strong>{{transportSpeed}} ft.</strong></p>
+        {{/if}}
+      {{/if}}
+
+      {{#if hauling}}
+        <fieldset class="cmt-hex-selection-list">
+          <legend>{{localize "CMT.Hexploration.Haulers"}}</legend>
+          {{#each haulers}}
+            <label>
+              <input type="checkbox" value="{{id}}" data-cmt-field="hauler" {{#if selected}}checked{{/if}} {{#unless @root.canEdit}}disabled{{/unless}}>
+              <img src="{{img}}" alt="">
+              <span>{{name}}</span>
+              <strong>{{speed}} ft.</strong>
+            </label>
+          {{else}}
+            <p>{{localize "CMT.Hexploration.NoHaulers"}}</p>
+          {{/each}}
+        </fieldset>
+      {{/if}}
+    </section>
+
+    <section class="cmt-hex-panel">
+      <h3><i class="fa-solid fa-people-group" aria-hidden="true"></i> {{localize "CMT.Hexploration.PartyTravelers"}}</h3>
+      <div class="cmt-hex-member-list">
+        {{#each members}}
+          <label>
+            <img src="{{img}}" alt="">
+            <span>{{name}}</span>
+            <strong>{{speed}} ft.</strong>
+            <span class="cmt-hex-rider-toggle">
+              <input type="checkbox" value="{{id}}" data-cmt-field="rider" {{#if riding}}checked{{/if}} {{#unless canRide}}disabled{{/unless}} {{#unless @root.canEdit}}disabled{{/unless}}>
+              {{localize "CMT.Hexploration.Riding"}}
+            </span>
+          </label>
+        {{else}}
+          <p>{{localize "CMT.Hexploration.NoMembers"}}</p>
+        {{/each}}
+      </div>
+    </section>
+  </div>
+
+  <section class="cmt-hex-panel cmt-hex-activities">
+    <div class="cmt-hex-panel-heading">
+      <div>
+        <h3><i class="fa-solid fa-list-check" aria-hidden="true"></i> {{localize "CMT.Hexploration.DailyActivities"}}</h3>
+        <p>{{localize "CMT.Hexploration.DailyActivitiesHint"}}</p>
+      </div>
+      <strong>{{plannedCount}} / {{activitiesPerDay}}</strong>
+    </div>
+    <div class="cmt-hex-activity-list">
+      {{#each activityRows}}
+        <div data-cmt-activity-row>
+          <span class="cmt-hex-activity-number">{{number}}</span>
+          <select data-cmt-field="activity-type" {{#unless @root.canEdit}}disabled{{/unless}}>
+            {{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+          <input type="text" maxlength="200" value="{{note}}" placeholder="{{localize 'CMT.Hexploration.ActivityNote'}}" data-cmt-field="activity-note" {{#unless @root.canEdit}}disabled{{/unless}}>
+        </div>
+      {{/each}}
+    </div>
+  </section>
+
+  <footer class="cmt-hex-actions">
+    <button type="button" data-cmt-action="save" {{#unless canEdit}}disabled{{/unless}}>
+      <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{localize "CMT.Hexploration.Save"}}
+    </button>
+    <button type="button" data-cmt-action="begin" {{#unless canEdit}}disabled{{/unless}}>
+      <i class="fa-solid fa-person-hiking" aria-hidden="true"></i> {{localize "CMT.Hexploration.BeginDay"}}
+    </button>
+  </footer>
+</div>

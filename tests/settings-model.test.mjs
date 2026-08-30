@@ -16,6 +16,7 @@ test("dashboard context exposes friendly crafting, flanking, and material summar
   const context = buildDashboardContext(config);
   assert.equal(context.craftingEnabled, true);
   assert.equal(context.flankingEnabled, true);
+  assert.equal(context.hexplorationEnabled, true);
   assert.equal(context.penaltyThree, -3);
   assert.match(context.materials.find((material) => material.id === "metal").tiers, /1: Iron/);
 });
@@ -29,9 +30,11 @@ test("dashboard changes toggle both systems and update flanking totals", () => {
       maxNormalSizeDifference: 2,
       oversizedParticipantsPerSide: 3,
     },
+    hexploration: { enabled: false },
   }));
   assert.equal(changed.crafting.enabled, false);
   assert.equal(changed.flanking.enabled, false);
+  assert.equal(changed.hexploration.enabled, false);
   assert.deepEqual(changed.flanking.penalties, { 2: -2, 3: -4, 4: -6 });
   assert.equal(changed.flanking.maxNormalSizeDifference, 2);
   assert.equal(changed.flanking.oversizedParticipantsPerSide, 3);

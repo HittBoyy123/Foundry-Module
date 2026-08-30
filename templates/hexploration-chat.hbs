@@ -1,0 +1,17 @@
+<section class="cmt-hex-chat">
+  <header><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> {{partyName}} — {{localize "CMT.Hexploration.ChatTitle"}}</header>
+  <div class="cmt-hex-chat-summary">
+    <p><strong>{{localize "CMT.Hexploration.TravelMode"}}:</strong> {{mode}}{{#if vehicle}} — {{vehicle}}{{/if}}</p>
+    {{#if haulers}}<p><strong>{{localize "CMT.Hexploration.Haulers"}}:</strong> {{haulers}}</p>{{/if}}
+    <p><strong>{{localize "CMT.Hexploration.SharedSpeed"}}:</strong> {{sharedSpeed}} ft. ({{milesPerHour}} mph / {{milesPerDay}} miles per day)</p>
+    <p><strong>{{localize "CMT.Hexploration.ActivitiesPerDay"}}:</strong> {{activitiesPerDay}}</p>
+    {{#if slowTravel}}<p><em>{{localize "CMT.Hexploration.SlowTravel"}}</em></p>{{/if}}
+  </div>
+  <ol>
+    {{#each activities}}
+      <li><strong>{{label}}</strong>{{#if note}} — {{note}}{{/if}}</li>
+    {{else}}
+      <li>{{localize "CMT.Hexploration.NoActivitiesPlanned"}}</li>
+    {{/each}}
+  </ol>
+</section>

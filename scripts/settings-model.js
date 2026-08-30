@@ -24,6 +24,7 @@ export function buildDashboardContext(config) {
   return {
     craftingEnabled: config.crafting?.enabled !== false,
     flankingEnabled: config.flanking.enabled !== false,
+    hexplorationEnabled: config.hexploration?.enabled !== false,
     penaltyThree: config.flanking.penalties[3],
     penaltyFour: config.flanking.penalties[4],
     maxNormalSizeDifference: config.flanking.maxNormalSizeDifference,
@@ -49,6 +50,8 @@ export function applyDashboardChanges(config, form) {
   updated.crafting ??= {};
   updated.crafting.enabled = checked(form.crafting?.enabled);
   updated.flanking.enabled = checked(form.flanking?.enabled);
+  updated.hexploration ??= {};
+  updated.hexploration.enabled = checked(form.hexploration?.enabled);
   updated.flanking.penalties[2] = -2;
   updated.flanking.penalties[3] = number(form.flanking?.penalties?.[3], updated.flanking.penalties[3]);
   updated.flanking.penalties[4] = number(form.flanking?.penalties?.[4], updated.flanking.penalties[4]);
