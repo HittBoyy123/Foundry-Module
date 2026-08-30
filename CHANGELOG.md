@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — PF2e control-panel styling
+
+- Reworked the control panel and material pop-outs with opaque PF2e-inspired parchment, crimson, charcoal, and gold surfaces.
+- Increased the contrast of descriptions, tier summaries, labels, inputs, and action buttons in both light and dark Foundry themes.
+- Removed the Advanced JSON button, its editor action, template, and in-game localization so world rules can only be changed through the friendly controls.
+
 ## 0.3.0 — In-game control panel
 
 - Replaced the primary raw-JSON settings screen with a GM-facing Wrathmaker control panel.

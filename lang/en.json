@@ -34,8 +34,7 @@
         "OversizedCount": "Flankers required per side when oversized",
         "Materials": "Crafting Materials",
         "MaterialsHint": "Open a material to rename it, enable or disable it, and edit all six tiers.",
-        "Edit": "Edit",
-        "Advanced": "Advanced JSON"
+        "Edit": "Edit"
       },
       "Material": {
         "Title": "Edit Crafting Material",
@@ -55,14 +54,7 @@
         "Rarity": "PF2e rarity",
         "Save": "Save Material"
       },
-      "Advanced": {
-        "Title": "Advanced Wrathmaker Rules",
-        "Intro": "This editor exposes the complete versioned rules data for advanced customization.",
-        "Hint": "Most settings are easier and safer to change from the main control panel and material pop-outs. Invalid data will not be saved."
-      },
       "Editor": {
-        "Label": "Rules JSON",
-        "Format": "Format JSON",
         "Reset": "Restore Defaults",
         "Save": "Save Rules"
       },
@@ -75,7 +67,6 @@
       "RulesSaved": "Wrathmaker game settings saved.",
       "MaterialSaved": "{material} settings saved.",
       "RulesReset": "Default crafting material rules restored.",
-      "InvalidJson": "The rules are not valid JSON.",
       "UpdateFailed": "The crafting material could not be saved."
     }
   }

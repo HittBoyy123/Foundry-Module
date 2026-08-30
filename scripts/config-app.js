@@ -15,57 +15,6 @@ function notifyError(error, context) {
 export function createRulesConfigApplication() {
   const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
-  class AdvancedRulesConfig extends HandlebarsApplicationMixin(ApplicationV2) {
-    static DEFAULT_OPTIONS = {
-      id: `${MODULE_ID}-advanced-rules-config`,
-      classes: [MODULE_ID, "cmt-rules-config", "cmt-advanced-config"],
-      tag: "form",
-      position: { width: 760, height: 720 },
-      window: {
-        icon: "fa-solid fa-code",
-        title: "CMT.Settings.Advanced.Title",
-        resizable: true,
-      },
-      form: {
-        closeOnSubmit: false,
-        handler: this.submitRules,
-      },
-      actions: {
-        format: this.formatRules,
-      },
-    };
-
-    static PARTS = {
-      main: { template: `modules/${MODULE_ID}/templates/rules-json-config.hbs` },
-    };
-
-    async _prepareContext(options) {
-      const context = await super._prepareContext(options);
-      return { ...context, configJson: JSON.stringify(getRulesConfig(), null, 2) };
-    }
-
-    static async submitRules(_event, _form, formData) {
-      try {
-        await setRulesConfig(formData.object.config);
-        ui.notifications.info(game.i18n.localize("CMT.Notifications.RulesSaved"));
-        await this.parentApp?.render({ force: true });
-        await this.render({ force: true });
-      } catch (error) {
-        notifyError(error, "Advanced rules configuration was not saved.");
-      }
-    }
-
-    static async formatRules() {
-      const textarea = this.element.querySelector('textarea[name="config"]');
-      if (!textarea) return;
-      try {
-        textarea.value = JSON.stringify(JSON.parse(textarea.value), null, 2);
-      } catch (error) {
-        ui.notifications.error(`${game.i18n.localize("CMT.Notifications.InvalidJson")} ${error.message}`);
-      }
-    }
-  }
-
   class MaterialRulesConfig extends HandlebarsApplicationMixin(ApplicationV2) {
     static DEFAULT_OPTIONS = {
       id: `${MODULE_ID}-material-config`,
@@ -124,7 +73,6 @@ export function createRulesConfigApplication() {
       },
       actions: {
         editMaterial: this.editMaterial,
-        advanced: this.openAdvanced,
         reset: this.resetRules,
       },
     };
@@ -153,12 +101,6 @@ export function createRulesConfigApplication() {
       if (!materialId || !getRulesConfig().materials[materialId]) return;
       const application = new MaterialRulesConfig();
       application.materialId = materialId;
-      application.parentApp = this;
-      await application.render({ force: true });
-    }
-
-    static async openAdvanced() {
-      const application = new AdvancedRulesConfig();
       application.parentApp = this;
       await application.render({ force: true });
     }

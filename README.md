@@ -31,7 +31,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.3.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.3.1.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -44,7 +44,7 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 - The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
 - Every crafting material has an **Edit** button that opens its own pop-out.
 - The material pop-out edits the material name, enabled state, weapon/armor availability, and all six tier names, bonuses, added prices, and PF2e rarities.
-- **Advanced JSON** remains available for custom effects and future item types that are not represented by the friendly controls.
+- The complete configuration is presented through named fields and material pop-outs; no raw-code or JSON editor is exposed in-game.
 
 Only a GM can open this world-settings menu. Turning a system off is reversible and does not remove saved item flags or custom definitions.
 
@@ -52,7 +52,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.3.0`.
+3. Create and push a matching tag such as `v0.3.1`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -130,7 +130,7 @@ Version 1 item flags are read automatically. The former per-item enable and over
 
 ## Configuring material effects
 
-For ordinary changes, use the in-game material pop-outs. The JSON structure below documents the Advanced editor and public API.
+For ordinary changes, use the in-game material pop-outs. The structure below is developer documentation for the validated world configuration and public API; it is not exposed as an in-game JSON editor.
 
 The GM rules editor stores validated, versioned JSON. Top-level `tierLabels`, `tierPricesGp`, and `tierRarities` hold the shared fallback names, prices, and PF2e rarities. Each supplied material can override these values independently.
 
