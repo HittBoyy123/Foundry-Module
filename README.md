@@ -90,8 +90,9 @@ Wrathmaker calculates flanking from creature tokens on the active scene and upda
 - If the target is more than one size category larger than a flanker, that flanker contributes half a side. Two such flankers are therefore required on that side.
 - A conscious, living flanker must be opposed to the target, able to flank under PF2e's prepared data, and have attack reach to the target.
 - A target that PF2e marks as unflankable or immune to Off-guard receives no Wrathmaker flanking penalty.
+- The extra three-/four-side adjustment is evaluated for each attack. It applies only to a melee attack that can currently reach the target, including a qualifying reach weapon; ranged attacks never inherit the penalty, even when the target is surrounded.
 
-Wrathmaker does not reproduce PF2e's normal two-sided penalty. PF2e applies Off-guard in the usual way, and Wrathmaker adds only the difference needed at three or four sides. The extra adjustment is an **untyped** PF2e AC modifier, so it stacks with Off-guard instead of replacing or altering that condition. The AC breakdown labels it `Wrathmaker Flanking Extra (3 sides)` or `Wrathmaker Flanking Extra (4 sides)`.
+Wrathmaker does not reproduce PF2e's normal two-sided penalty. PF2e applies Off-guard in the usual way, and Wrathmaker adds only the difference needed at three or four sides. The extra adjustment is an **untyped, attack-contextual** PF2e AC modifier, so it stacks with Off-guard instead of replacing or altering that condition and is not stored as a blanket reduction on the enemy. The AC breakdown labels it `Wrathmaker Flanking Extra (3 sides)` or `Wrathmaker Flanking Extra (4 sides)`.
 
 The default configuration is:
 

@@ -18,6 +18,19 @@ const SIZE_RANKS = Object.freeze({
   grg: 5,
   gargantuan: 5,
 });
+const BASE_ATTACK_REACH_BY_SIZE = Object.freeze({
+  tiny: 0,
+  sm: 5,
+  small: 5,
+  med: 5,
+  medium: 5,
+  lg: 5,
+  large: 5,
+  huge: 10,
+  grg: 15,
+  gargantuan: 15,
+});
+const BASE_ATTACK_REACH_BY_SIZE_RANK = Object.freeze([0, 5, 5, 5, 10, 15]);
 
 let refreshTimer = null;
 let warnedAboutModifier = false;
@@ -25,6 +38,62 @@ let warnedAboutModifier = false;
 function numeric(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
+}
+
+function asRollOptionSet(value) {
+  if (value instanceof Set) return value;
+  if (Array.isArray(value)) return new Set(value);
+  return new Set();
+}
+
+function numericRollOption(options, prefix) {
+  for (const option of options) {
+    if (!option.startsWith(`${prefix}:`)) continue;
+    const value = Number(option.slice(prefix.length + 1));
+    if (Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function originBaseAttackReach(options) {
+  const explicitReach = numericRollOption(options, "origin:reach");
+  if (explicitReach !== null) return Math.max(explicitReach, 0);
+
+  for (const option of options) {
+    if (!option.startsWith("origin:size:")) continue;
+    const size = option.slice("origin:size:".length).toLowerCase();
+    if (size in BASE_ATTACK_REACH_BY_SIZE) return BASE_ATTACK_REACH_BY_SIZE[size];
+    const rank = Number(size);
+    if (Number.isInteger(rank) && rank >= 0 && rank < BASE_ATTACK_REACH_BY_SIZE_RANK.length) {
+      return BASE_ATTACK_REACH_BY_SIZE_RANK[rank];
+    }
+  }
+  return 5;
+}
+
+/**
+ * Restrict Wrathmaker's contextual AC penalty to an attack that can participate in melee flanking.
+ * PF2e supplies these item, origin-distance, and origin-flanking options to the target's contextual clone.
+ */
+export function isEligibleWrathmakerFlankingAttack(test) {
+  const options = asRollOptionSet(test);
+  if (!options.has("item:melee")) return false;
+
+  // PF2e's own flanking option already includes item-specific reach and token geometry.
+  if (options.has("origin:flanking")) return true;
+
+  const distance = numericRollOption(options, "origin:distance");
+  if (distance === null) return false;
+
+  const numberedReach = [...options]
+    .filter((option) => /^item:trait:reach-\d+$/.test(option))
+    .map((option) => Number(option.replace(/^item:trait:reach-/, "")))
+    .filter(Number.isFinite);
+  const baseReach = originBaseAttackReach(options);
+  const itemReach = numberedReach.length > 0
+    ? Math.max(...numberedReach)
+    : baseReach + (options.has("item:trait:reach") ? 5 : 0);
+  return distance <= itemReach;
 }
 
 export function getSizeRank(value) {
@@ -168,7 +237,12 @@ export function calculateActorFlankingState(actor, config, environment = {}) {
   if (!actor || !config.enabled) return null;
   if (actor.isOfType && !actor.isOfType("creature")) return null;
   const tokens = environment.tokens ?? globalThis.canvas?.tokens?.placeables ?? [];
-  const targetTokens = tokens.filter((token) => token.actor === actor);
+  const targetTokens = tokens.filter((token) => {
+    const tokenActor = token.actor;
+    return tokenActor === actor
+      || (!!tokenActor?.uuid && !!actor.uuid && tokenActor.uuid === actor.uuid)
+      || (!!tokenActor?.id && !!actor.id && tokenActor.id === actor.id);
+  });
   if (targetTokens.length === 0) return null;
   const grid = environment.grid ?? {
     size: globalThis.canvas?.grid?.size,
@@ -195,13 +269,16 @@ export function injectFlankingModifier(actor, config, environment = {}) {
   const modifiers = (actor.synthetics.modifiers.ac ??= []);
   const label = globalThis.game?.i18n?.format?.("CMT.Flanking.Modifier", { sides: state.sides })
     ?? `Wrathmaker Flanking (${state.sides} sides)`;
-  modifiers.push(() => new Modifier({
-    slug: "wrathmaker-flanking",
-    label,
-    modifier: state.wrathmakerPenalty,
-    type: config.pf2eHandlesTwoSidedFlanking || config.stackWithOffGuard ? "untyped" : "circumstance",
-    domains: ["ac"],
-  }));
+  modifiers.push(({ test } = {}) => {
+    if (!isEligibleWrathmakerFlankingAttack(test)) return null;
+    return new Modifier({
+      slug: "wrathmaker-flanking",
+      label,
+      modifier: state.wrathmakerPenalty,
+      type: config.pf2eHandlesTwoSidedFlanking || config.stackWithOffGuard ? "untyped" : "circumstance",
+      domains: ["ac"],
+    });
+  });
   return true;
 }
 

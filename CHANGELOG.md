@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1 — Melee-only enhanced flanking
+
+- Changed the extra three-/four-side AC adjustment from a blanket target penalty to an attack-contextual modifier.
+- Limited the adjustment to melee attacks that can reach the target, including normal and extended-reach weapons.
+- Prevented ranged attacks from receiving Wrathmaker's enhanced-flanking benefit when firing at a surrounded target.
+- Matched contextual actor clones back to their active scene tokens so PF2e can evaluate the modifier during an attack.
+
 ## 0.7.0 — Dragon Scale resistance and reliable settings saves
 
 - Changed Dragon Scales from a replacement base material into an armor-only enhancement for Metal and Leather/Hide armor.
