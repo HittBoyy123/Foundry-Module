@@ -1,0 +1,18 @@
+<article class="cmt-gathering-chat">
+  <header>
+    <img src="{{taskImg}}" alt="">
+    <div>
+      <strong>{{taskName}}</strong>
+      <span>{{actorName}}</span>
+    </div>
+  </header>
+  <dl>
+    <div><dt>{{localize "CMT.Gathering.Skill"}}</dt><dd>{{skill}} vs DC {{dc}}</dd></div>
+    <div><dt>{{localize "CMT.Gathering.Roll"}}</dt><dd>{{rollTotal}} — {{outcome}}</dd></div>
+  </dl>
+  {{#if success}}
+    <p class="is-success"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i> {{quantity}} × {{resourceName}} added to {{actorName}} ({{units}} {{unit}}).</p>
+  {{else}}
+    <p class="is-failure">No crafting resource was gathered.</p>
+  {{/if}}
+</article>

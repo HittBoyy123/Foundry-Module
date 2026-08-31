@@ -399,6 +399,21 @@ export function normalizeRulesConfig(input) {
   const crafting = {
     enabled: parsed.crafting?.enabled !== false,
   };
+  if (parsed.gathering !== undefined && !isPlainObject(parsed.gathering)) {
+    throw new ConfigValidationError("gathering must be an object.");
+  }
+  const gathering = {
+    enabled: parsed.gathering?.enabled !== false,
+    environmentId: typeof parsed.gathering?.environmentId === "string"
+      && SLUG_PATTERN.test(parsed.gathering.environmentId)
+      ? parsed.gathering.environmentId
+      : DEFAULT_RULES_CONFIG.gathering.environmentId,
+    maxTier: Math.min(6, Math.max(1, finiteNumber(
+      parsed.gathering?.maxTier,
+      "gathering.maxTier",
+      { integer: true, fallback: DEFAULT_RULES_CONFIG.gathering.maxTier },
+    ))),
+  };
   const tierBonuses = normalizeTierBonuses(parsed.tierBonuses, "tierBonuses");
   const useNewTierLabels = sourceSchemaVersion < 3 && (
     parsed.tierLabels === undefined || tierMapMatches(parsed.tierLabels, LEGACY_TIER_LABELS)
@@ -568,6 +583,7 @@ export function normalizeRulesConfig(input) {
   return {
     schemaVersion: RULES_SCHEMA_VERSION,
     crafting,
+    gathering,
     tierBonuses,
     tierLabels,
     tierPricesGp,

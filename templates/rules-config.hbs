@@ -15,6 +15,15 @@
     </label>
 
     <label class="cmt-setting-card">
+      <span class="cmt-setting-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></span>
+      <span class="cmt-setting-copy">
+        <strong>{{localize "CMT.Settings.Dashboard.Gathering"}}</strong>
+        <small>{{localize "CMT.Settings.Dashboard.GatheringHint"}}</small>
+      </span>
+      <input type="checkbox" name="gathering.enabled" {{#if gatheringEnabled}}checked{{/if}}>
+    </label>
+
+    <label class="cmt-setting-card">
       <span class="cmt-setting-icon"><i class="fa-solid fa-people-arrows-left-right" aria-hidden="true"></i></span>
       <span class="cmt-setting-copy">
         <strong>{{localize "CMT.Settings.Dashboard.Flanking"}}</strong>
@@ -31,6 +40,29 @@
       </span>
       <input type="checkbox" name="hexploration.enabled" {{#if hexplorationEnabled}}checked{{/if}}>
     </label>
+  </section>
+
+  <section class="cmt-panel">
+    <h3><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.GatheringOptions"}}</h3>
+    <p class="hint">{{localize "CMT.Settings.Dashboard.GatheringOptionsHint"}}</p>
+    <div class="cmt-gathering-settings-grid">
+      <label class="cmt-dashboard-select">
+        <span>{{localize "CMT.Settings.Dashboard.ActiveEnvironment"}}</span>
+        <select name="gathering.environmentId">
+          {{#each gatheringEnvironments}}
+            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label class="cmt-dashboard-select">
+        <span>{{localize "CMT.Settings.Dashboard.MaximumGatheringTier"}}</span>
+        <select name="gathering.maxTier">
+          {{#each gatheringTiers}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>Tier {{value}}</option>
+          {{/each}}
+        </select>
+      </label>
+    </div>
   </section>
 
   <section class="cmt-panel">

@@ -4,12 +4,14 @@ import path from "node:path";
 
 import { APEX_ITEM_SOURCES } from "../content/apex-items.js";
 import { CRAFTING_ITEM_SOURCES } from "../content/crafting-items.js";
+import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = path.join(projectRoot, "packs");
 const packs = Object.freeze({
   "apex-items.db": APEX_ITEM_SOURCES,
   "crafting-items.db": CRAFTING_ITEM_SOURCES,
+  "crafting-resources.db": CRAFTING_RESOURCE_SOURCES,
 });
 
 await mkdir(outputDirectory, { recursive: true });

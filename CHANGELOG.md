@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.11.0 — Crafting resources, recipes, and gathering
+
+- Added a player-facing **Gather Resources** application inspired by established Foundry gathering workflows without requiring another module.
+- Added Forest, Plains, Mountains, Wetlands, Underground, Arcane Nexus, and Dragon Hunting Grounds environments.
+- Added a GM-controlled active environment; players see only that environment while GMs can inspect them all.
+- Added a GM-controlled maximum resource tier, defaulting to Tier 1, so higher-tier tasks can be revealed as the campaign advances.
+- Added one validated gathering task for every one of the 66 Wrathmaker resource items.
+- Added PF2e Crafting, Nature, Survival, and Arcana checks using each resource tier's level-based DC.
+- Added configurable per-outcome bundle yields, defaulting to one bundle on Success and two on Critical Success.
+- Added automatic, permission-checked resource awards that merge matching stacks by Wrathmaker flags rather than displayed item name.
+- Added a PF2e-styled gathering result card to chat and a gathering toggle to the Wrathmaker Game Settings screen.
+- Added public API access for environments, tasks, validation, previews, outcome resolution, and opening the gathering screen.
+- Migrated world rules to schema version 12 with gathering enabled by default.
+- Added a **Wrathmaker Crafting Resources** compendium with 66 stackable PF2e Treasure items.
+- Added one inventory resource for all six Metal, Wood, Stone, Leather/Hide, Herbs/Mushrooms, and Mana Crystal tiers.
+- Added all 30 combinations of Black, Blue, Green, Red, and White Dragon Scales across the six Dragon age tiers.
+- Recorded material id, tier, resource unit, bundle size, and optional Dragon color under module flags without assigning premature prices or recipe quantities.
+- Added stable PF2e category mapping for Light, Medium, and Heavy Armor; Simple, Martial, and Advanced Weapons; Shields; and Spell Focuses.
+- Added public API helpers for category lookup, resource metadata, category listings, and future recipe keys.
+- Kept unarmored defenses, unarmed attacks, and unrelated physical items outside the recipe-category system.
+- Assigned raw-resource Levels 1, 4, 8, 12, 16, and 20 to Tiers 1–6 respectively.
+- Added standard PF2e level-based crafting DCs of 15, 19, 24, 30, 35, and 40.
+- Added on-the-fly PF2e difficulty adjustments from Incredibly Easy (−10) through Incredibly Hard (+10) without rewriting resource items.
+- Added an independent recipe schema inspired by established Foundry crafting workflows without adding a runtime dependency.
+- Added validated OR ingredient sets containing required AND groups with resource alternatives inside each group.
+- Added non-destructive inventory summaries and craftability previews based on module flags and resource bundle sizes rather than displayed item names.
+- Added whole-recipe allocation so one material stack cannot satisfy multiple required groups simultaneously.
+- Added target-category validation, tier-based check previews, stable tool references for later use, and selected-PF2e-item result definitions.
+- Added public API helpers to validate recipes, summarize resource inventories, and evaluate craftability; resource consumption and result creation remain reserved for the confirmed GM-authoritative transaction layer.
+
 ## 0.10.0 — Campaign progression and multiple Apex items
 
 - Added independent Apex activation for all six attributes, allowing different Wrathmaker Apex items to be active at the same time.

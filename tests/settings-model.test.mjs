@@ -16,6 +16,9 @@ const config = normalizeRulesConfig(cloneDefaultRulesConfig());
 test("dashboard context exposes friendly crafting, flanking, and material summaries", () => {
   const context = buildDashboardContext(config);
   assert.equal(context.craftingEnabled, true);
+  assert.equal(context.gatheringEnabled, true);
+  assert.equal(context.gatheringEnvironments.find((environment) => environment.selected).id, "forest");
+  assert.equal(context.gatheringTiers.find((tier) => tier.selected).value, 1);
   assert.equal(context.flankingEnabled, true);
   assert.equal(context.hexplorationEnabled, true);
   assert.equal(context.penaltyThree, -3);
@@ -27,6 +30,7 @@ test("dashboard context exposes friendly crafting, flanking, and material summar
 test("dashboard changes toggle both systems and update flanking totals", () => {
   const changed = normalizeRulesConfig(applyDashboardChanges(config, {
     crafting: { enabled: false },
+    gathering: { enabled: false, environmentId: "underground", maxTier: 4 },
     flanking: {
       enabled: false,
       penalties: { 3: -4, 4: -6 },
@@ -36,6 +40,9 @@ test("dashboard changes toggle both systems and update flanking totals", () => {
     hexploration: { enabled: false },
   }));
   assert.equal(changed.crafting.enabled, false);
+  assert.equal(changed.gathering.enabled, false);
+  assert.equal(changed.gathering.environmentId, "underground");
+  assert.equal(changed.gathering.maxTier, 4);
   assert.equal(changed.flanking.enabled, false);
   assert.equal(changed.hexploration.enabled, false);
   assert.deepEqual(changed.flanking.penalties, { 2: -2, 3: -4, 4: -6 });
@@ -46,18 +53,25 @@ test("dashboard changes toggle both systems and update flanking totals", () => {
 test("Foundry dotted form fields expand before dashboard toggles are saved", () => {
   assert.deepEqual(expandDottedFormData({
     "crafting.enabled": "on",
+    "gathering.enabled": "on",
+    "gathering.environmentId": "mountains",
+    "gathering.maxTier": "3",
     "flanking.enabled": "on",
     "hexploration.enabled": "on",
     "flanking.penalties.3": "-3",
     "flanking.penalties.4": "-4",
   }), {
     crafting: { enabled: "on" },
+    gathering: { enabled: "on", environmentId: "mountains", maxTier: "3" },
     flanking: { enabled: "on", penalties: { 3: "-3", 4: "-4" } },
     hexploration: { enabled: "on" },
   });
 
   const changed = normalizeRulesConfig(applyDashboardChanges(config, {
     "crafting.enabled": "on",
+    "gathering.enabled": "on",
+    "gathering.environmentId": "mountains",
+    "gathering.maxTier": "3",
     "flanking.enabled": "on",
     "hexploration.enabled": "on",
     "flanking.penalties.3": "-3",
@@ -66,6 +80,9 @@ test("Foundry dotted form fields expand before dashboard toggles are saved", () 
     "flanking.oversizedParticipantsPerSide": "2",
   }));
   assert.equal(changed.crafting.enabled, true);
+  assert.equal(changed.gathering.enabled, true);
+  assert.equal(changed.gathering.environmentId, "mountains");
+  assert.equal(changed.gathering.maxTier, 3);
   assert.equal(changed.flanking.enabled, true);
   assert.equal(changed.hexploration.enabled, true);
 });

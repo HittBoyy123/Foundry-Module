@@ -219,6 +219,24 @@
   margin-top: 0.65rem;
 }
 
+.cmt-dashboard-select {
+  align-items: center;
+  display: grid;
+  font-weight: 700;
+  gap: 0.65rem;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(220px, 1fr);
+  margin-top: 0.65rem;
+}
+
+.cmt-gathering-settings-grid {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.cmt-dashboard-select select {
+  width: 100%;
+}
+
 .cmt-flanking-grid label {
   align-items: center;
   display: grid;
@@ -1127,6 +1145,229 @@
   padding-left: 2rem;
 }
 
+.cmt-gathering-app {
+  --cmt-gather-brown: #605856;
+  --cmt-gather-red: #5e0000;
+  --cmt-gather-soft: #e7d9cf;
+  --cmt-gather-yellow: #e9d7a1;
+  --cmt-gather-paper: #f4eee6;
+  --cmt-gather-ink: #2a211d;
+}
+
+.cmt-gathering-app .window-content {
+  background: #f4eee6;
+  color: var(--cmt-gather-ink);
+  overflow: hidden;
+}
+
+.cmt-gathering-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  height: 100%;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.cmt-gathering-header {
+  background: var(--cmt-gather-red);
+  border: 1px solid var(--cmt-gather-brown);
+  color: #fff8e9;
+  padding: 0.65rem 0.8rem;
+}
+
+.cmt-gathering-header h2,
+.cmt-gathering-header p,
+.cmt-gathering-environment h3,
+.cmt-gathering-environment p,
+.cmt-gathering-task-card h3,
+.cmt-gathering-task-card p,
+.cmt-gathering-result h3,
+.cmt-gathering-result p {
+  margin: 0;
+}
+
+.cmt-gathering-header p {
+  margin-top: 0.25rem;
+}
+
+.cmt-gathering-controls {
+  background: var(--cmt-gather-soft);
+  border: 1px solid var(--cmt-gather-brown);
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.65rem;
+}
+
+.cmt-gathering-controls label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  gap: 0.2rem;
+}
+
+.cmt-gathering-controls select {
+  background: #fffdf8;
+  color: var(--cmt-gather-ink);
+  width: 100%;
+}
+
+.cmt-gathering-task-select {
+  grid-column: 1 / -1;
+}
+
+.cmt-gathering-environment,
+.cmt-gathering-resource {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.cmt-gathering-environment {
+  background: var(--cmt-gather-brown);
+  border: 2px solid var(--cmt-gather-yellow);
+  color: #fff8e9;
+  padding: 0.55rem;
+}
+
+.cmt-gathering-environment img,
+.cmt-gathering-resource img {
+  border: 1px solid var(--cmt-gather-yellow);
+  height: 64px;
+  object-fit: cover;
+  width: 64px;
+}
+
+.cmt-gathering-task-card {
+  background: #fffdf8;
+  border: 2px solid var(--cmt-gather-red);
+  box-shadow: inset 0 0 0 1px var(--cmt-gather-yellow);
+  padding: 0.7rem;
+}
+
+.cmt-gathering-stat-grid {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0.65rem 0;
+}
+
+.cmt-gathering-stat-grid > div {
+  background: var(--cmt-gather-soft);
+  border: 1px solid #b5a49b;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0.45rem;
+}
+
+.cmt-gathering-stat-grid dt {
+  font-weight: 700;
+}
+
+.cmt-gathering-stat-grid dd {
+  margin: 0;
+}
+
+.cmt-gathering-yields {
+  background: var(--cmt-gather-yellow);
+  border-left: 4px solid var(--cmt-gather-red);
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.cmt-gathering-notice,
+.cmt-gathering-result {
+  background: var(--cmt-gather-soft);
+  border: 1px solid var(--cmt-gather-brown);
+  padding: 0.55rem;
+}
+
+.cmt-gathering-notice.is-warning {
+  border-left: 5px solid var(--cmt-gather-red);
+}
+
+.cmt-gathering-result {
+  border-left: 5px solid #2f6b3b;
+}
+
+.cmt-gathering-actions button,
+.cmt-open-gathering {
+  background: var(--cmt-gather-yellow, #e9d7a1);
+  border: 1px solid var(--cmt-gather-red, #5e0000);
+  color: #2a211d;
+  font-weight: 700;
+}
+
+.cmt-gathering-actions button {
+  min-height: 38px;
+  width: 100%;
+}
+
+.cmt-gathering-actions button:hover:not(:disabled),
+.cmt-open-gathering:hover:not(:disabled) {
+  background: #fff0bd;
+  border-color: #5e0000;
+}
+
+.cmt-gathering-chat {
+  border: 1px solid #605856;
+  color: #2a211d;
+}
+
+.cmt-gathering-chat > header {
+  align-items: center;
+  background: #5e0000;
+  color: #fff8e9;
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.45rem;
+}
+
+.cmt-gathering-chat > header img {
+  border: 1px solid #e9d7a1;
+  height: 42px;
+  object-fit: cover;
+  width: 42px;
+}
+
+.cmt-gathering-chat > header div {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmt-gathering-chat dl {
+  background: #f4eee6;
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+}
+
+.cmt-gathering-chat dl > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cmt-gathering-chat dd {
+  margin: 0;
+}
+
+.cmt-gathering-chat > p {
+  background: #e7d9cf;
+  border-top: 1px solid #605856;
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+}
+
+.cmt-gathering-chat > p.is-success {
+  border-left: 5px solid #2f6b3b;
+}
+
+.cmt-gathering-chat > p.is-failure {
+  border-left: 5px solid #5e0000;
+}
+
 @media (max-width: 600px) {
   .cmt-config-actions,
   .cmt-switch-grid,
@@ -1175,5 +1416,10 @@
 
   .cmt-hex-activity-fields > input {
     grid-column: 1 / -1;
+  }
+
+  .cmt-gathering-controls,
+  .cmt-gathering-stat-grid {
+    grid-template-columns: 1fr;
   }
 }

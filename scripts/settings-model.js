@@ -1,4 +1,5 @@
 import { ConfigValidationError, getTierPresentation } from "./model.js";
+import { GATHERING_ENVIRONMENT_SOURCES } from "../content/gathering-presets.js";
 
 const RARITIES = Object.freeze([
   Object.freeze({ value: "common", label: "Common" }),
@@ -83,6 +84,16 @@ export function expandDottedFormData(form) {
 export function buildDashboardContext(config) {
   return {
     craftingEnabled: config.crafting?.enabled !== false,
+    gatheringEnabled: config.gathering?.enabled !== false,
+    gatheringEnvironments: GATHERING_ENVIRONMENT_SOURCES.map((environment) => ({
+      id: environment.id,
+      name: environment.name,
+      selected: environment.id === config.gathering?.environmentId,
+    })),
+    gatheringTiers: Array.from({ length: 6 }, (_unused, index) => ({
+      value: index + 1,
+      selected: index + 1 === config.gathering?.maxTier,
+    })),
     flankingEnabled: config.flanking.enabled !== false,
     hexplorationEnabled: config.hexploration?.enabled !== false,
     penaltyThree: config.flanking.penalties[3],
@@ -111,6 +122,15 @@ export function applyDashboardChanges(config, form) {
   const updated = clone(config);
   updated.crafting ??= {};
   updated.crafting.enabled = checked(form.crafting?.enabled);
+  updated.gathering ??= {};
+  updated.gathering.enabled = checked(form.gathering?.enabled);
+  updated.gathering.environmentId = String(
+    form.gathering?.environmentId ?? updated.gathering.environmentId ?? "forest",
+  ).trim();
+  updated.gathering.maxTier = number(
+    form.gathering?.maxTier,
+    updated.gathering.maxTier ?? 1,
+  );
   updated.flanking.enabled = checked(form.flanking?.enabled);
   updated.hexploration ??= {};
   updated.hexploration.enabled = checked(form.hexploration?.enabled);

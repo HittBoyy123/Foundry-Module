@@ -5,6 +5,7 @@ import { installCampaignResourceBridge, registerCampaignResourceSheetHooks } fro
 import { createRulesConfigApplication } from "./config-app.js";
 import { getRulesConfig, refreshPreparedData, registerRulesSetting } from "./config-store.js";
 import { installFlankingBridge } from "./flanking.js";
+import { registerGathering } from "./gathering.js";
 import { installHexploration } from "./hexploration.js";
 import { installRuleElementBridge, registerPreparedItemHooks } from "./integration.js";
 import { registerItemSheetHooks } from "./item-sheet.js";
@@ -14,6 +15,7 @@ let abilityBoostsInstalled = false;
 let campaignResourcesInstalled = false;
 let flankingInstalled = false;
 let hexplorationInstalled = false;
+let gatheringInstalled = false;
 
 Hooks.once("init", () => {
   if (game.system.id !== "pf2e") {
@@ -31,6 +33,17 @@ Hooks.once("init", () => {
     type: RulesConfigApplication,
     restricted: true,
   });
+
+  const GatheringApplication = registerGathering(getRulesConfig);
+  game.settings.registerMenu(MODULE_ID, "gatheringMenu", {
+    name: "CMT.Gathering.MenuName",
+    label: "CMT.Gathering.Open",
+    hint: "CMT.Gathering.MenuHint",
+    icon: "fa-solid fa-basket-shopping",
+    type: GatheringApplication,
+    restricted: false,
+  });
+  gatheringInstalled = true;
 
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
   abilityBoostsInstalled = installAbilityBoostBridge();
@@ -58,6 +71,7 @@ Hooks.once("ready", () => {
     !campaignResourcesInstalled ? "campaign resource automation" : null,
     !flankingInstalled ? "flanking automation" : null,
     !hexplorationInstalled ? "Hexploration automation" : null,
+    !gatheringInstalled ? "gathering" : null,
   ].filter(Boolean);
   console.info(`${MODULE_ID} | Ready${unavailable.length ? ` (${unavailable.join(" and ")} unavailable)` : ""}.`);
 });

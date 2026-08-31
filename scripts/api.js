@@ -13,9 +13,40 @@ import {
   setPartyNephilimPoints,
 } from "./campaign-resources.js";
 import { getRulesConfig, resetRulesConfig, setRulesConfig } from "./config-store.js";
+import {
+  CRAFTING_CATEGORY_SCHEMA_VERSION,
+  CRAFTING_RESOURCE_SCHEMA_VERSION,
+  categorizeCraftableItem,
+  getCraftingRecipeKey,
+  getCraftingResourceData,
+  listCraftingCategories,
+} from "./crafting-categories.js";
+import {
+  calculateCraftingDC,
+  listCraftingDifficultyAdjustments,
+} from "./crafting-dc.js";
+import {
+  CRAFTING_RECIPE_SCHEMA_VERSION,
+  evaluateCraftingRecipe,
+  normalizeCraftingRecipe,
+  summarizeCraftingResources,
+} from "./crafting-recipes.js";
 import { calculateItemEffects, getCraftingItemType, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
 import { buildPartyTravelState } from "./hexploration.js";
 import { normalizeHexplorationPlan } from "./hexploration-model.js";
+import {
+  GATHERING_SCHEMA_VERSION,
+  evaluateGatheringTask,
+  listTasksForEnvironment,
+  normalizeGatheringEnvironment,
+  normalizeGatheringTask,
+  resolveGatheringOutcome,
+} from "./gathering-model.js";
+import { openGatheringApplication } from "./gathering.js";
+import {
+  GATHERING_ENVIRONMENT_SOURCES,
+  GATHERING_TASK_SOURCES,
+} from "../content/gathering-presets.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -40,10 +71,15 @@ export function createPublicApi() {
     heroPointsMax: HERO_POINTS_MAX,
     nephilimPointsMax: NEPHILIM_POINTS_MAX,
     nephilimPointsSchemaVersion: NEPHILIM_POINTS_SCHEMA_VERSION,
+    craftingCategorySchemaVersion: CRAFTING_CATEGORY_SCHEMA_VERSION,
+    craftingResourceSchemaVersion: CRAFTING_RESOURCE_SCHEMA_VERSION,
+    craftingRecipeSchemaVersion: CRAFTING_RECIPE_SCHEMA_VERSION,
+    gatheringSchemaVersion: GATHERING_SCHEMA_VERSION,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
     hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
     flagsPath: `flags.${MODULE_ID}`,
+    craftingResourceFlagsPath: `flags.${MODULE_ID}.resource`,
     hexplorationFlagsPath: `flags.${MODULE_ID}.hexploration`,
 
     getRulesConfig() {
@@ -95,6 +131,81 @@ export function createPublicApi() {
       const next = normalizeItemFlags({ ...current, ...changes }, getRulesConfig());
       await item.update({ [`flags.${MODULE_ID}`]: next });
       return next;
+    },
+
+    listCraftingCategories() {
+      return listCraftingCategories();
+    },
+
+    categorizeCraftableItem(item) {
+      requireItem(item);
+      return categorizeCraftableItem(item);
+    },
+
+    getCraftingResourceData(item) {
+      requireItem(item);
+      return getCraftingResourceData(item);
+    },
+
+    getCraftingRecipeKey(item, material) {
+      requireItem(item);
+      return getCraftingRecipeKey(item, material);
+    },
+
+    calculateCraftingDC(tier, adjustment = "normal") {
+      return calculateCraftingDC(tier, adjustment);
+    },
+
+    calculateResourceCraftingDC(item, adjustment = "normal") {
+      requireItem(item);
+      const resource = getCraftingResourceData(item);
+      return resource ? calculateCraftingDC(resource.tier, adjustment) : null;
+    },
+
+    listCraftingDifficultyAdjustments() {
+      return listCraftingDifficultyAdjustments();
+    },
+
+    validateCraftingRecipe(recipe) {
+      return normalizeCraftingRecipe(recipe);
+    },
+
+    summarizeCraftingResources(items) {
+      return summarizeCraftingResources(items);
+    },
+
+    evaluateCraftingRecipe(recipe, options) {
+      return evaluateCraftingRecipe(recipe, options);
+    },
+
+    listGatheringEnvironments() {
+      return clone(GATHERING_ENVIRONMENT_SOURCES);
+    },
+
+    listGatheringTasks(environmentId = "") {
+      if (!environmentId) return clone(GATHERING_TASK_SOURCES);
+      const environment = GATHERING_ENVIRONMENT_SOURCES.find((entry) => entry.id === environmentId);
+      return environment ? listTasksForEnvironment(environment, GATHERING_TASK_SOURCES) : [];
+    },
+
+    validateGatheringEnvironment(environment) {
+      return normalizeGatheringEnvironment(environment);
+    },
+
+    validateGatheringTask(task) {
+      return normalizeGatheringTask(task);
+    },
+
+    evaluateGatheringTask(task, options) {
+      return evaluateGatheringTask(task, options);
+    },
+
+    resolveGatheringOutcome(task, degree, resource = null) {
+      return resolveGatheringOutcome(task, degree, resource);
+    },
+
+    openGathering(options = {}) {
+      return openGatheringApplication(options);
     },
 
     getHexplorationPlan(party) {

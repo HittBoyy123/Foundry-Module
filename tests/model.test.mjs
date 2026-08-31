@@ -268,7 +268,7 @@ test("version 1 rules migrate without discarding customized materials", () => {
   delete legacy.tierPricesGp;
   legacy.materials.metal.label = "Custom Metal";
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.equal(migrated.materials.metal.label, "Custom Metal");
   assert.equal(migrated.tierLabels[3], "Rare");
   assert.equal(migrated.tierPricesGp[3], 25);
@@ -289,7 +289,7 @@ test("version 2 defaults migrate while existing material-specific overrides are 
   legacy.materials.metal.tierPricesGp = { 4: 777 };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.equal(migrated.tierLabels[4], "Epic");
   assert.equal(migrated.tierPricesGp[4], 100);
   assert.equal(migrated.materials.metal.tierLabels[4], "Moonsteel");
@@ -319,7 +319,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   const metal = migrated.materials.metal;
   const weaponEffect = metal.effects.find((effect) => effect.id === "weapon-attack");
   const armorEffect = metal.effects.find((effect) => effect.id === "armor-ac");
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.deepEqual(migrated.tierRarities, {
     1: "common",
     2: "uncommon",
@@ -344,7 +344,7 @@ test("version 4 flanking rules migrate to PF2e-managed two-sided flanking", () =
   delete legacy.flanking.pf2eHandlesTwoSidedFlanking;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
 });
@@ -355,7 +355,7 @@ test("version 5 rules migrate with both in-game systems enabled", () => {
   delete legacy.crafting;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.equal(migrated.hexploration.enabled, true);
   assert.equal(migrated.crafting.enabled, true);
   assert.equal(migrated.flanking.enabled, true);
@@ -367,7 +367,7 @@ test("version 6 control-panel rules migrate with Hexploration enabled", () => {
   delete legacy.hexploration;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.equal(migrated.hexploration.enabled, true);
   assert.deepEqual(migrated.hexploration.activityThresholds, [
     { maxSpeed: 10, activities: 0.5 },
@@ -390,7 +390,7 @@ test("version 7 dragon scale material migrates to an armor augmentation", () => 
   dragonScale.effects = structuredClone(legacy.materials.metal.effects);
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.equal(migrated.materials["dragon-scale"].augmentation, true);
   assert.deepEqual(migrated.materials["dragon-scale"].itemTypes, ["armor"]);
   assert.deepEqual(migrated.materials["dragon-scale"].allowedBaseMaterials, ["metal", "leather"]);
@@ -412,7 +412,7 @@ test("version 8 default dragon-scale labels migrate to age tiers without replaci
   };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.deepEqual(migrated.materials["dragon-scale"].tierLabels, {
     1: "Hatchling",
     2: "Juvenile",
@@ -437,7 +437,7 @@ test("version 9 materials migrate to weapon damage and metal or wood spell focus
   }
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   for (const [materialId, material] of Object.entries(migrated.materials)) {
     if (material.augmentation) continue;
     assert.equal(material.effects.some((effect) => effect.id === "weapon-damage"), true, materialId);
@@ -461,7 +461,7 @@ test("version 10 generic material labels migrate individually without replacing 
   legacy.materials.leather.tierLabels[4] = "GM's Custom Hide";
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 11);
+  assert.equal(migrated.schemaVersion, 12);
   assert.deepEqual(migrated.materials.stone.tierLabels, {
     1: "Fieldstone",
     2: "Granite",
@@ -474,6 +474,17 @@ test("version 10 generic material labels migrate individually without replacing 
   assert.equal(migrated.materials.leather.tierLabels[4], "GM's Custom Hide");
   assert.equal(migrated.materials.herbs.tierLabels[6], "Worldroot");
   assert.equal(migrated.materials["mana-crystals"].tierLabels[5], "Astral Crystal");
+});
+
+test("version 11 rules migrate with gathering enabled", () => {
+  const legacy = cloneDefaultRulesConfig();
+  legacy.schemaVersion = 11;
+  delete legacy.gathering;
+  const migrated = normalizeRulesConfig(legacy);
+  assert.equal(migrated.schemaVersion, 12);
+  assert.equal(migrated.gathering.enabled, true);
+  assert.equal(migrated.gathering.environmentId, "forest");
+  assert.equal(migrated.gathering.maxTier, 1);
 });
 
 test("crafting master switch hides controls and disables prepared effects", () => {

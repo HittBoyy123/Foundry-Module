@@ -24,19 +24,25 @@
     "Settings": {
       "Rules": {
         "Name": "Wrathmaker world rules",
-        "Hint": "World-level Wrathmaker settings for crafting materials, tiers, enhanced flanking, and Hexploration."
+        "Hint": "World-level Wrathmaker settings for crafting materials, gathering, tiers, enhanced flanking, and Hexploration."
       },
       "Menu": {
         "Title": "Wrathmaker Rules",
         "Name": "Wrathmaker rules",
         "Label": "Open Control Panel",
-        "Hint": "Open the in-game control panel for crafting materials, tier progression, enhanced flanking, and Hexploration."
+        "Hint": "Open the in-game control panel for crafting materials, gathering, tier progression, enhanced flanking, and Hexploration."
       },
       "Dashboard": {
         "Heading": "Wrathmaker Game Settings",
         "Intro": "These settings apply to the whole world and can be changed by a GM while the game is running.",
         "Crafting": "Crafting material rules",
         "CraftingHint": "Show Material and Tier on supported item sheets and apply their names, prices, rarities, and bonuses.",
+        "Gathering": "Resource gathering",
+        "GatheringHint": "Allow owned characters to gather Wrathmaker crafting resources with PF2e skill checks.",
+        "GatheringOptions": "Gathering Options",
+        "GatheringOptionsHint": "Players can gather only from the active environment. GMs can inspect every environment in the gathering window.",
+        "ActiveEnvironment": "Active gathering environment",
+        "MaximumGatheringTier": "Maximum available resource tier",
         "Flanking": "Enhanced flanking",
         "FlankingHint": "Add Wrathmaker's extra penalty at three and four qualifying sides. PF2e still handles ordinary two-sided flanking.",
         "Hexploration": "Hexploration travel",
@@ -93,6 +99,49 @@
       "MaterialSaved": "{material} settings saved.",
       "RulesReset": "Default crafting material rules restored.",
       "UpdateFailed": "The crafting material could not be saved."
+    },
+    "Gathering": {
+      "Title": "Wrathmaker Gathering",
+      "MenuName": "Wrathmaker gathering",
+      "MenuHint": "Open the player gathering screen for Wrathmaker crafting resources.",
+      "Open": "Gather Resources",
+      "Heading": "Resource Gathering",
+      "Intro": "Choose an owned character, an environment, and a resource. Wrathmaker uses the resource tier's PF2e DC and awards the result directly to that character.",
+      "Character": "Character",
+      "Environment": "Environment",
+      "Task": "Resource task",
+      "Tier": "Tier",
+      "Level": "Level",
+      "Skill": "Skill",
+      "DC": "DC",
+      "Time": "Attempt time",
+      "Minutes": "minutes",
+      "Bundle": "One inventory bundle",
+      "Success": "Success",
+      "CriticalSuccess": "Critical success",
+      "Roll": "Roll",
+      "Attempt": "Attempt Gathering",
+      "NoCharacters": "No owned characters are available",
+      "NoTasks": "No gathering tasks are available in this environment.",
+      "Disabled": "Resource gathering is disabled in Wrathmaker Game Settings.",
+      "SelectCharacter": "Choose a character who will attempt the gathering check.",
+      "SelectTask": "Choose a valid gathering environment and resource task.",
+      "EnvironmentUnavailable": "The GM has not made this gathering environment active.",
+      "TierUnavailable": "This resource is above the GM's maximum available gathering tier.",
+      "SkillUnavailable": "The selected character does not have the required PF2e statistic.",
+      "ResourcePackMissing": "The Wrathmaker Crafting Resources compendium could not be found.",
+      "ResourceInvalid": "The selected reward is not a valid Wrathmaker crafting resource.",
+      "NotEditable": "You do not have permission to add resources to this character.",
+      "Unavailable": "This gathering task is unavailable: {reasons}.",
+      "RollTitle": "{task} — {actor}",
+      "Awarded": "{actor} received {quantity} × {resource}.",
+      "NoAward": "{actor} did not gather a resource from this attempt.",
+      "Outcomes": {
+        "criticalFailure": "Critical Failure",
+        "failure": "Failure",
+        "success": "Success",
+        "criticalSuccess": "Critical Success"
+      }
     },
     "Hexploration": {
       "Tab": "Hexploration",

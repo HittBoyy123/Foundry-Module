@@ -1,12 +1,14 @@
 # Wrathmaker
 
-A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapons, armor, and crafted spell focuses, custom Apex ability-boost items, campaign Hero and Nephilim Points, escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel. A GM-facing control panel manages the configurable systems during play.
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapons, armor, and crafted spell focuses, tiered crafting resources and resource gathering, custom Apex ability-boost items, campaign Hero and Nephilim Points, escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel. A GM-facing control panel manages the configurable systems during play.
 
 ## Compatibility
 
 - Foundry VTT 13 and 14
 - Pathfinder Second Edition 7.1 or newer
 - Material-tier item support: weapons, armor, and held spell focuses
+- Stackable tiered resources for every material, including color-specific Dragon Scales
+- PF2e skill-based gathering with GM-controlled environments and tier availability
 - Thirty worn Apex ability items with exact +1 through +5 modifier increases
 - Persistent Hero Points up to 10 and party-level Nephilim Points up to 10
 - Automatic token-based custom flanking
@@ -34,7 +36,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.10.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.11.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -56,13 +58,14 @@ Every PF2e party sheet also displays **Nephilim Points** in its native green hea
 
 ## Compendium organization
 
-Foundry groups every module compendium under **Pathfinder 2E Wrathmaker** in the Compendium Packs sidebar. The folder currently contains the Apex Ability Items and Crafting Items packs and is the parent for future Wrathmaker packs.
+Foundry groups every module compendium under **Pathfinder 2E Wrathmaker** in the Compendium Packs sidebar. The folder contains the Apex Ability Items, Crafting Items, and Crafting Resources packs and is the parent for future Wrathmaker packs.
 
 ## In-game control panel
 
 The Wrathmaker control panel stores world-level settings and applies changes immediately to prepared actors and items.
 
 - **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
+- **Resource gathering** enables the player gathering screen and lets the GM choose the active environment and maximum available material tier.
 - **Enhanced flanking** turns only Wrathmaker's three- and four-side adjustments on or off. PF2e's ordinary two-sided flanking remains unchanged.
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
 - The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
@@ -77,7 +80,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.10.0`.
+3. Create and push a matching tag such as `v0.11.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -102,6 +105,79 @@ The included GitHub Actions workflow validates the module, builds a Foundry-read
 | 6 | Dark Iron | Godwood | Worldstone | Primordial Hide | Worldroot | Aetherheart Crystal |
 
 Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as base materials for weapons and armor. A crafted weapon adds the tier bonus to its own attack rolls and twice the tier bonus to its own damage rolls. Armor adds the tier bonus only to AC and only while equipped. The default bonus type is **untyped**, and the GM can change it to item, status, or circumstance in the material editor without changing the module code.
+
+## Crafting resources and recipe categories
+
+The **Wrathmaker Crafting Resources** compendium contains stackable PF2e Treasure items that the GM can award immediately:
+
+- Six Metal Ingots, Wood Lumber resources, Stone Blocks, Leather/Hide Sheets, Herb/Mushroom Bundles, and Mana Crystal bundles—one for every configured tier.
+- Thirty Dragon Scale bundles covering all six age tiers in Black, Blue, Green, Red, and White. One inventory quantity represents five scales.
+- Mana Crystal bundles represent ten crystals per inventory quantity. Every other resource currently represents one crafting unit.
+
+That is **66 resource items** in total. They deliberately have no automatic sale price or consumption rule yet. Their material id, tier, unit size, and optional Dragon color are stored under Wrathmaker flags, so future recipes remain reliable if the displayed names are customized.
+
+Every raw resource also has a PF2e item level and a standard level-based crafting DC:
+
+| Resource tier | Item level | Base crafting DC |
+| ---: | ---: | ---: |
+| 1 | 1 | 15 |
+| 2 | 4 | 19 |
+| 3 | 8 | 24 |
+| 4 | 12 | 30 |
+| 5 | 16 | 35 |
+| 6 | 20 | 40 |
+
+The base DC is not increased automatically by the item's displayed rarity. When a check is made, the GM can instead select PF2e's normal difficulty adjustment: Incredibly Easy −10, Very Easy −5, Easy −2, Normal ±0, Hard +2, Very Hard +5, or Incredibly Hard +10. This keeps the tier progression predictable while allowing situational difficulty to be decided at the table without editing the material item.
+
+Wrathmaker also provides stable category ids for future category-wide resource costs:
+
+| PF2e item | Wrathmaker recipe category |
+| --- | --- |
+| Light armor | `armor.light` |
+| Medium armor | `armor.medium` |
+| Heavy armor | `armor.heavy` |
+| Simple weapon | `weapon.simple` |
+| Martial weapon | `weapon.martial` |
+| Advanced weapon | `weapon.advanced` |
+| Shield | `shield` |
+| Spell Focus | `spell-focus` |
+
+PF2e's own `system.category` field performs the armor and weapon classification, so every heavy armor automatically shares the `armor.heavy` cost group without maintaining a separate list of item names. Unarmored defenses, unarmed attacks, ordinary equipment, consumables, and unrelated treasure are intentionally excluded. Future recipe records can use keys such as `armor.heavy:metal:tier-4`; only the resource quantity for that category needs to be supplied when the campaign's costs are decided.
+
+### Recipe foundation
+
+Wrathmaker keeps its crafting implementation independent, but follows the proven workflow used by Fabricate and other Foundry crafting modules: recipe definitions are separate from inventory items, requirements are checked before anything is consumed, and the final result remains a real PF2e item rather than a module-specific substitute.
+
+A recipe selects one supported PF2e category and one material tier. Its ingredients are arranged as:
+
+1. **Ingredient sets (OR):** any complete set may satisfy the recipe.
+2. **Groups within a set (AND):** every group in the selected set is required.
+3. **Resource options within a group (OR):** one allowed material option satisfies that group.
+
+For example, Heavy Armor might require `6 Steel Ingots` **and** either `2 Leather Sheets` **or** `2 Hardwood Lumber`. The allocator considers the whole recipe before declaring it craftable, so a single inventory stack cannot be reused to satisfy two separate groups.
+
+Resource matching uses the material, tier, Dragon color, and bundle-size data stored under Wrathmaker flags. Renaming `Steel Ingot` on its PF2e item sheet therefore does not break a recipe. Recipe validation rejects missing groups, unknown categories, invalid tiers, and incomplete quantities before the recipe is made available to players.
+
+The current API is deliberately a non-destructive foundation: it validates recipes, summarizes resource inventories, verifies the selected PF2e result category, calculates the tier DC and difficulty adjustment, and returns the exact allocation that would be required. It does **not** consume resources or create the finished item yet. That later transaction will require explicit confirmation and a GM-authoritative update, allowing the eventual player crafting screen, shopping list, and persistent projects to share the same safe model.
+
+### Gathering resources
+
+Wrathmaker includes an independent, Fabricate-inspired gathering screen for all 66 crafting resources. Players can open **Gather Resources** from the Items Directory header or from Wrathmaker's settings entry, then choose an owned character and visible resource task. The GM chooses the **Active gathering environment** and **Maximum available resource tier** in Wrathmaker Game Settings, so players cannot browse locations the party has not reached or attempt materials above the current location's ceiling. GMs can inspect every environment in the gathering window, subject to the same tier ceiling.
+
+The supplied environments are **Forest, Plains, Mountains, Wetlands, Underground, Arcane Nexus,** and **Dragon Hunting Grounds**. Environments compose reusable tasks rather than containing copied reward items. This means one task definition can be offered in several suitable environments while its reward continues to point to the stable material, tier, and Dragon-color flags in the resource compendium.
+
+Default PF2e checks are:
+
+| Resource | Skill |
+| --- | --- |
+| Metal and Stone | Crafting |
+| Wood and Herbs/Mushrooms | Nature |
+| Leather/Hide and Dragon Scales | Survival |
+| Mana Crystals | Arcana |
+
+The check uses the resource's existing tier level and DC. A **Success** awards one inventory bundle and a **Critical Success** awards two; Failure and Critical Failure award nothing. Mana Crystal inventory bundles still represent ten crystals and Dragon Scale bundles represent five scales, so the result screen reports both inventory quantity and crafting units. Awarded resources merge into an identical stack on the character or create the correct PF2e Treasure item when no stack exists.
+
+Each task currently displays a default attempt time of 60 minutes, but Wrathmaker does not advance world time automatically. Task records already keep their skill, DC adjustment, time, outcome quantities, environments, and future tool references separate so a later GM editor can change these without rewriting the gathering code. Stamina, finite resource nodes, weather gates, random events, and blind gathering are not enforced in this first gathering pass.
 
 ## Crafted spell focus
 
@@ -326,6 +402,18 @@ Available methods:
 - `validateRulesConfig(config)`
 - `registerMaterial(id, definition)`
 - `getItemData(item)` / `calculateItem(item)` / `updateItem(item, changes)`
+- `listCraftingCategories()` / `categorizeCraftableItem(item)`
+- `getCraftingResourceData(item)` / `getCraftingRecipeKey(item, { materialId, tier })`
+- `calculateCraftingDC(tier, adjustment)` / `calculateResourceCraftingDC(item, adjustment)`
+- `listCraftingDifficultyAdjustments()`
+- `validateCraftingRecipe(recipe)` / `summarizeCraftingResources(items)`
+- `evaluateCraftingRecipe(recipe, { targetItem, inventoryItems })`
+- `craftingRecipeSchemaVersion` reports the current independent recipe schema.
+- `listGatheringEnvironments()` / `listGatheringTasks(environmentId)`
+- `validateGatheringEnvironment(environment)` / `validateGatheringTask(task)`
+- `evaluateGatheringTask(task, options)` / `resolveGatheringOutcome(task, degree, resource)`
+- `openGathering(options)` opens the player gathering screen.
+- `gatheringSchemaVersion` reports the gathering environment/task schema.
 - `getHexplorationPlan(party)` / `calculateHexploration(party)` / `updateHexplorationPlan(party, changes)`
 - `getNephilimPoints(party)` / `updateNephilimPoints(party, value)`
 - `heroPointsMax`, `nephilimPointsMax`, and `nephilimPointsSchemaVersion` report the campaign resource limits and schema.
@@ -335,4 +423,4 @@ The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry i
 
 ## Current scope
 
-Wrathmaker currently automates crafting-material modifiers for weapons, armor, and spell focuses, tier-based names/prices/rarity, custom Apex ability items, campaign point tracking, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.
+Wrathmaker currently automates crafting-material modifiers for weapons, armor, and spell focuses, tier-based names/prices/rarity, tiered inventory resources and recipe classification, custom Apex ability items, campaign point tracking, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.

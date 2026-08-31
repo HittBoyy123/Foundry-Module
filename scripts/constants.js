@@ -1,6 +1,6 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 11;
+export const RULES_SCHEMA_VERSION = 12;
 export const ITEM_SCHEMA_VERSION = 3;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -215,6 +215,11 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
   schemaVersion: RULES_SCHEMA_VERSION,
   crafting: Object.freeze({
     enabled: true,
+  }),
+  gathering: Object.freeze({
+    enabled: true,
+    environmentId: "forest",
+    maxTier: 1,
   }),
   tierBonuses: Object.freeze({
     1: 0,

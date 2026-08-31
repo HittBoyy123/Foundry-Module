@@ -1,0 +1,95 @@
+<div class="cmt-gathering-body">
+  <header class="cmt-gathering-header">
+    <div>
+      <h2><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i> {{localize "CMT.Gathering.Heading"}}</h2>
+      <p>{{localize "CMT.Gathering.Intro"}}</p>
+    </div>
+  </header>
+
+  {{#unless gatheringEnabled}}
+    <div class="cmt-gathering-notice is-warning">{{localize "CMT.Gathering.Disabled"}}</div>
+  {{/unless}}
+
+  <section class="cmt-gathering-controls">
+    <label>
+      <span>{{localize "CMT.Gathering.Character"}}</span>
+      <select name="actorId">
+        {{#each actors}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+        {{else}}
+          <option value="">{{localize "CMT.Gathering.NoCharacters"}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <label>
+      <span>{{localize "CMT.Gathering.Environment"}}</span>
+      <select name="environmentId">
+        {{#each environments}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <label class="cmt-gathering-task-select">
+      <span>{{localize "CMT.Gathering.Task"}}</span>
+      <select name="taskId">
+        {{#each tasks}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+        {{/each}}
+      </select>
+    </label>
+  </section>
+
+  {{#if environment}}
+    <section class="cmt-gathering-environment">
+      <img src="{{environment.img}}" alt="">
+      <div>
+        <h3>{{environment.name}}</h3>
+        <p>{{environment.description}}</p>
+      </div>
+    </section>
+  {{/if}}
+
+  {{#if task}}
+    <section class="cmt-gathering-task-card">
+      <div class="cmt-gathering-resource">
+        <img src="{{resource.img}}" alt="">
+        <div>
+          <h3>{{resource.name}}</h3>
+          <p>{{task.description}}</p>
+        </div>
+      </div>
+      <dl class="cmt-gathering-stat-grid">
+        <div><dt>{{localize "CMT.Gathering.Tier"}}</dt><dd>{{task.tier}}</dd></div>
+        <div><dt>{{localize "CMT.Gathering.Level"}}</dt><dd>{{task.level}}</dd></div>
+        <div><dt>{{localize "CMT.Gathering.Skill"}}</dt><dd>{{task.skillLabel}}</dd></div>
+        <div><dt>{{localize "CMT.Gathering.DC"}}</dt><dd>{{task.dc}}</dd></div>
+        <div><dt>{{localize "CMT.Gathering.Time"}}</dt><dd>{{task.timeMinutes}} {{localize "CMT.Gathering.Minutes"}}</dd></div>
+        <div><dt>{{localize "CMT.Gathering.Bundle"}}</dt><dd>{{resource.unitsPerItem}} {{resource.unit}}</dd></div>
+      </dl>
+      <div class="cmt-gathering-yields">
+        <span><strong>{{localize "CMT.Gathering.Success"}}:</strong> {{task.successQuantity}} × {{resource.name}}</span>
+        <span><strong>{{localize "CMT.Gathering.CriticalSuccess"}}:</strong> {{task.criticalSuccessQuantity}} × {{resource.name}}</span>
+      </div>
+    </section>
+  {{else}}
+    <div class="cmt-gathering-notice">{{localize "CMT.Gathering.NoTasks"}}</div>
+  {{/if}}
+
+  {{#if lastResult}}
+    <section class="cmt-gathering-result">
+      <h3>{{lastResult.outcome}}</h3>
+      {{#if lastResult.quantity}}
+        <p>{{lastResult.actorName}} received {{lastResult.quantity}} × {{lastResult.resourceName}} ({{lastResult.units}} crafting units).</p>
+      {{else}}
+        <p>{{lastResult.actorName}} did not gather a resource from this attempt.</p>
+      {{/if}}
+    </section>
+  {{/if}}
+
+  <footer class="cmt-gathering-actions">
+    <button type="submit" {{#unless canAttempt}}disabled{{/unless}}>
+      <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
+      {{localize "CMT.Gathering.Attempt"}}
+    </button>
+  </footer>
+</div>

@@ -39,7 +39,7 @@ jobs:
           ARCHIVE_NAME="wrathmaker-v${MODULE_VERSION}.zip"
           mkdir -p release
           cp module.json LICENSE README.md CHANGELOG.md release/
-          cp -R scripts styles templates lang assets packs release/
+          cp -R scripts styles templates lang assets packs content release/
           node - <<'NODE'
           const fs = require("fs");
           const manifestPath = "release/module.json";
