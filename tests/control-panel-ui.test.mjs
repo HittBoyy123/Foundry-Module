@@ -28,6 +28,18 @@ test("control panel uses opaque PF2e-inspired surfaces", async () => {
   assert.doesNotMatch(css, /color-mix\(|rgba\(/);
 });
 
+test("Hexploration uses the requested fixed palette", async () => {
+  const css = await readSource("../styles/module.css");
+
+  assert.match(css, /--cmt-hex-brown:\s*#605856/i);
+  assert.match(css, /--cmt-hex-crimson:\s*#5e0000/i);
+  assert.match(css, /--cmt-hex-soft:\s*#e7d9cf/i);
+  assert.match(css, /--cmt-hex-yellow:\s*#e9d7a1/i);
+  assert.match(css, /\.cmt-native-progress\s*\{[^}]*background:\s*#e7d9cf/is);
+  assert.match(css, /\.cmt-native-travel-role\s*\{[^}]*background:\s*#e7d9cf/is);
+  assert.match(css, /\.cmt-hex-count-badges span\s*\{[^}]*background:\s*#e7d9cf/is);
+});
+
 test("Hexploration party controls do not submit unknown fields through the PF2e actor form", async () => {
   const [application, template] = await Promise.all([
     readSource("../scripts/hexploration.js"),
@@ -45,5 +57,9 @@ test("Hexploration party controls do not submit unknown fields through the PF2e 
   assert.match(application, /party\.setFlag\(MODULE_ID, "hexploration"/);
   assert.match(application, /data-tab="\$\{EXPLORATION_TAB_ID\}"/);
   assert.match(application, /rememberScrollPosition/);
+  assert.match(application, /syncNativeTravelSummary/);
+  assert.match(application, /synchronizePreparedTravelSpeed/);
+  assert.match(application, /LIVE_SUMMARY_INTERVAL_MS\s*=\s*750/);
+  assert.match(application, /Hooks\.on\("updateItem"/);
   assert.doesNotMatch(application, /link\.dataset\.tab/);
 });

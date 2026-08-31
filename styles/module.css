@@ -321,10 +321,12 @@
 }
 
 .cmt-hexploration-tab {
-  --cmt-hex-brown: #5e5857;
-  --cmt-hex-brown-dark: #4b4544;
-  --cmt-hex-crimson: #5e0b10;
-  --cmt-hex-gold: #b79a63;
+  --cmt-hex-brown: #605856;
+  --cmt-hex-brown-dark: #605856;
+  --cmt-hex-crimson: #5e0000;
+  --cmt-hex-gold: #e9d7a1;
+  --cmt-hex-soft: #e7d9cf;
+  --cmt-hex-yellow: #e9d7a1;
   --cmt-hex-ink: #332d29;
   --cmt-hex-muted: #6c625b;
   --cmt-hex-paper: #f4eee6;
@@ -342,8 +344,27 @@
   font-weight: 400;
 }
 
+.cmt-hexploration-integrated > aside.sidebar li.summary > header,
+.cmt-hexploration-integrated > section.content > .content-header {
+  background: #605856;
+}
+
+.cmt-hexploration-integrated > aside.sidebar li.member > footer.health-bar {
+  background: #5e0000;
+}
+
+.cmt-hexploration-integrated [data-cmt-native-summary="activities"],
+.cmt-hexploration-integrated .cmt-native-progress,
+.cmt-hexploration-integrated .cmt-native-travel-role {
+  background: #e7d9cf;
+}
+
+.cmt-hexploration-integrated > section.content > .content-header button {
+  background: #e9d7a1;
+}
+
 .cmt-native-progress {
-  background: #ded0c2;
+  background: #e7d9cf;
   border: 1px solid #b6aaa0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -362,13 +383,13 @@
 }
 
 .cmt-native-progress strong {
-  color: var(--color-pf-primary, #5e0b10);
+  color: #5e0000;
   font-size: 1rem;
 }
 
 .cmt-native-travel-role {
   align-items: center;
-  background: #e3dad1;
+  background: #e7d9cf;
   border-top: 1px solid #b5aaa1;
   color: #554c48;
   display: flex;
@@ -388,7 +409,7 @@
 }
 
 .cmt-native-travel-role input {
-  accent-color: var(--color-pf-primary, #5e0b10);
+  accent-color: #5e0000;
   margin: 0;
 }
 
@@ -567,7 +588,7 @@
 .cmt-hex-heading-action,
 .cmt-hex-actions button,
 .cmt-hex-roll-button {
-  background: #ead8a6;
+  background: #e9d7a1;
   border: 1px solid #8d7142;
   border-radius: 2px;
   color: #3e342a;
@@ -822,7 +843,7 @@
 }
 
 .cmt-hex-count-badges span {
-  background: #eee3ce;
+  background: #e7d9cf;
   border: 1px solid #9a8366;
   color: #443930;
   font-size: 0.72rem;
@@ -902,7 +923,7 @@
 .cmt-hex-heading-action:hover:not(:disabled),
 .cmt-hex-actions button:hover:not(:disabled),
 .cmt-hex-roll-button:hover:not(:disabled) {
-  background: #f5e5b7;
+  background: #e9d7a1;
   border-color: var(--cmt-hex-crimson);
 }
 
@@ -912,12 +933,12 @@
 }
 
 .cmt-hex-chat {
-  border: 1px solid #4b4544;
+  border: 1px solid #605856;
   color: #2a211d;
 }
 
 .cmt-hex-chat > header {
-  background: #5e5857;
+  background: #605856;
   color: #fff4dc;
   font-size: 1.05rem;
   font-weight: 700;
@@ -949,8 +970,8 @@
 }
 
 .cmt-hex-chat > h4 {
-  background: #5e5857;
-  border-top: 1px solid #4b4544;
+  background: #605856;
+  border-top: 1px solid #605856;
   color: #fff8e9;
   margin: 0;
   padding: 0.3rem 0.55rem;

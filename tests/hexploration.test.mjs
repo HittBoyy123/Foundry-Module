@@ -38,6 +38,26 @@ test("on-foot Hexploration uses the slowest party member", () => {
   assert.equal(state.milesPerDay, 16);
 });
 
+test("travel readouts recalculate from current member Speeds instead of retaining an earlier value", () => {
+  const first = calculateTravelState({
+    plan: { mode: "foot" },
+    members: [{ id: "one", speed: 60 }, { id: "two", speed: 60 }],
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  const changed = calculateTravelState({
+    plan: { mode: "foot" },
+    members: [{ id: "one", speed: 30 }, { id: "two", speed: 40 }],
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(first.sharedSpeed, 60);
+  assert.equal(first.activitiesPerDay, 4);
+  assert.equal(changed.sharedSpeed, 30);
+  assert.equal(changed.feetPerMinute, 300);
+  assert.equal(changed.milesPerHour, 3);
+  assert.equal(changed.milesPerDay, 24);
+  assert.equal(changed.activitiesPerDay, 2);
+});
+
 test("vehicle riders use vehicle Speed while walkers still limit the party", () => {
   const mixed = calculateTravelState({
     plan: { mode: "vehicle", vehicleId: "wagon", riderIds: ["fast"], haulerIds: ["slow"] },

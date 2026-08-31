@@ -14,8 +14,10 @@ import {
 const PARTY_PATCH_MARKER = Symbol.for(`${MODULE_ID}.hexploration.prepareDerivedData`);
 const PARTY_SCROLL_MARKER = Symbol.for(`${MODULE_ID}.hexploration.scrollPosition`);
 const SCROLL_TRACKING_MARKER = Symbol.for(`${MODULE_ID}.hexploration.scrollTracking`);
+const LIVE_SUMMARY_MONITOR = Symbol.for(`${MODULE_ID}.hexploration.liveSummaryMonitor`);
 const ACTIVITY_ROWS = 4;
 const EXPRESS_RIDER_BENEFICIARY_LIMIT = 6;
+const LIVE_SUMMARY_INTERVAL_MS = 750;
 const EXPLORATION_TAB_ID = "exploration";
 const TRAVEL_FOLDER_NAMES = Object.freeze({
   root: "Wrathmaker Travel",
@@ -321,6 +323,8 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
     activityRows,
     warnings: state.warnings.map((warning) => warningLabel(warning)),
     hasWarnings: state.warnings.length > 0,
+    travelValid: state.travelValid,
+    sharedSpeedValue: state.sharedSpeed,
     sharedSpeed: formatDistance(state.sharedSpeed),
     transportSpeed: state.transportSpeed === null ? null : formatDistance(state.transportSpeed),
     hasTransportSpeed: state.transportSpeed !== null,
@@ -544,18 +548,69 @@ function makeSidebarProgress(context) {
   const progress = document.createElement("div");
   progress.className = "cmt-native-progress";
   progress.dataset.cmtNativeProgress = "true";
-  for (const [label, value] of [
-    [localize("CMT.Hexploration.Assigned"), context.assignedCount],
-    [localize("CMT.Hexploration.Used"), context.usedCount],
-    [localize("CMT.Hexploration.Remaining"), context.remainingCount],
+  for (const [key, label, value] of [
+    ["assigned", localize("CMT.Hexploration.Assigned"), context.assignedCount],
+    ["used", localize("CMT.Hexploration.Used"), context.usedCount],
+    ["remaining", localize("CMT.Hexploration.Remaining"), context.remainingCount],
   ]) {
     const item = document.createElement("span");
+    item.dataset.cmtNativeCount = key;
     const strong = document.createElement("strong");
     strong.textContent = String(value);
     item.append(strong, document.createTextNode(label));
     progress.append(item);
   }
   return progress;
+}
+
+function nativeSpeedWithUnit(element, speed) {
+  const existing = element.textContent?.trim() ?? "";
+  const unit = existing.replace(/^[\s+\-\d.,½]+/u, "").trim();
+  return unit ? `${speed} ${unit}` : `${speed} feet`;
+}
+
+function syncProgressReadouts(root, context) {
+  const values = {
+    assigned: context.assignedCount,
+    used: context.usedCount,
+    remaining: context.remainingCount,
+  };
+  for (const [key, value] of Object.entries(values)) {
+    for (const counter of root.querySelectorAll(`[data-cmt-native-count="${key}"], [data-cmt-count="${key}"]`)) {
+      const strong = counter.querySelector("strong");
+      if (strong) strong.textContent = String(value);
+    }
+  }
+}
+
+export function syncNativeTravelSummary(explorationRoot, context) {
+  const summary = explorationRoot.querySelector(":scope > aside.sidebar li.summary .summary-data");
+  if (!summary) return;
+  const rows = [...summary.querySelectorAll(":scope > div:not([data-cmt-native-progress])")].slice(0, 5);
+  const readouts = [
+    ["speed", context.sharedSpeed],
+    ["feet-per-minute", context.feetPerMinute],
+    ["miles-per-hour", context.milesPerHour],
+    ["miles-per-day", context.milesPerDay],
+    ["activities", context.activitiesPerDay],
+  ];
+  for (let index = 0; index < readouts.length; index += 1) {
+    const row = rows[index];
+    if (!row) continue;
+    const [key, value] = readouts[index];
+    row.dataset.cmtNativeSummary = key;
+    const output = row.querySelector(".value") ?? row.lastElementChild;
+    if (!(output instanceof HTMLElement)) continue;
+    output.textContent = key === "speed" ? nativeSpeedWithUnit(output, value) : String(value);
+  }
+  syncProgressReadouts(explorationRoot, context);
+}
+
+function synchronizePreparedTravelSpeed(party, context) {
+  return applyPreparedPartyTravelSpeed(party, {
+    travelValid: context.travelValid,
+    sharedSpeed: context.sharedSpeedValue,
+  });
 }
 
 function syncNativeExplorationSidebar(explorationRoot, context) {
@@ -567,6 +622,7 @@ function syncNativeExplorationSidebar(explorationRoot, context) {
     divider.dataset.cmtNativeProgress = "true";
     summary.append(divider, makeSidebarProgress(context));
   }
+  syncNativeTravelSummary(explorationRoot, context);
 
   const memberByUuid = new Map(context.members.map((member) => [member.uuid, member]));
   for (const link of explorationRoot.querySelectorAll(':scope > aside.sidebar .actor-link[data-actor-uuid]')) {
@@ -608,6 +664,7 @@ function syncNativeExplorationSidebar(explorationRoot, context) {
 async function renderTabContents(app, party, tab, config, draftPlan = null, explorationRoot = null) {
   explorationRoot ??= tab.closest(`[data-tab="${EXPLORATION_TAB_ID}"]`);
   const context = buildHexplorationSheetContext(party, config, draftPlan);
+  synchronizePreparedTravelSpeed(party, context);
   tab.innerHTML = await renderTemplate(`modules/${MODULE_ID}/templates/hexploration-tab.hbs`, context);
   if (explorationRoot) syncNativeExplorationSidebar(explorationRoot, context);
 
@@ -779,6 +836,44 @@ async function injectPartyExploration(app, html, getConfig) {
   restoreScrollPositions(app, explorationRoot);
   requestAnimationFrame(() => restoreScrollPositions(app, explorationRoot));
   trackScrollPosition(app, explorationRoot);
+  startLiveSummaryMonitor(app, party, getConfig);
+}
+
+function currentExplorationRoot(app) {
+  const root = rootElement(app.element);
+  const form = root?.matches("form") ? root : root?.querySelector("form");
+  const container = form?.querySelector("section.container") ?? form?.querySelector(".container");
+  return container?.querySelector(`:scope > [data-tab="${EXPLORATION_TAB_ID}"]`) ?? null;
+}
+
+function refreshLiveSummary(app, party, getConfig) {
+  if (!app.rendered) {
+    stopLiveSummaryMonitor(app);
+    return;
+  }
+  const config = getConfig().hexploration;
+  const explorationRoot = currentExplorationRoot(app);
+  if (!config?.enabled || !explorationRoot?.classList.contains("active")) return;
+  const planner = explorationRoot.querySelector(".cmt-hexploration-tab");
+  const draftPlan = planner ? collectPlan(explorationRoot) : null;
+  const context = buildHexplorationSheetContext(party, config, draftPlan);
+  synchronizePreparedTravelSpeed(party, context);
+  syncNativeTravelSummary(explorationRoot, context);
+  syncProgressReadouts(explorationRoot, context);
+}
+
+function startLiveSummaryMonitor(app, party, getConfig) {
+  if (app[LIVE_SUMMARY_MONITOR]) return;
+  app[LIVE_SUMMARY_MONITOR] = setInterval(
+    () => refreshLiveSummary(app, party, getConfig),
+    LIVE_SUMMARY_INTERVAL_MS,
+  );
+}
+
+function stopLiveSummaryMonitor(app) {
+  const monitor = app?.[LIVE_SUMMARY_MONITOR];
+  if (monitor) clearInterval(monitor);
+  if (app) app[LIVE_SUMMARY_MONITOR] = null;
 }
 
 function refreshParties() {
@@ -790,7 +885,7 @@ function refreshParties() {
 }
 
 function schedulePartyRefresh(actor) {
-  if (isParty(actor)) return;
+  if (!actor || isParty(actor)) return;
   if (refreshTimer !== null) clearTimeout(refreshTimer);
   refreshTimer = setTimeout(refreshParties, 50);
 }
@@ -846,6 +941,12 @@ export function installHexploration(getConfig) {
   });
   Hooks.on("updateActor", schedulePartyRefresh);
   Hooks.on("deleteActor", schedulePartyRefresh);
+  Hooks.on("createItem", (item) => schedulePartyRefresh(item.actor));
+  Hooks.on("updateItem", (item) => schedulePartyRefresh(item.actor));
+  Hooks.on("deleteItem", (item) => schedulePartyRefresh(item.actor));
+  Hooks.on("createActiveEffect", (effect) => schedulePartyRefresh(effect.parent));
+  Hooks.on("updateActiveEffect", (effect) => schedulePartyRefresh(effect.parent));
+  Hooks.on("deleteActiveEffect", (effect) => schedulePartyRefresh(effect.parent));
   Hooks.on("createFolder", (folder) => {
     if (isActorFolder(folder)) schedulePartyRefresh(folder);
   });
@@ -855,5 +956,7 @@ export function installHexploration(getConfig) {
   Hooks.on("deleteFolder", (folder) => {
     if (isActorFolder(folder)) schedulePartyRefresh(folder);
   });
+  Hooks.on("closeActorSheet", stopLiveSummaryMonitor);
+  Hooks.on("closeActorSheetV2", stopLiveSummaryMonitor);
   return true;
 }

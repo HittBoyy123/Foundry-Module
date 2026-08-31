@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 — Live travel summary and exact palette
+
+- Kept PF2e's native party travel summary synchronized with the current Wrathmaker travel plan while the Exploration tab is open.
+- Recalculated shared Speed, feet per minute, miles per hour, miles per day, and Hexploration activities immediately when party member, vehicle, mount, item, or effect data changes.
+- Updated Assigned, Used, and Remaining readouts alongside the native summary without forcing a full party-sheet rerender or moving the user's scroll position.
+- Applied the requested Hexploration palette exactly: gray `#605856`, red `#5E0000`, soft parchment `#E7D9CF`, and yellow `#E9D7A1`.
+
 ## 0.6.0 — Unified Exploration and travel rosters
 
 - Merged Wrathmaker's travel planner into PF2e's existing party Exploration tab and removed the separate Hexploration navigation tab.

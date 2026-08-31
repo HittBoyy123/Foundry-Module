@@ -32,7 +32,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.6.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.6.1.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -54,7 +54,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.6.0`.
+3. Create and push a matching tag such as `v0.6.1`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -120,6 +120,7 @@ Open a PF2e party sheet and select its existing **Exploration** tab. Wrathmaker 
 - **Begin Day & Share** saves the plan and posts its Speed, distance, vehicle, haulers, and chosen activities to chat.
 - Each activity can be assigned to a specific party member or to the whole party. Its **Used** checkbox saves immediately so everyone sees current daily progress.
 - **Assigned**, **Used**, and **Remaining** counters appear in both the travel sidebar and daily-activity header.
+- The native travel summary stays live while Exploration is open, recalculating shared Speed, distance, and daily activities from the current party, transport, and travel modifiers without moving the sheet's scroll position.
 - **New Day** clears the Used checkboxes and the current Express Rider result while retaining the party's route setup and assignments.
 - **Express Rider** can be assigned to any party member. Wrathmaker detects the feat on the selected character, rolls that character's PF2e **Nature** statistic against a GM-set DC, and stores the result for the day.
 - Express Rider can target up to six selected party members, including people walking alongside a vehicle. A success or critical success increases the selected mount and those travellers' relevant overland Speeds by half for the current day. A vehicle Speed limit and any unselected walkers continue to cap shared Speed normally.
