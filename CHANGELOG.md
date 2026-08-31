@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 — Unified Exploration and travel rosters
+
+- Merged Wrathmaker's travel planner into PF2e's existing party Exploration tab and removed the separate Hexploration navigation tab.
+- Reused PF2e's native travel/member sidebar, including its label typography and dividers, while adding compact Assigned, Used, and Remaining progress plus member Riding or Walking status.
+- Preserved the party sheet's scroll position when travel setup, assignments, daily progress, or modifier choices refresh.
+- Added the `Wrathmaker Travel` Actor folder with `Animals & Mounts` and `Vehicles & Transport` subfolders so travel selectors no longer show every world Actor.
+- Automatically recognized world Actors named Riding Horse or Riding Drake as available mounts, even outside the travel folder.
+- Changed Express Rider to Nature only and removed the selectable check field.
+- Added up to six selectable Express Rider beneficiaries, including party members walking beside a cart or vehicle, and included them in the shared-Speed calculation.
+- Restyled Wrathmaker section bars and the Begin Day chat card to match the native PF2e Exploration brown-and-parchment presentation.
+- Migrated saved party travel plans to schema version 3 while retaining existing setup, rolls, and assignments.
+
 ## 0.5.0 — Native daily travel planning
 
 - Rebuilt the Wrathmaker Hexploration tab to match the PF2e party sheet's native two-column layout, brown section bars, parchment rows, compact travel summary, and member sidebar.

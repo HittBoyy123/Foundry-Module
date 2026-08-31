@@ -1,7 +1,7 @@
 import { DEFAULT_HEXPLORATION_CONFIG, HEXPLORATION_PLAN_SCHEMA_VERSION } from "./constants.js";
 
 export const TRAVEL_MODES = Object.freeze(["foot", "vehicle", "hauled"]);
-export const TRAVEL_CHECK_SKILLS = Object.freeze(["survival", "nature"]);
+export const EXPRESS_RIDER_SKILL = "nature";
 export const EXPRESS_RIDER_OUTCOMES = Object.freeze([
   "unrolled",
   "criticalFailure",
@@ -20,6 +20,7 @@ export const ACTIVITY_TYPES = Object.freeze([
 ]);
 
 const MAX_ACTIVITY_SLOTS = 4;
+const MAX_EXPRESS_RIDER_BENEFICIARIES = 6;
 const MAX_SPEED = 1000;
 const MAX_CHECK_DC = 100;
 
@@ -117,7 +118,6 @@ export function normalizeHexplorationPlan(input) {
   const otherSource = modifierSource.other && typeof modifierSource.other === "object"
     ? modifierSource.other
     : {};
-  const skill = TRAVEL_CHECK_SKILLS.includes(expressSource.skill) ? expressSource.skill : "survival";
   const outcome = EXPRESS_RIDER_OUTCOMES.includes(expressSource.outcome)
     ? expressSource.outcome
     : "unrolled";
@@ -135,10 +135,11 @@ export function normalizeHexplorationPlan(input) {
       expressRider: {
         enabled: expressSource.enabled === true,
         actorId: cleanId(expressSource.actorId),
-        skill,
+        skill: EXPRESS_RIDER_SKILL,
         dc: finiteCheckValue(expressSource.dc, MAX_CHECK_DC),
         outcome,
         rollTotal: finiteRollTotal(expressSource.rollTotal),
+        beneficiaryIds: uniqueIds(expressSource.beneficiaryIds).slice(0, MAX_EXPRESS_RIDER_BENEFICIARIES),
       },
       other: {
         enabled: otherSource.enabled === true,
@@ -185,11 +186,13 @@ export function calculateTravelState({ plan: inputPlan, members = [], vehicles =
   const riderIds = new Set(plan.riderIds.filter((id) => memberById.has(id) && !selectedHaulerIds.has(id)));
   const walkingMembers = normalizedMembers.filter((member) => !riderIds.has(member.id) && !selectedHaulerIds.has(member.id));
   const warnings = [];
+  const expressRiderBeneficiaryIds = plan.travelModifiers.expressRider.beneficiaryIds
+    .filter((id) => memberById.has(id));
+  const expressRiderBeneficiarySet = new Set(expressRiderBeneficiaryIds);
   const expressRiderSuccessful = plan.travelModifiers.expressRider.enabled
     && ["success", "criticalSuccess"].includes(plan.travelModifiers.expressRider.outcome);
   const expressRiderEligible = memberById.has(plan.travelModifiers.expressRider.actorId)
-    && plan.mode === "hauled"
-    && selectedHaulers.length > 0;
+    && ((plan.mode === "hauled" && selectedHaulers.length > 0) || expressRiderBeneficiaryIds.length > 0);
   const expressRiderApplied = expressRiderSuccessful && expressRiderEligible;
 
   let transportSpeed = null;
@@ -198,15 +201,15 @@ export function calculateTravelState({ plan: inputPlan, members = [], vehicles =
     if (!selectedVehicle) {
       warnings.push("vehicle-required");
     } else if (plan.mode === "vehicle") {
-      baseTransportSpeed = selectedVehicle.speed;
-      transportSpeed = plan.manualSpeed ?? baseTransportSpeed;
+      transportSpeed = plan.manualSpeed ?? selectedVehicle.speed;
+      baseTransportSpeed = transportSpeed;
       if (!(transportSpeed > 0)) warnings.push("vehicle-speed-required");
     } else {
       if (selectedHaulers.length === 0) {
         warnings.push("hauler-required");
       } else {
         const haulerSpeed = Math.min(...selectedHaulers.map((hauler) => hauler.speed));
-        baseTransportSpeed = haulerSpeed;
+        baseTransportSpeed = plan.manualSpeed ? Math.min(plan.manualSpeed, haulerSpeed) : haulerSpeed;
         const effectiveHaulerSpeed = expressRiderApplied ? haulerSpeed * 1.5 : haulerSpeed;
         transportSpeed = plan.manualSpeed ? Math.min(plan.manualSpeed, effectiveHaulerSpeed) : effectiveHaulerSpeed;
         if (!(transportSpeed > 0)) warnings.push("hauler-speed-required");
@@ -214,15 +217,24 @@ export function calculateTravelState({ plan: inputPlan, members = [], vehicles =
     }
   }
 
-  const speedContributors = plan.mode === "foot"
+  const baseSpeedContributors = plan.mode === "foot"
     ? normalizedMembers.map((member) => member.speed)
     : walkingMembers.map((member) => member.speed);
+  const speedContributors = plan.mode === "foot"
+    ? normalizedMembers.map((member) => (
+      expressRiderApplied && expressRiderBeneficiarySet.has(member.id) ? member.speed * 1.5 : member.speed
+    ))
+    : walkingMembers.map((member) => (
+      expressRiderApplied && expressRiderBeneficiarySet.has(member.id) ? member.speed * 1.5 : member.speed
+    ));
+  if (plan.mode !== "foot" && baseTransportSpeed !== null) baseSpeedContributors.push(baseTransportSpeed);
   if (plan.mode !== "foot" && transportSpeed !== null) speedContributors.push(transportSpeed);
-  const baseSharedSpeed = speedContributors.length > 0 ? Math.min(...speedContributors) : 0;
+  const baseSharedSpeed = baseSpeedContributors.length > 0 ? Math.min(...baseSpeedContributors) : 0;
+  const expressAdjustedSharedSpeed = speedContributors.length > 0 ? Math.min(...speedContributors) : 0;
   const customSpeedBonus = plan.travelModifiers.other.enabled
     ? plan.travelModifiers.other.speedBonus
     : 0;
-  const sharedSpeed = Math.max(0, Math.min(baseSharedSpeed + customSpeedBonus, MAX_SPEED));
+  const sharedSpeed = Math.max(0, Math.min(expressAdjustedSharedSpeed + customSpeedBonus, MAX_SPEED));
   if (normalizedMembers.length === 0) warnings.push("members-required");
   const travelValid = warnings.length === 0;
 
@@ -243,6 +255,7 @@ export function calculateTravelState({ plan: inputPlan, members = [], vehicles =
     transportSpeed,
     baseTransportSpeed,
     baseSharedSpeed,
+    expressAdjustedSharedSpeed,
     sharedSpeed,
     feetPerMinute: sharedSpeed * 10,
     milesPerHour: sharedSpeed / Number(hexConfig.milesPerHourDivisor ?? 10),
@@ -263,8 +276,9 @@ export function calculateTravelState({ plan: inputPlan, members = [], vehicles =
     expressRiderSuccessful,
     expressRiderEligible,
     expressRiderApplied,
-    expressRiderSpeedBonus: expressRiderApplied && transportSpeed !== null && baseTransportSpeed !== null
-      ? Math.max(transportSpeed - baseTransportSpeed, 0)
+    expressRiderBeneficiaryIds,
+    expressRiderSpeedBonus: expressRiderApplied
+      ? Math.max(expressAdjustedSharedSpeed - baseSharedSpeed, 0)
       : 0,
     customSpeedBonus,
     warnings,

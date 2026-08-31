@@ -1,16 +1,24 @@
 <section class="cmt-hex-chat">
   <header><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> {{partyName}} — {{localize "CMT.Hexploration.ChatTitle"}}</header>
   <div class="cmt-hex-chat-summary">
-    <p><strong>{{localize "CMT.Hexploration.TravelMode"}}:</strong> {{mode}}{{#if vehicle}} — {{vehicle}}{{/if}}</p>
-    {{#if haulers}}<p><strong>{{localize "CMT.Hexploration.Haulers"}}:</strong> {{haulers}}</p>{{/if}}
-    <p><strong>{{localize "CMT.Hexploration.SharedSpeed"}}:</strong> {{sharedSpeed}} ft. ({{milesPerHour}} mph / {{milesPerDay}} miles per day)</p>
-    <p><strong>{{localize "CMT.Hexploration.ActivitiesPerDay"}}:</strong> {{activitiesPerDay}}</p>
-    <p><strong>{{localize "CMT.Hexploration.ActivityProgress"}}:</strong> {{assignedCount}} {{localize "CMT.Hexploration.Assigned"}} · {{usedCount}} {{localize "CMT.Hexploration.Used"}} · {{remainingCount}} {{localize "CMT.Hexploration.Remaining"}}</p>
+    <div><span>{{localize "CMT.Hexploration.TravelMode"}}</span><strong>{{mode}}{{#if vehicle}} — {{vehicle}}{{/if}}</strong></div>
+    {{#if haulers}}<div><span>{{localize "CMT.Hexploration.Haulers"}}</span><strong>{{haulers}}</strong></div>{{/if}}
+    <hr>
+    <div><span>{{localize "CMT.Hexploration.SharedSpeed"}}</span><strong>{{sharedSpeed}} ft.</strong></div>
+    <div><span>{{localize "CMT.Hexploration.FeetPerMinute"}}</span><strong>{{feetPerMinute}}</strong></div>
+    <div><span>{{localize "CMT.Hexploration.MilesPerHour"}}</span><strong>{{milesPerHour}}</strong></div>
+    <div><span>{{localize "CMT.Hexploration.MilesPerDay"}}</span><strong>{{milesPerDay}}</strong></div>
+    <hr>
+    <div><span>{{localize "CMT.Hexploration.ActivitiesPerDay"}}</span><strong>{{activitiesPerDay}}</strong></div>
+    <div><span>{{localize "CMT.Hexploration.ActivityProgress"}}</span><strong>{{assignedCount}} {{localize "CMT.Hexploration.Assigned"}} · {{usedCount}} {{localize "CMT.Hexploration.Used"}} · {{remainingCount}} {{localize "CMT.Hexploration.Remaining"}}</strong></div>
     {{#if expressRider}}
-      <p><strong>{{localize "CMT.Hexploration.ExpressRider"}}:</strong> {{expressRider.actor}} — {{expressRider.outcome}}{{#if expressRider.hasTotal}} ({{expressRider.total}}){{/if}}{{#if expressRider.applied}} · {{localize "CMT.Hexploration.Applied"}}{{/if}}</p>
+      <hr>
+      <div><span>{{localize "CMT.Hexploration.ExpressRider"}}</span><strong>{{expressRider.actor}} — {{expressRider.outcome}}{{#if expressRider.hasTotal}} ({{expressRider.total}}){{/if}}{{#if expressRider.applied}} · {{localize "CMT.Hexploration.Applied"}}{{/if}}</strong></div>
+      {{#if expressRider.beneficiaries}}<div><span>{{localize "CMT.Hexploration.AffectedTravellers"}}</span><strong>{{expressRider.beneficiaries}}</strong></div>{{/if}}
     {{/if}}
     {{#if slowTravel}}<p><em>{{localize "CMT.Hexploration.SlowTravel"}}</em></p>{{/if}}
   </div>
+  <h4>{{localize "CMT.Hexploration.ChatAssignments"}}</h4>
   <ol>
     {{#each activities}}
       <li><strong>{{label}}</strong> — {{assignee}}{{#if note}} · {{note}}{{/if}}{{#if used}} · {{localize "CMT.Hexploration.Used"}}{{/if}}</li>

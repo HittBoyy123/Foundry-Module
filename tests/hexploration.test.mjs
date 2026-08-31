@@ -11,6 +11,7 @@ import {
   getVehicleGroundSpeed,
   normalizeHexplorationPlan,
 } from "../scripts/hexploration-model.js";
+import { actorIsInTravelFolder } from "../scripts/hexploration.js";
 
 const members = [
   { id: "slow", name: "Slow Hero", speed: 20 },
@@ -140,8 +141,21 @@ test("travel plans are bounded and unknown activity values are made safe", () =>
   assert.equal(plan.activities[0].actorId, "");
   assert.equal(plan.activities[0].used, false);
   assert.equal(plan.activities[0].note.length, 200);
-  assert.equal(plan.schemaVersion, 2);
-  assert.equal(plan.travelModifiers.expressRider.skill, "survival");
+  assert.equal(plan.schemaVersion, 3);
+  assert.equal(plan.travelModifiers.expressRider.skill, "nature");
+});
+
+test("Express Rider beneficiaries are de-duplicated and limited to six", () => {
+  const plan = normalizeHexplorationPlan({
+    travelModifiers: {
+      expressRider: {
+        skill: "survival",
+        beneficiaryIds: ["a", "b", "a", "c", "d", "e", "f", "g"],
+      },
+    },
+  });
+  assert.equal(plan.travelModifiers.expressRider.skill, "nature");
+  assert.deepEqual(plan.travelModifiers.expressRider.beneficiaryIds, ["a", "b", "c", "d", "e", "f"]);
 });
 
 test("daily assignments track assigned, used, and remaining activities", () => {
@@ -226,6 +240,55 @@ test("Express Rider does not boost foot travel or a failed check", () => {
   });
   assert.equal(failed.transportSpeed, 40);
   assert.equal(failed.expressRiderApplied, false);
+});
+
+test("Express Rider can boost selected walkers while unselected walkers still limit the party", () => {
+  const boosted = calculateTravelState({
+    plan: {
+      mode: "foot",
+      travelModifiers: {
+        expressRider: {
+          enabled: true,
+          actorId: "fast",
+          dc: 20,
+          outcome: "success",
+          beneficiaryIds: ["slow", "fast"],
+        },
+      },
+    },
+    members,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(boosted.baseSharedSpeed, 20);
+  assert.equal(boosted.sharedSpeed, 30);
+  assert.equal(boosted.expressRiderApplied, true);
+  assert.equal(boosted.expressRiderSpeedBonus, 10);
+
+  const limited = calculateTravelState({
+    plan: {
+      mode: "foot",
+      travelModifiers: {
+        expressRider: {
+          enabled: true,
+          actorId: "fast",
+          outcome: "success",
+          beneficiaryIds: ["fast"],
+        },
+      },
+    },
+    members,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(limited.sharedSpeed, 20);
+});
+
+test("travel Actor folder membership includes descendants", () => {
+  const travel = { id: "travel", folder: null };
+  const animals = { id: "animals", folder: travel };
+  const horses = { id: "horses", folder: animals };
+  assert.equal(actorIsInTravelFolder({ folder: horses }, animals), true);
+  assert.equal(actorIsInTravelFolder({ folder: horses }, travel), true);
+  assert.equal(actorIsInTravelFolder({ folder: horses }, { id: "vehicles" }), false);
 });
 
 test("Express Rider requires a selected party member before its daily result can apply", () => {

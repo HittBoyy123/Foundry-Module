@@ -37,8 +37,13 @@ test("Hexploration party controls do not submit unknown fields through the PF2e 
   assert.doesNotMatch(template, /\sname=/);
   assert.match(template, /data-cmt-action="save"/);
   assert.match(template, /data-cmt-action="begin"/);
-  assert.match(template, /cmt-hex-native-layout/);
+  assert.match(template, /cmt-hex-native-content/);
   assert.match(template, /data-cmt-field="activity-used"/);
   assert.match(template, /data-cmt-action="roll-express-rider"/);
+  assert.match(template, /data-cmt-field="express-rider-beneficiary"/);
+  assert.doesNotMatch(template, /data-cmt-field="express-rider-skill"/);
   assert.match(application, /party\.setFlag\(MODULE_ID, "hexploration"/);
+  assert.match(application, /data-tab="\$\{EXPLORATION_TAB_ID\}"/);
+  assert.match(application, /rememberScrollPosition/);
+  assert.doesNotMatch(application, /link\.dataset\.tab/);
 });
