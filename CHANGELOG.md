@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0 — Dragon Scale resistance and reliable settings saves
+
+- Changed Dragon Scales from a replacement base material into an armor-only enhancement for Metal and Leather/Hide armor.
+- Added editable Black, Blue, Green, Red, and White dragon-color names with configurable PF2e resistance damage types.
+- Added six editable Dragon Scale resistance values; they default to 0 until the campaign values are decided.
+- Added Dragon Scale and Scale Tier controls to eligible armor sheets and generated an equipped-only PF2e Resistance rule.
+- Layered Dragon Scale name, price, and rarity on top of the selected base armor material without rewriting PF2e source data.
+- Fixed dotted Foundry form fields being read as missing data, which caused false blank material-name errors and disabled every Wrathmaker system after saving.
+- Added an editable PF2e bonus type to ordinary material rules, defaulting to Untyped.
+- Migrated rules to schema version 8 and item flags to schema version 3 while preserving existing world and item data.
+
 ## 0.6.2 — Automatic Express Rider Will DC
 
 - Removed the manual Express Rider DC field and calculated the check DC from the highest prepared Will DC among selected pulling creatures and affected travellers.

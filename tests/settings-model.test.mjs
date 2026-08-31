@@ -8,6 +8,7 @@ import {
   applyMaterialChanges,
   buildDashboardContext,
   buildMaterialEditorContext,
+  expandDottedFormData,
 } from "../scripts/settings-model.js";
 
 const config = normalizeRulesConfig(cloneDefaultRulesConfig());
@@ -38,6 +39,33 @@ test("dashboard changes toggle both systems and update flanking totals", () => {
   assert.deepEqual(changed.flanking.penalties, { 2: -2, 3: -4, 4: -6 });
   assert.equal(changed.flanking.maxNormalSizeDifference, 2);
   assert.equal(changed.flanking.oversizedParticipantsPerSide, 3);
+});
+
+test("Foundry dotted form fields expand before dashboard toggles are saved", () => {
+  assert.deepEqual(expandDottedFormData({
+    "crafting.enabled": "on",
+    "flanking.enabled": "on",
+    "hexploration.enabled": "on",
+    "flanking.penalties.3": "-3",
+    "flanking.penalties.4": "-4",
+  }), {
+    crafting: { enabled: "on" },
+    flanking: { enabled: "on", penalties: { 3: "-3", 4: "-4" } },
+    hexploration: { enabled: "on" },
+  });
+
+  const changed = normalizeRulesConfig(applyDashboardChanges(config, {
+    "crafting.enabled": "on",
+    "flanking.enabled": "on",
+    "hexploration.enabled": "on",
+    "flanking.penalties.3": "-3",
+    "flanking.penalties.4": "-4",
+    "flanking.maxNormalSizeDifference": "1",
+    "flanking.oversizedParticipantsPerSide": "2",
+  }));
+  assert.equal(changed.crafting.enabled, true);
+  assert.equal(changed.flanking.enabled, true);
+  assert.equal(changed.hexploration.enabled, true);
 });
 
 test("material editor changes all tier presentation fields and per-material bonuses", () => {
@@ -73,4 +101,57 @@ test("material editor changes all tier presentation fields and per-material bonu
   assert.equal(result.presentation.label, "Kingssteel");
   assert.equal(result.presentation.priceGp, 75);
   assert.equal(result.presentation.rarity, "rare");
+});
+
+test("flat material editor fields save names, tiers, and an untyped bonus", () => {
+  const flat = {
+    "material.label": "Forged Metal",
+    "material.enabled": "on",
+    "material.modifierType": "untyped",
+    "itemTypes.weapon": "on",
+    "itemTypes.armor": "on",
+  };
+  for (let tier = 1; tier <= 6; tier += 1) {
+    flat[`tiers.${tier}.label`] = tier === 2 ? "Kingssteel" : config.materials.metal.tierLabels[tier];
+    flat[`tiers.${tier}.bonus`] = String(tier - 1);
+    flat[`tiers.${tier}.priceGp`] = String(config.materials.metal.tierPricesGp[tier]);
+    flat[`tiers.${tier}.rarity`] = config.tierRarities[tier];
+  }
+
+  const changed = normalizeRulesConfig(applyMaterialChanges(config, "metal", flat));
+  assert.equal(changed.materials.metal.label, "Forged Metal");
+  assert.equal(changed.materials.metal.enabled, true);
+  assert.equal(changed.materials.metal.tierLabels[2], "Kingssteel");
+  assert.equal(changed.materials.metal.effects.every((effect) => effect.modifierType === "untyped"), true);
+});
+
+test("dragon-scale editor changes color mappings and resistance values", () => {
+  const editor = buildMaterialEditorContext(config, "dragon-scale");
+  assert.equal(editor.isDragonScale, true);
+  assert.equal(editor.supportsWeapon, false);
+  assert.equal(editor.dragonColors.find((color) => color.id === "red").label, "Red");
+
+  const flat = {
+    "material.label": "Dragon Scale Plating",
+    "material.enabled": "on",
+    "dragonColors.red.label": "Crimson",
+    "dragonColors.red.damageType": "fire",
+  };
+  for (const color of editor.dragonColors) {
+    if (color.id === "red") continue;
+    flat[`dragonColors.${color.id}.label`] = color.label;
+    flat[`dragonColors.${color.id}.damageType`] = color.damageTypes.find((type) => type.selected).value;
+  }
+  for (const row of editor.tiers) {
+    flat[`tiers.${row.tier}.label`] = row.label;
+    flat[`tiers.${row.tier}.bonus`] = row.tier === 4 ? "9" : String(row.bonus);
+    flat[`tiers.${row.tier}.priceGp`] = String(row.priceGp);
+    flat[`tiers.${row.tier}.rarity`] = row.rarities.find((rarity) => rarity.selected).value;
+  }
+
+  const changed = normalizeRulesConfig(applyMaterialChanges(config, "dragon-scale", flat));
+  assert.equal(changed.materials["dragon-scale"].label, "Dragon Scale Plating");
+  assert.equal(changed.materials["dragon-scale"].colors.red.label, "Crimson");
+  assert.equal(changed.materials["dragon-scale"].tierBonuses[4], 9);
+  assert.deepEqual(changed.materials["dragon-scale"].allowedBaseMaterials, ["metal", "leather"]);
 });

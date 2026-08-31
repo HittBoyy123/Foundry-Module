@@ -32,7 +32,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.6.2.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.7.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -45,7 +45,8 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
 - The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
 - Every crafting material has an **Edit** button that opens its own pop-out.
-- The material pop-out edits the material name, enabled state, weapon/armor availability, and all six tier names, bonuses, added prices, and PF2e rarities.
+- The material pop-out edits the material name, enabled state, weapon/armor availability, PF2e bonus type, and all six tier names, bonuses, added prices, and PF2e rarities.
+- Dragon Scales use a specialized editor for dragon-color names, resistance damage types, and six editable resistance values.
 - The complete configuration is presented through named fields and material pop-outs; no raw-code or JSON editor is exposed in-game.
 
 Only a GM can open this world-settings menu. Turning a system off is reversible and does not remove saved item flags or custom definitions.
@@ -54,7 +55,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.6.2`.
+3. Create and push a matching tag such as `v0.7.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -69,7 +70,9 @@ The included GitHub Actions workflow validates the module, builds a Foundry-read
 | 5 | Adamantium | Starwood | Legendary | +4 | 1,000 gp | Unique |
 | 6 | Dark Iron | Godwood | Mythical | +5 | 5,000 gp | Unique |
 
-Metal, wood, stone, leather/hide, dragon scales, herbs/mushrooms, and mana crystals are available to both weapons and armor. Weapon bonuses apply only to the selected weapon's attack selector. Armor bonuses apply only to AC and only while that armor is equipped. Both are **untyped** PF2e flat modifiers, so they stay separate from ordinary PF2e item, potency, and rune bonuses.
+Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as base materials for weapons and armor. Weapon bonuses apply only to the selected weapon's attack selector. Armor bonuses apply only to AC and only while that armor is equipped. The default bonus type is **untyped**, and the GM can change it to item, status, or circumstance in the material editor without changing the module code.
+
+Dragon Scales are an armor-only enhancement rather than a replacement base material. Metal and Leather/Hide armor sheets gain Dragon Scale and Scale Tier controls. Black, Blue, Green, Red, and White scales default to acid, electricity, poison, fire, and cold resistance respectively; the GM can rename every color and change its damage type. The six resistance values default to 0 because the campaign progression is still undecided, and can be edited in the Dragon Scales material pop-out. A configured resistance is generated only while the armor is equipped, without changing the armor's PF2e source rules.
 
 Tier 1 creates no zero-value rule element, keeping roll breakdowns uncluttered. Selecting either field saves both choices and activates the configured tier rule for that item.
 

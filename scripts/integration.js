@@ -37,14 +37,17 @@ export function applyPreparedItemPresentation(item, config) {
   if (item.isIdentified !== false) {
     const baseName = item._source?.name ?? item.name;
     item.name = insertTierLabel(item.name, baseName, result.presentation.label);
+    if (result.dragonScale) {
+      item.name = insertTierLabel(item.name, baseName, result.dragonScale.name);
+    }
   }
 
-  if (item.system.traits && result.presentation.rarity) {
-    item.system.traits.rarity = result.presentation.rarity;
+  if (item.system.traits && result.effectiveRarity) {
+    item.system.traits.rarity = result.effectiveRarity;
   }
 
   const price = item.system.price?.value;
-  const priceGp = result.presentation.priceGp;
+  const priceGp = result.priceGp;
   if (price && typeof price === "object" && priceGp > 0 && !adjustedPrices.has(price)) {
     const gp = Math.floor(priceGp);
     const cp = Math.round((priceGp - gp) * 100);

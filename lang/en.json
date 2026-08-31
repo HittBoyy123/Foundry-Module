@@ -3,6 +3,9 @@
     "ItemSheet": {
       "Material": "Material",
       "Tier": "Tier",
+      "DragonScale": "Dragon Scale",
+      "DragonScaleTier": "Scale Tier",
+      "NoDragonScale": "None",
       "Unavailable": "Unavailable material"
     },
     "Flanking": {
@@ -48,6 +51,14 @@
         "AppliesTo": "Available on",
         "Weapons": "Weapons",
         "Armor": "Armor",
+        "ModifierType": "PF2e bonus type",
+        "ModifierTypeHint": "Choose Untyped when the bonus is not an item, status, or circumstance bonus.",
+        "DragonScaleAppliesTo": "Armor-only enhancement available on Metal and Leather / Hide armor.",
+        "DragonColors": "Dragon Scale Resistances",
+        "DragonColorsHint": "Rename each dragon color and choose the PF2e damage type it resists. Tier resistance values are edited below.",
+        "ColorName": "Dragon color",
+        "ResistanceType": "Resistance type",
+        "Resistance": "Resistance",
         "Tiers": "Material tiers",
         "Tier": "Tier",
         "CraftedName": "Crafted name",

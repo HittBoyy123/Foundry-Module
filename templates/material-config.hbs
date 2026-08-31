@@ -20,18 +20,60 @@
       <input type="checkbox" name="material.enabled" {{#if enabled}}checked{{/if}}>
     </label>
 
-    <fieldset class="cmt-item-types">
-      <legend>{{localize "CMT.Settings.Material.AppliesTo"}}</legend>
-      <label><input type="checkbox" name="itemTypes.weapon" {{#if supportsWeapon}}checked{{/if}}> {{localize "CMT.Settings.Material.Weapons"}}</label>
-      <label><input type="checkbox" name="itemTypes.armor" {{#if supportsArmor}}checked{{/if}}> {{localize "CMT.Settings.Material.Armor"}}</label>
-    </fieldset>
+    {{#if isDragonScale}}
+      <div class="cmt-augmentation-summary">
+        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+        <span>{{localize "CMT.Settings.Material.DragonScaleAppliesTo"}}</span>
+      </div>
+    {{else}}
+      <fieldset class="cmt-item-types">
+        <legend>{{localize "CMT.Settings.Material.AppliesTo"}}</legend>
+        <label><input type="checkbox" name="itemTypes.weapon" {{#if supportsWeapon}}checked{{/if}}> {{localize "CMT.Settings.Material.Weapons"}}</label>
+        <label><input type="checkbox" name="itemTypes.armor" {{#if supportsArmor}}checked{{/if}}> {{localize "CMT.Settings.Material.Armor"}}</label>
+      </fieldset>
+
+      <div class="form-group">
+        <label for="cmt-material-modifier-type">{{localize "CMT.Settings.Material.ModifierType"}}</label>
+        <div class="form-fields">
+          <select id="cmt-material-modifier-type" name="material.modifierType">
+            {{#each modifierTypes}}
+              <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <p class="hint">{{localize "CMT.Settings.Material.ModifierTypeHint"}}</p>
+      </div>
+    {{/if}}
   </section>
+
+  {{#if isDragonScale}}
+    <section class="cmt-panel cmt-dragon-colors">
+      <h3><i class="fa-solid fa-dragon" aria-hidden="true"></i> {{localize "CMT.Settings.Material.DragonColors"}}</h3>
+      <p class="hint">{{localize "CMT.Settings.Material.DragonColorsHint"}}</p>
+      <div class="cmt-dragon-color-grid">
+        {{#each dragonColors}}
+          <label>
+            <span>{{localize "CMT.Settings.Material.ColorName"}}</span>
+            <input type="text" name="dragonColors.{{id}}.label" value="{{label}}" required>
+          </label>
+          <label>
+            <span>{{localize "CMT.Settings.Material.ResistanceType"}}</span>
+            <select name="dragonColors.{{id}}.damageType">
+              {{#each damageTypes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+        {{/each}}
+      </div>
+    </section>
+  {{/if}}
 
   <section class="cmt-tier-editor" aria-label="{{localize 'CMT.Settings.Material.Tiers'}}">
     <div class="cmt-tier-row cmt-tier-head">
       <span>{{localize "CMT.Settings.Material.Tier"}}</span>
       <span>{{localize "CMT.Settings.Material.CraftedName"}}</span>
-      <span>{{localize "CMT.Settings.Material.Bonus"}}</span>
+      <span>{{#if isDragonScale}}{{localize "CMT.Settings.Material.Resistance"}}{{else}}{{localize "CMT.Settings.Material.Bonus"}}{{/if}}</span>
       <span>{{localize "CMT.Settings.Material.Price"}}</span>
       <span>{{localize "CMT.Settings.Material.Rarity"}}</span>
     </div>
@@ -39,7 +81,7 @@
       <div class="cmt-tier-row">
         <strong class="cmt-tier-number">{{tier}}</strong>
         <input type="text" name="tiers.{{tier}}.label" value="{{label}}" aria-label="Tier {{tier}} crafted name" required>
-        <input type="number" name="tiers.{{tier}}.bonus" value="{{bonus}}" step="any" aria-label="Tier {{tier}} bonus" required>
+        <input type="number" name="tiers.{{tier}}.bonus" value="{{bonus}}" {{#if ../isDragonScale}}min="0"{{/if}} step="any" aria-label="Tier {{tier}} {{#if ../isDragonScale}}resistance{{else}}bonus{{/if}}" required>
         <div class="cmt-price-input">
           <input type="number" name="tiers.{{tier}}.priceGp" value="{{priceGp}}" min="0" step="0.01" aria-label="Tier {{tier}} added price" required>
           <span>gp</span>

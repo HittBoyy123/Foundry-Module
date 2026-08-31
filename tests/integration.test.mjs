@@ -100,3 +100,73 @@ test("armor AC rules are generated only while the armor is equipped", () => {
   assert.deepEqual(rules[0].selector, ["ac"]);
   assert.equal(rules[0].value, 1);
 });
+
+test("equipped metal or leather armor can add dragon-scale resistance", () => {
+  const customized = cloneDefaultRulesConfig();
+  customized.materials["dragon-scale"].tierBonuses[3] = 7;
+  const config = normalizeRulesConfig(customized);
+  const armor = {
+    actor: {},
+    type: "armor",
+    id: "armor-dragon",
+    name: "Breastplate",
+    isEquipped: true,
+    getFlag: () => ({
+      material: "metal",
+      tier: 2,
+      dragonScale: { color: "red", tier: 3 },
+    }),
+  };
+
+  const rules = buildItemRuleElements(armor, config);
+  assert.equal(rules.length, 2);
+  assert.deepEqual(rules.find((rule) => rule.key === "Resistance"), {
+    key: "Resistance",
+    type: "fire",
+    value: 7,
+  });
+
+  armor.isEquipped = false;
+  assert.deepEqual(buildItemRuleElements(armor, config), []);
+});
+
+test("dragon-scale armor presentation layers its name, rarity, and price", () => {
+  class MockCoins {
+    constructor({ gp = 0, cp = 0 } = {}) {
+      this.gp = gp;
+      this.cp = cp;
+    }
+
+    plus({ gp = 0, cp = 0 }) {
+      return new MockCoins({ gp: this.gp + gp, cp: this.cp + cp });
+    }
+  }
+
+  const customized = cloneDefaultRulesConfig();
+  customized.materials["dragon-scale"].tierBonuses[3] = 7;
+  const config = normalizeRulesConfig(customized);
+  const armor = {
+    type: "armor",
+    id: "armor-dragon-presentation",
+    name: "+1 Resilient Breastplate",
+    isIdentified: true,
+    _source: {
+      name: "Breastplate",
+      system: { price: { value: { gp: 8 } }, traits: { rarity: "common" } },
+    },
+    system: {
+      price: { value: new MockCoins({ gp: 100 }) },
+      traits: { rarity: "common" },
+    },
+    getFlag: () => ({
+      material: "metal",
+      tier: 2,
+      dragonScale: { color: "red", tier: 3 },
+    }),
+  };
+
+  assert.equal(applyPreparedItemPresentation(armor, config), true);
+  assert.equal(armor.name, "+1 Resilient Steel Rare Red Dragon Scale Breastplate");
+  assert.equal(armor.system.price.value.gp, 135);
+  assert.equal(armor.system.traits.rarity, "rare");
+});

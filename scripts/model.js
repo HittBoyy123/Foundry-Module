@@ -24,6 +24,7 @@ const MODIFIER_TYPES = new Set([
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ITEM_TYPE_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/;
 const RARITIES = new Set(["common", "uncommon", "rare", "unique"]);
+const RARITY_RANKS = Object.freeze({ common: 0, uncommon: 1, rare: 2, unique: 3 });
 const MIN_VALUE = -100;
 const MAX_VALUE = 100;
 const MAX_PRICE_GP = 1_000_000_000;
@@ -158,6 +159,40 @@ function normalizeItemTypes(value, path) {
     }
     return normalized;
   }))];
+}
+
+function normalizeMaterialIds(value, path) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new ConfigValidationError(`${path} must contain at least one material id.`);
+  }
+  return [...new Set(value.map((materialId, index) => {
+    const normalized = nonBlankString(materialId, `${path}[${index}]`).toLowerCase();
+    if (!SLUG_PATTERN.test(normalized)) {
+      throw new ConfigValidationError(`${path}[${index}] must be a lowercase material slug.`);
+    }
+    return normalized;
+  }))];
+}
+
+function normalizeDragonScaleColors(value, path) {
+  if (!isPlainObject(value) || Object.keys(value).length === 0) {
+    throw new ConfigValidationError(`${path} must contain at least one dragon color.`);
+  }
+  const colors = {};
+  for (const [colorId, color] of Object.entries(value)) {
+    if (!SLUG_PATTERN.test(colorId) || !isPlainObject(color)) {
+      throw new ConfigValidationError(`${path}.${colorId} must be a dragon-color definition with a slug id.`);
+    }
+    const damageType = nonBlankString(color.damageType, `${path}.${colorId}.damageType`).toLowerCase();
+    if (!SLUG_PATTERN.test(damageType)) {
+      throw new ConfigValidationError(`${path}.${colorId}.damageType must be a lowercase PF2e damage-type slug.`);
+    }
+    colors[colorId] = {
+      label: nonBlankString(color.label, `${path}.${colorId}.label`),
+      damageType,
+    };
+  }
+  return colors;
 }
 
 function tierMapMatches(source, expected) {
@@ -397,13 +432,17 @@ export function normalizeRulesConfig(input) {
     }
     const originalItemTypes = normalizeItemTypes(material.itemTypes, `materials.${materialId}.itemTypes`);
     const defaultMaterial = DEFAULT_RULES_CONFIG.materials[materialId];
-    const itemTypes = sourceSchemaVersion < 4 && defaultMaterial
+    const isLegacyDragonScale = materialId === "dragon-scale" && sourceSchemaVersion < 8;
+    const augmentation = material.augmentation === true || isLegacyDragonScale;
+    const itemTypes = augmentation
+      ? ["armor"]
+      : sourceSchemaVersion < 4 && defaultMaterial
       ? [...new Set([...originalItemTypes, "armor"])]
       : originalItemTypes;
     if (!Array.isArray(material.effects)) {
       throw new ConfigValidationError(`materials.${materialId}.effects must be an array.`);
     }
-    const effectSources = material.effects.map((effect) => (
+    const effectSources = (augmentation ? [] : material.effects).map((effect) => (
       sourceSchemaVersion < 4 && isPlainObject(effect) && effect.itemTypes === undefined
         ? { ...effect, itemTypes: originalItemTypes }
         : effect
@@ -415,7 +454,7 @@ export function normalizeRulesConfig(input) {
       )
     ));
     const defaultArmorEffect = defaultMaterial?.effects.find((effect) => effect.id === "armor-ac");
-    if (sourceSchemaVersion < 4 && defaultArmorEffect && !hasArmorEffect) {
+    if (!augmentation && sourceSchemaVersion < 4 && defaultArmorEffect && !hasArmorEffect) {
       effectSources.push(copyJson(defaultArmorEffect));
     }
     const effects = effectSources.map((effect, index) =>
@@ -447,10 +486,13 @@ export function normalizeRulesConfig(input) {
         `materials.${materialId}.tierRarities`,
         { partial: true },
       );
-    const tierBonusOverrides = material.tierBonuses === undefined
+    const tierBonusSource = augmentation
+      ? material.tierBonuses ?? defaultMaterial?.tierBonuses
+      : material.tierBonuses;
+    const tierBonusOverrides = tierBonusSource === undefined
       ? {}
       : normalizeTierBonuses(
-        material.tierBonuses,
+        tierBonusSource,
         `materials.${materialId}.tierBonuses`,
         { partial: true },
       );
@@ -458,7 +500,7 @@ export function normalizeRulesConfig(input) {
     const migratedLabel = sourceSchemaVersion < 3 && material.label === legacyLabel
       ? defaultMaterial?.label
       : material.label;
-    materials[materialId] = {
+    const normalizedMaterial = {
       label: nonBlankString(migratedLabel ?? materialId, `materials.${materialId}.label`),
       enabled: material.enabled !== false,
       itemTypes,
@@ -468,6 +510,18 @@ export function normalizeRulesConfig(input) {
       ...(Object.keys(tierPriceOverrides).length > 0 ? { tierPricesGp: tierPriceOverrides } : {}),
       ...(Object.keys(tierRarityOverrides).length > 0 ? { tierRarities: tierRarityOverrides } : {}),
     };
+    if (augmentation) {
+      normalizedMaterial.augmentation = true;
+      normalizedMaterial.allowedBaseMaterials = normalizeMaterialIds(
+        material.allowedBaseMaterials ?? defaultMaterial?.allowedBaseMaterials,
+        `materials.${materialId}.allowedBaseMaterials`,
+      );
+      normalizedMaterial.colors = normalizeDragonScaleColors(
+        material.colors ?? defaultMaterial?.colors,
+        `materials.${materialId}.colors`,
+      );
+    }
+    materials[materialId] = normalizedMaterial;
   }
 
   return {
@@ -490,17 +544,29 @@ export function normalizeItemFlags(input, config = null) {
   const material = typeof source.material === "string" && source.material.trim()
     ? source.material.trim()
     : DEFAULT_ITEM_FLAGS.material;
+  const dragonScaleSource = isPlainObject(source.dragonScale) ? source.dragonScale : {};
+  const dragonScaleTierNumber = Number(dragonScaleSource.tier ?? DEFAULT_ITEM_FLAGS.dragonScale.tier);
+  const dragonScaleTier = Number.isInteger(dragonScaleTierNumber)
+    ? Math.min(6, Math.max(1, dragonScaleTierNumber))
+    : DEFAULT_ITEM_FLAGS.dragonScale.tier;
+  const dragonScaleColor = typeof dragonScaleSource.color === "string"
+    ? dragonScaleSource.color.trim().toLowerCase()
+    : DEFAULT_ITEM_FLAGS.dragonScale.color;
   return {
     schemaVersion: ITEM_SCHEMA_VERSION,
     material,
     tier,
+    dragonScale: {
+      color: dragonScaleColor,
+      tier: dragonScaleTier,
+    },
   };
 }
 
 export function materialsForItemType(config, itemType) {
   if (config.crafting?.enabled === false) return [];
   return Object.entries(config.materials)
-    .filter(([, material]) => material.enabled && material.itemTypes.includes(itemType))
+    .filter(([, material]) => !material.augmentation && material.enabled && material.itemTypes.includes(itemType))
     .map(([id, material]) => ({ id, label: material.label }));
 }
 
@@ -554,6 +620,10 @@ function slugify(value) {
     .slice(0, 64) || "material-bonus";
 }
 
+function higherRarity(first, second) {
+  return (RARITY_RANKS[second] ?? -1) > (RARITY_RANKS[first] ?? -1) ? second : first;
+}
+
 export function calculateItemEffects({ itemType, itemId, itemName, flags, config }) {
   const configured = isPlainObject(flags) && (typeof flags.material === "string" || flags.tier !== undefined);
   const normalizedFlags = normalizeItemFlags(flags, config);
@@ -565,9 +635,21 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
   const inactive = config.crafting?.enabled === false
     || !configured
     || !material?.enabled
+    || material?.augmentation
     || !material?.itemTypes.includes(itemType);
   if (inactive) {
-    return { active: false, flags: normalizedFlags, material, tierBonus, presentation, previews: [], rules: [] };
+    return {
+      active: false,
+      flags: normalizedFlags,
+      material,
+      tierBonus,
+      presentation,
+      dragonScale: null,
+      effectiveRarity: presentation.rarity,
+      priceGp: presentation.priceGp,
+      previews: [],
+      rules: [],
+    };
   }
 
   const previews = material.effects
@@ -606,5 +688,56 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
       return rule;
     });
 
-  return { active: true, flags: normalizedFlags, material, tierBonus, presentation, previews, rules };
+  const dragonMaterial = config.materials["dragon-scale"];
+  const dragonSelection = normalizedFlags.dragonScale;
+  const dragonColor = dragonMaterial?.colors?.[dragonSelection.color];
+  const dragonEligible = itemType === "armor"
+    && dragonMaterial?.augmentation === true
+    && dragonMaterial.enabled
+    && dragonMaterial.allowedBaseMaterials.includes(normalizedFlags.material)
+    && dragonColor;
+  let dragonScale = null;
+  if (dragonEligible) {
+    const dragonPresentation = getTierPresentation(config, "dragon-scale", dragonSelection.tier);
+    const resistance = dragonMaterial.tierBonuses?.[dragonSelection.tier] ?? 0;
+    const name = `${dragonPresentation.label} ${dragonColor.label} Dragon Scale`;
+    dragonScale = {
+      colorId: dragonSelection.color,
+      colorLabel: dragonColor.label,
+      damageType: dragonColor.damageType,
+      tier: dragonSelection.tier,
+      resistance,
+      name,
+      presentation: dragonPresentation,
+    };
+    previews.push({
+      id: "dragon-scale-resistance",
+      kind: "resistance",
+      label: `${name} (${dragonColor.damageType} resistance)`,
+      value: resistance,
+      damageType: dragonColor.damageType,
+    });
+    if (resistance > 0) {
+      rules.push({
+        key: "Resistance",
+        type: dragonColor.damageType,
+        value: resistance,
+      });
+    }
+  }
+
+  return {
+    active: true,
+    flags: normalizedFlags,
+    material,
+    tierBonus,
+    presentation,
+    dragonScale,
+    effectiveRarity: dragonScale
+      ? higherRarity(presentation.rarity, dragonScale.presentation.rarity)
+      : presentation.rarity,
+    priceGp: presentation.priceGp + (dragonScale?.presentation.priceGp ?? 0),
+    previews,
+    rules,
+  };
 }

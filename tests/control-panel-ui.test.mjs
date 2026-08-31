@@ -5,9 +5,11 @@ import test from "node:test";
 const readSource = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 test("control panel exposes only friendly settings actions", async () => {
-  const [application, template] = await Promise.all([
+  const [application, template, materialTemplate, itemSheet] = await Promise.all([
     readSource("../scripts/config-app.js"),
     readSource("../templates/rules-config.hbs"),
+    readSource("../templates/material-config.hbs"),
+    readSource("../scripts/item-sheet.js"),
   ]);
 
   assert.doesNotMatch(application, /AdvancedRulesConfig|openAdvanced|data-action=["']advanced/);
@@ -15,6 +17,10 @@ test("control panel exposes only friendly settings actions", async () => {
   assert.match(template, /data-action="editMaterial"/);
   assert.match(template, /data-action="reset"/);
   assert.match(template, /name="hexploration\.enabled"/);
+  assert.match(materialTemplate, /name="material\.modifierType"/);
+  assert.match(materialTemplate, /name="dragonColors\.\{\{id\}\}\.damageType"/);
+  assert.match(itemSheet, /data-cmt-field="dragon-scale-color"/);
+  assert.match(itemSheet, /data-cmt-field="dragon-scale-tier"/);
 });
 
 test("control panel uses opaque PF2e-inspired surfaces", async () => {

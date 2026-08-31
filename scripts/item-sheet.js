@@ -68,6 +68,32 @@ function populateTierOptions(control, materialId, selectedTier, config) {
   }
 }
 
+function dragonScaleConfig(config) {
+  const material = config.materials?.["dragon-scale"];
+  return material?.augmentation === true && material.enabled ? material : null;
+}
+
+function dragonScaleIsAvailable(config, itemType, materialId) {
+  const dragonScale = dragonScaleConfig(config);
+  return itemType === "armor" && Boolean(dragonScale?.allowedBaseMaterials.includes(materialId));
+}
+
+function populateDragonScaleColors(control, selectedColor, config) {
+  const dragonScale = dragonScaleConfig(config);
+  control.replaceChildren(option("", localize("CMT.ItemSheet.NoDragonScale", "None"), selectedColor));
+  if (!dragonScale) return;
+  if (selectedColor && !dragonScale.colors[selectedColor]) {
+    control.append(option(
+      selectedColor,
+      `${localize("CMT.ItemSheet.Unavailable", "Unavailable material")} (${selectedColor})`,
+      selectedColor,
+    ));
+  }
+  for (const [colorId, color] of Object.entries(dragonScale.colors)) {
+    control.append(option(colorId, `${color.label} — ${color.damageType}`, selectedColor));
+  }
+}
+
 function createNativeRow(anchor, labelText, control) {
   const tagName = ["DIV", "LI"].includes(anchor.tagName) ? anchor.tagName.toLowerCase() : "div";
   const row = document.createElement(tagName);
@@ -84,7 +110,16 @@ function createNativeRow(anchor, labelText, control) {
 async function saveSelection(item, root, config) {
   const material = root.querySelector('[data-cmt-field="material"]')?.value ?? DEFAULT_ITEM_FLAGS.material;
   const tier = Number(root.querySelector('[data-cmt-field="tier"]')?.value ?? 1);
-  const flags = normalizeItemFlags({ material, tier }, config);
+  const current = normalizeItemFlags(item.getFlag?.(MODULE_ID) ?? item.flags?.[MODULE_ID], config);
+  const dragonColor = root.querySelector('[data-cmt-field="dragon-scale-color"]')?.value;
+  const dragonTier = root.querySelector('[data-cmt-field="dragon-scale-tier"]')?.value;
+  const flags = normalizeItemFlags({
+    material,
+    tier,
+    dragonScale: dragonColor === undefined
+      ? current.dragonScale
+      : { color: dragonColor, tier: Number(dragonTier ?? current.dragonScale.tier) },
+  }, config);
   const controls = root.querySelectorAll("[data-cmt-field]");
   controls.forEach((control) => { control.disabled = true; });
   try {
@@ -135,13 +170,59 @@ function insertControls(application, item, root, config) {
   const materialRow = createNativeRow(anchor, localize("CMT.ItemSheet.Material", "Material"), material);
   materialRow.dataset.cmtSheetControls = "true";
   const tierRow = createNativeRow(anchor, localize("CMT.ItemSheet.Tier", "Tier"), tier);
+  const rows = [materialRow, tierRow];
 
-  anchor.after(materialRow, tierRow);
+  let dragonColor = null;
+  let dragonTier = null;
+  let dragonColorRow = null;
+  let dragonTierRow = null;
+  if (item.type === "armor" && dragonScaleConfig(config)) {
+    dragonColor = document.createElement("select");
+    dragonColor.id = `${application.id ?? item.id}-cmt-dragon-scale`;
+    dragonColor.dataset.cmtField = "dragon-scale-color";
+    matchNativeSelect(dragonColor, referenceSelect);
+    populateDragonScaleColors(dragonColor, flags.dragonScale.color, config);
+
+    dragonTier = document.createElement("select");
+    dragonTier.id = `${application.id ?? item.id}-cmt-dragon-scale-tier`;
+    dragonTier.dataset.cmtField = "dragon-scale-tier";
+    matchNativeSelect(dragonTier, referenceSelect);
+    populateTierOptions(dragonTier, "dragon-scale", flags.dragonScale.tier, config);
+
+    dragonColorRow = createNativeRow(
+      anchor,
+      localize("CMT.ItemSheet.DragonScale", "Dragon Scale"),
+      dragonColor,
+    );
+    dragonTierRow = createNativeRow(
+      anchor,
+      localize("CMT.ItemSheet.DragonScaleTier", "Scale Tier"),
+      dragonTier,
+    );
+    rows.push(dragonColorRow, dragonTierRow);
+  }
+
+  anchor.after(...rows);
+  const updateDragonScaleControls = () => {
+    if (!dragonColor || !dragonTier) return;
+    const available = dragonScaleIsAvailable(config, item.type, material.value);
+    dragonColorRow.hidden = !available;
+    dragonTierRow.hidden = !available;
+    dragonColor.disabled = !editable || !available;
+    dragonTier.disabled = !editable || !available || !dragonColor.value;
+  };
+  updateDragonScaleControls();
   material.addEventListener("change", () => {
     populateTierOptions(tier, material.value, Number(tier.value), config);
+    updateDragonScaleControls();
     void saveSelection(item, root, config);
   });
   tier.addEventListener("change", () => void saveSelection(item, root, config));
+  dragonColor?.addEventListener("change", () => {
+    updateDragonScaleControls();
+    void saveSelection(item, root, config);
+  });
+  dragonTier?.addEventListener("change", () => void saveSelection(item, root, config));
 }
 
 export function injectItemSheet(application, html, getConfig) {

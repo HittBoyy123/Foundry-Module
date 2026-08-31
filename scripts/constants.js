@@ -1,13 +1,17 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 7;
-export const ITEM_SCHEMA_VERSION = 2;
+export const RULES_SCHEMA_VERSION = 8;
+export const ITEM_SCHEMA_VERSION = 3;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
 export const DEFAULT_ITEM_FLAGS = Object.freeze({
   schemaVersion: ITEM_SCHEMA_VERSION,
   material: "metal",
   tier: 1,
+  dragonScale: Object.freeze({
+    color: "",
+    tier: 1,
+  }),
 });
 
 const defaultWeaponEffect = () => ({
@@ -115,6 +119,23 @@ const WOOD_TIER_LABELS = Object.freeze({
   6: "Godwood",
 });
 
+const DRAGON_SCALE_RESISTANCE_VALUES = Object.freeze({
+  1: 0,
+  2: 0,
+  3: 0,
+  4: 0,
+  5: 0,
+  6: 0,
+});
+
+const DRAGON_SCALE_COLORS = Object.freeze({
+  black: Object.freeze({ label: "Black", damageType: "acid" }),
+  blue: Object.freeze({ label: "Blue", damageType: "electricity" }),
+  green: Object.freeze({ label: "Green", damageType: "poison" }),
+  red: Object.freeze({ label: "Red", damageType: "fire" }),
+  white: Object.freeze({ label: "White", damageType: "cold" }),
+});
+
 export const DEFAULT_RULES_CONFIG = Object.freeze({
   schemaVersion: RULES_SCHEMA_VERSION,
   crafting: Object.freeze({
@@ -169,8 +190,12 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     "dragon-scale": Object.freeze({
       label: "Dragon Scales",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
-      effects: defaultEffects(),
+      augmentation: true,
+      itemTypes: Object.freeze(["armor"]),
+      allowedBaseMaterials: Object.freeze(["metal", "leather"]),
+      effects: Object.freeze([]),
+      colors: DRAGON_SCALE_COLORS,
+      tierBonuses: DRAGON_SCALE_RESISTANCE_VALUES,
       tierLabels: DEFAULT_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
