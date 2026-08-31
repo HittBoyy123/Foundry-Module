@@ -43,9 +43,12 @@ test("every custom item is valid worn Apex equipment with Item Boost tracking", 
     assert.equal(item.system.traits.value.includes("invested"), true);
     assert.equal(item.system.traits.value.includes("magical"), true);
     assert.equal(item.system.traits.otherTags.includes("item-boost"), true);
+    assert.equal(boost.schemaVersion, 2);
+    assert.equal(boost.active, false);
     assert.match(item.system.usage.value, /^worn/);
     assert.notEqual(item.system.usage.value, "wornshoes");
     assert.match(item.system.description.value, new RegExp(`Item Boost \\+${boost.value}`));
+    assert.match(item.system.description.value, /different attributes can be active together/);
     assert.deepEqual(item.system.price.value, {});
 
     const imagePath = path.join(projectRoot, item.img.replace(`modules/${MODULE_ID}/`, ""));
@@ -71,4 +74,10 @@ test("the generated NeDB pack matches its human-readable catalog", async () => {
       ASSISTANT: "OWNER",
     },
   });
+  assert.deepEqual(manifest.packFolders, [{
+    name: "Pathfinder 2E Wrathmaker",
+    sorting: "m",
+    color: "#5E0000",
+    packs: ["apex-items", "crafting-items"],
+  }]);
 });

@@ -1,6 +1,6 @@
 # Wrathmaker
 
-A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapons, armor, and crafted spell focuses, a collection of custom Apex ability-boost items, Wrathmaker's escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel to the PF2e party sheet. A GM-facing control panel manages the configurable systems during play.
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapons, armor, and crafted spell focuses, custom Apex ability-boost items, campaign Hero and Nephilim Points, escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel. A GM-facing control panel manages the configurable systems during play.
 
 ## Compatibility
 
@@ -8,6 +8,7 @@ A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and 
 - Pathfinder Second Edition 7.1 or newer
 - Material-tier item support: weapons, armor, and held spell focuses
 - Thirty worn Apex ability items with exact +1 through +5 modifier increases
+- Persistent Hero Points up to 10 and party-level Nephilim Points up to 10
 - Automatic token-based custom flanking
 - Party-sheet Hexploration, vehicles, haulers, riders, daily assignments, progress tracking, and travel-feat checks
 - In-game world settings and per-material tier editors
@@ -33,7 +34,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.9.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.10.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -41,9 +42,21 @@ The GM settings panel is under **Configure Settings → Module Settings → Wrat
 
 The **Wrathmaker Apex Ability Items** compendium contains 30 original worn equipment items: five each for Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma. Their Item Boost values range from +1 to +5. Belts represent Strength, rings Dexterity, amulets Constitution, circlets Intelligence, sashes Wisdom, and brooches Charisma; none of the collection uses armor, weapons, or boots.
 
-Every item carries PF2e's **Apex**, **Invested**, and **Magical** traits and the `item-boost` other tag. PF2e continues to manage investment and which single Apex item is selected. When a Wrathmaker item is invested, selected, and worn, the module replaces the standard Apex adjustment for that item with its exact additive ability-modifier value. Removing, dropping, uninvesting, or deselecting it removes the benefit during the next normal actor preparation.
+Every item carries PF2e's **Apex**, **Invested**, and **Magical** traits and the `item-boost` other tag. Once a Wrathmaker item is invested and worn, the character sheet shows PF2e's familiar circled **A** beside its attribute. Click each **A** independently to activate Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma items together. A filled **A** is active and an outlined **A** is available.
+
+Wrathmaker applies the exact additive modifier from the active item. Different attributes stack; if several active items affect the same attribute, only the strongest one applies. Dropping or uninvesting an item suspends its bonus until it is worn and invested again. Existing v0.8/v0.9 items retain their previous selected state until their **A** is first toggled.
 
 The collection uses five progressive item levels—1, 5, 9, 13, and 17—but deliberately has no purchase prices so the GM can award and value these campaign-specific items as needed.
+
+## Campaign points
+
+Character Hero Points use PF2e's normal header control with a maximum of **10** instead of 3. Their value is stored on the character normally and Wrathmaker does not perform a session reset, so unspent Hero Points carry into later sessions.
+
+Every PF2e party sheet also displays **Nephilim Points** in its native green header. The tracker has 10 pips, persists on that party actor, and can be set from 0 through 10 by a user who can edit the party. Clicking an empty pip sets the total to that value; clicking the highest filled pip removes one, and right-clicking the tracker also removes one.
+
+## Compendium organization
+
+Foundry groups every module compendium under **Pathfinder 2E Wrathmaker** in the Compendium Packs sidebar. The folder currently contains the Apex Ability Items and Crafting Items packs and is the parent for future Wrathmaker packs.
 
 ## In-game control panel
 
@@ -64,20 +77,29 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.9.0`.
+3. Create and push a matching tag such as `v0.10.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
 ## Default rules
 
-| Tier | Metal | Wood | Other materials | Attack / focus | Weapon damage | Added price | PF2e rarity |
-| ---: | --- | --- | --- | ---: | ---: | ---: | --- |
-| 1 | Iron | Softwood | Common | +0 | +0 | 0 gp | Common |
-| 2 | Steel | Hardwood | Uncommon | +1 | +2 | 10 gp | Uncommon |
-| 3 | Cold Iron | Blackwood | Rare | +2 | +4 | 25 gp | Rare |
-| 4 | Mithril | Darkmoon | Epic | +3 | +6 | 100 gp | Unique |
-| 5 | Adamantium | Starwood | Legendary | +4 | +8 | 1,000 gp | Unique |
-| 6 | Dark Iron | Godwood | Mythical | +5 | +10 | 5,000 gp | Unique |
+| Tier | Attack / focus | Weapon damage | Added price | PF2e rarity |
+| ---: | ---: | ---: | ---: | --- |
+| 1 | +0 | +0 | 0 gp | Common |
+| 2 | +1 | +2 | 10 gp | Uncommon |
+| 3 | +2 | +4 | 25 gp | Rare |
+| 4 | +3 | +6 | 100 gp | Unique |
+| 5 | +4 | +8 | 1,000 gp | Unique |
+| 6 | +5 | +10 | 5,000 gp | Unique |
+
+| Tier | Metal | Wood | Stone | Leather / Hide | Herbs / Mushrooms | Mana Crystals |
+| ---: | --- | --- | --- | --- | --- | --- |
+| 1 | Iron | Softwood | Fieldstone | Rawhide | Greenleaf | Faint Mana Crystal |
+| 2 | Steel | Hardwood | Granite | Hardened Leather | Embercap | Charged Mana Crystal |
+| 3 | Cold Iron | Blackwood | Obsidian | Ironhide | Ghostmoss | Resonant Mana Crystal |
+| 4 | Mithril | Darkmoon | Runestone | Moonhide | Moonbloom | Arcane Prism |
+| 5 | Adamantium | Starwood | Celestite | Titanhide | Starspore | Astral Crystal |
+| 6 | Dark Iron | Godwood | Worldstone | Primordial Hide | Worldroot | Aetherheart Crystal |
 
 Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as base materials for weapons and armor. A crafted weapon adds the tier bonus to its own attack rolls and twice the tier bonus to its own damage rolls. Armor adds the tier bonus only to AC and only while equipped. The default bonus type is **untyped**, and the GM can change it to item, status, or circumstance in the material editor without changing the module code.
 
@@ -182,6 +204,8 @@ The module never persists changes to the item's source `name`, `system.price`, `
 Disabling or uninstalling the module leaves inert flags on previously configured items. All PF2e item and rune data remains intact.
 
 Party travel plans are likewise stored only under `flags.pf2e-crafting-material-tiers.hexploration` on the party actor. Assignments, Used states, Express Rider results, affected traveller ids, and manual travel effects live in that versioned flag. Vehicle, creature, and character actors are referenced by id and are never modified. Wrathmaker creates travel-organizing Actor folders but does not move existing Actors into them.
+
+Nephilim Points are stored under `flags.pf2e-crafting-material-tiers.nephilimPoints` on the party actor. Hero Point values remain in PF2e's native `system.resources.heroPoints.value`; Wrathmaker changes only the prepared maximum to 10 and does not reset the stored value.
 
 Version 1 item flags are read automatically. The former per-item enable and override values are ignored, leaving Material and Tier as the only item-level choices.
 
@@ -303,10 +327,12 @@ Available methods:
 - `registerMaterial(id, definition)`
 - `getItemData(item)` / `calculateItem(item)` / `updateItem(item, changes)`
 - `getHexplorationPlan(party)` / `calculateHexploration(party)` / `updateHexplorationPlan(party, changes)`
+- `getNephilimPoints(party)` / `updateNephilimPoints(party, value)`
+- `heroPointsMax`, `nephilimPointsMax`, and `nephilimPointsSchemaVersion` report the campaign resource limits and schema.
 - `hexplorationPlanSchemaVersion` reports the current saved party-plan schema.
 
 The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry is ready.
 
 ## Current scope
 
-Wrathmaker currently automates crafting-material modifiers for weapons, armor, and spell focuses, tier-based names/prices/rarity, custom Apex ability items, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.
+Wrathmaker currently automates crafting-material modifiers for weapons, armor, and spell focuses, tier-based names/prices/rarity, custom Apex ability items, campaign point tracking, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.

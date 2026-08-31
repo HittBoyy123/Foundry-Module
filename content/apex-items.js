@@ -133,8 +133,8 @@ export const APEX_ITEM_FAMILIES = Object.freeze([
 function createDescription(family, bonus, flavor) {
   return [
     `<p>${flavor}</p>`,
-    `<p><strong>Wrathmaker Item Boost +${bonus}:</strong> While this Apex item is invested, selected, and worn, increase your ${family.ability} modifier by ${bonus}. Wrathmaker applies this value in place of PF2e's standard Apex adjustment for this item.</p>`,
-    "<p>Only one Apex item can be selected at a time.</p>",
+    `<p><strong>Wrathmaker Item Boost +${bonus}:</strong> While this Apex item is invested, active, and worn, increase your ${family.ability} modifier by ${bonus}. Wrathmaker applies this as an exact additive increase.</p>`,
+    "<p>Use the A beside this attribute on the character sheet to activate it. Wrathmaker Apex items for different attributes can be active together; only the strongest active item for the same attribute applies.</p>",
   ].join("\n");
 }
 
@@ -174,9 +174,10 @@ export function createApexItemSources() {
       flags: {
         [MODULE_ID]: {
           abilityBoost: {
-            schemaVersion: 1,
+            schemaVersion: 2,
             attribute: family.attribute,
             value: bonus,
+            active: false,
           },
         },
       },

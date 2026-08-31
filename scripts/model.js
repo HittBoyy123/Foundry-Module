@@ -29,6 +29,7 @@ const RARITY_RANKS = Object.freeze({ common: 0, uncommon: 1, rare: 2, unique: 3 
 const MIN_VALUE = -100;
 const MAX_VALUE = 100;
 const MAX_PRICE_GP = 1_000_000_000;
+const MATERIALS_WITH_RENAMED_TIERS = new Set(["stone", "leather", "herbs", "mana-crystals"]);
 const LEGACY_TIER_LABELS = Object.freeze({
   1: "Tier 1",
   2: "Tier 2",
@@ -484,8 +485,22 @@ export function normalizeRulesConfig(input) {
     const usesLegacyDragonScaleTierLabels = materialId === "dragon-scale"
       && sourceSchemaVersion < 9
       && (material.tierLabels === undefined || tierMapMatches(material.tierLabels, DEFAULT_TIER_LABELS));
+    const usesGenericMaterialTierLabels = sourceSchemaVersion < 11
+      && MATERIALS_WITH_RENAMED_TIERS.has(materialId)
+      && defaultMaterial?.tierLabels;
+    const renamedMaterialTierLabels = usesGenericMaterialTierLabels
+      ? Object.fromEntries([1, 2, 3, 4, 5, 6].map((tier) => {
+        const existing = material.tierLabels?.[tier];
+        const label = existing === undefined || existing === DEFAULT_TIER_LABELS[tier]
+          ? defaultMaterial.tierLabels[tier]
+          : existing;
+        return [tier, label];
+      }))
+      : undefined;
     const migratedTierLabels = usesLegacyDragonScaleTierLabels
       ? defaultMaterial?.tierLabels ?? DRAGON_SCALE_TIER_LABELS
+      : renamedMaterialTierLabels
+        ? renamedMaterialTierLabels
       : sourceSchemaVersion < 3 && material.tierLabels === undefined
         ? defaultMaterial?.tierLabels
         : undefined;

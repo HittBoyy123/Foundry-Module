@@ -1,5 +1,15 @@
 {
   "CMT": {
+    "Apex": {
+      "ActiveHint": "Active: {item} (Item Boost +{bonus}). Click to deactivate.",
+      "InactiveHint": "Available: {item} (Item Boost +{bonus}). Click to activate.",
+      "UpdateFailed": "The active Apex item could not be changed."
+    },
+    "Resources": {
+      "NephilimPoints": "Nephilim Points",
+      "SetNephilimPoints": "Set Nephilim Points to {value} of {max}",
+      "NephilimUpdateFailed": "Nephilim Points could not be updated."
+    },
     "ItemSheet": {
       "Material": "Material",
       "Tier": "Tier",

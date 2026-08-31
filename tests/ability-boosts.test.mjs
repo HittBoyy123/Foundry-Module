@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  abilityBoostIsActive,
   applyAbilityBoost,
+  buildAbilityBoostSelectionUpdates,
   getActiveAbilityBoost,
+  getActiveAbilityBoosts,
   getItemAbilityBoost,
   installAbilityBoostBridge,
   normalizeAbilityBoost,
@@ -11,14 +14,22 @@ import {
 
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
-function createItem({ attribute = "str", value = 2, selected = true, invested = true, equipped = true } = {}) {
+function createItem({
+  id = "item-1",
+  attribute = "str",
+  value = 2,
+  active = true,
+  selected = false,
+  invested = true,
+  equipped = true,
+  legacy = false,
+} = {}) {
+  const abilityBoost = { schemaVersion: legacy ? 1 : 2, attribute, value };
+  if (!legacy) abilityBoost.active = active;
   return {
+    id,
     type: "equipment",
-    flags: {
-      [MODULE_ID]: {
-        abilityBoost: { schemaVersion: 1, attribute, value },
-      },
-    },
+    flags: { [MODULE_ID]: { abilityBoost } },
     system: {
       apex: { attribute, selected },
       equipped: { carryType: equipped ? "worn" : "carried", invested },
@@ -32,29 +43,35 @@ function createItem({ attribute = "str", value = 2, selected = true, invested = 
   };
 }
 
-function createActor(item, { attribute = "str", mod = 2 } = {}) {
+function createActor(items, modifiers = {}) {
+  const contents = Array.isArray(items) ? items : [items];
   return {
     type: "character",
-    inventory: { contents: [item] },
+    inventory: { contents },
     system: {
-      abilities: {
-        str: { mod: attribute === "str" ? mod : 0, base: attribute === "str" ? mod : 0 },
-        dex: { mod: attribute === "dex" ? mod : 0, base: attribute === "dex" ? mod : 0 },
-        con: { mod: attribute === "con" ? mod : 0, base: attribute === "con" ? mod : 0 },
-        int: { mod: attribute === "int" ? mod : 0, base: attribute === "int" ? mod : 0 },
-        wis: { mod: attribute === "wis" ? mod : 0, base: attribute === "wis" ? mod : 0 },
-        cha: { mod: attribute === "cha" ? mod : 0, base: attribute === "cha" ? mod : 0 },
-      },
-      build: { attributes: { apex: attribute } },
+      abilities: Object.fromEntries(
+        ["str", "dex", "con", "int", "wis", "cha"].map((attribute) => {
+          const mod = modifiers[attribute] ?? 0;
+          return [attribute, { mod, base: mod }];
+        }),
+      ),
+      build: { attributes: { apex: null } },
     },
   };
 }
 
 test("ability boosts accept only the six attributes and values from 1 through 5", () => {
-  assert.deepEqual(normalizeAbilityBoost({ attribute: "STR", value: "5" }), {
-    schemaVersion: 1,
+  assert.deepEqual(normalizeAbilityBoost({ attribute: "STR", value: "5", active: true }), {
+    schemaVersion: 2,
     attribute: "str",
     value: 5,
+    active: true,
+  });
+  assert.deepEqual(normalizeAbilityBoost({ attribute: "dex", value: 2 }), {
+    schemaVersion: 2,
+    attribute: "dex",
+    value: 2,
+    active: null,
   });
   assert.equal(normalizeAbilityBoost({ attribute: "luck", value: 2 }), null);
   assert.equal(normalizeAbilityBoost({ attribute: "dex", value: 0 }), null);
@@ -63,7 +80,12 @@ test("ability boosts accept only the six attributes and values from 1 through 5"
 
 test("only tagged Apex equipment is recognized as a Wrathmaker item boost", () => {
   const item = createItem();
-  assert.deepEqual(getItemAbilityBoost(item), { schemaVersion: 1, attribute: "str", value: 2 });
+  assert.deepEqual(getItemAbilityBoost(item), {
+    schemaVersion: 2,
+    attribute: "str",
+    value: 2,
+    active: true,
+  });
 
   item.system.traits.otherTags = [];
   assert.equal(getItemAbilityBoost(item), null);
@@ -72,20 +94,57 @@ test("only tagged Apex equipment is recognized as a Wrathmaker item boost", () =
   assert.equal(getItemAbilityBoost(item), null);
 });
 
-test("an item boost must be invested, selected, and worn", () => {
+test("an active item boost must be invested and worn", () => {
   assert.equal(getActiveAbilityBoost(createActor(createItem({ invested: false }))), null);
-  assert.equal(getActiveAbilityBoost(createActor(createItem({ selected: false }))), null);
+  assert.equal(getActiveAbilityBoost(createActor(createItem({ active: false, selected: true }))), null);
   assert.equal(getActiveAbilityBoost(createActor(createItem({ equipped: false }))), null);
 
   const item = createItem({ attribute: "wis", value: 4 });
-  const active = getActiveAbilityBoost(createActor(item, { attribute: "wis" }));
+  const active = getActiveAbilityBoost(createActor(item));
   assert.equal(active.attribute, "wis");
   assert.equal(active.value, 4);
   assert.equal(active.item, item);
 });
 
+test("legacy items inherit PF2e's selected state until they are first toggled", () => {
+  const selected = createItem({ legacy: true, selected: true });
+  const unselected = createItem({ id: "item-2", legacy: true, selected: false });
+  assert.equal(abilityBoostIsActive(selected), true);
+  assert.equal(abilityBoostIsActive(unselected), false);
+});
+
+test("different attributes stack while only the strongest item for one attribute applies", () => {
+  const weakStrength = createItem({ id: "str-1", attribute: "str", value: 1 });
+  const strongStrength = createItem({ id: "str-4", attribute: "str", value: 4 });
+  const constitution = createItem({ id: "con-3", attribute: "con", value: 3 });
+  const boosts = getActiveAbilityBoosts(createActor([weakStrength, strongStrength, constitution]));
+
+  assert.deepEqual(boosts.map(({ attribute, value }) => ({ attribute, value })), [
+    { attribute: "str", value: 4 },
+    { attribute: "con", value: 3 },
+  ]);
+});
+
+test("attribute marker updates do not deactivate a different attribute", () => {
+  const strength1 = createItem({ id: "str-1", attribute: "str", value: 1, active: false });
+  const strength4 = createItem({ id: "str-4", attribute: "str", value: 4, active: false });
+  const constitution = createItem({ id: "con-3", attribute: "con", value: 3, active: true });
+  const actor = createActor([strength1, strength4, constitution]);
+
+  assert.deepEqual(buildAbilityBoostSelectionUpdates(actor, "str"), [{
+    _id: "str-4",
+    [`flags.${MODULE_ID}.abilityBoost.active`]: true,
+    [`flags.${MODULE_ID}.abilityBoost.schemaVersion`]: 2,
+  }]);
+  assert.deepEqual(buildAbilityBoostSelectionUpdates(actor, "con"), [{
+    _id: "con-3",
+    [`flags.${MODULE_ID}.abilityBoost.active`]: false,
+    [`flags.${MODULE_ID}.abilityBoost.schemaVersion`]: 2,
+  }]);
+});
+
 test("ability boosts are additive and respect PF2e's prepared modifier bounds", () => {
-  const actor = createActor(createItem({ attribute: "cha", value: 5 }), { attribute: "cha", mod: 3 });
+  const actor = createActor(createItem({ attribute: "cha", value: 5 }), { cha: 3 });
   assert.equal(applyAbilityBoost(actor, { attribute: "cha", value: 5 }), true);
   assert.equal(actor.system.abilities.cha.mod, 8);
   assert.equal(actor.system.abilities.cha.base, 8);
@@ -95,7 +154,7 @@ test("ability boosts are additive and respect PF2e's prepared modifier bounds", 
   assert.equal(actor.system.abilities.cha.mod, 10);
 });
 
-test("the bridge replaces PF2e's standard Apex adjustment for custom items", () => {
+test("the bridge applies multiple custom items and preserves ordinary PF2e Apex items", () => {
   const previousConfig = globalThis.CONFIG;
   class CharacterDocument {
     prepareBuildData() {
@@ -120,18 +179,18 @@ test("the bridge replaces PF2e's standard Apex adjustment for custom items", () 
     assert.equal(installAbilityBoostBridge(), true);
     assert.equal(installAbilityBoostBridge(), true);
 
-    const item = createItem({ attribute: "str", value: 2 });
-    const actor = Object.assign(new CharacterDocument(), createActor(item, { attribute: "str", mod: 2 }));
-    actor.system.build.attributes.apex = null;
+    const strength = createItem({ id: "str-2", attribute: "str", value: 2, selected: true });
+    const constitution = createItem({ id: "con-3", attribute: "con", value: 3 });
+    const actor = Object.assign(new CharacterDocument(), createActor([strength, constitution], { str: 2, con: 1 }));
     assert.equal(actor.prepareDataFromItems(), "prepared");
     assert.equal(actor.system.abilities.str.mod, 4);
+    assert.equal(actor.system.abilities.con.mod, 4);
     assert.equal(actor.system.build.attributes.apex, "str");
 
-    const ordinaryApex = createItem({ attribute: "dex", value: 2, invested: false });
-    const ordinaryActor = Object.assign(
-      new CharacterDocument(),
-      createActor(ordinaryApex, { attribute: "dex", mod: 1 }),
-    );
+    const ordinaryApex = createItem({ id: "ordinary", attribute: "dex", value: 2, selected: true });
+    delete ordinaryApex.flags[MODULE_ID];
+    ordinaryApex.system.traits.otherTags = [];
+    const ordinaryActor = Object.assign(new CharacterDocument(), createActor(ordinaryApex, { dex: 1 }));
     ordinaryActor.prepareDataFromItems();
     assert.equal(ordinaryActor.system.abilities.dex.mod, 4);
   } finally {

@@ -1,6 +1,6 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 10;
+export const RULES_SCHEMA_VERSION = 11;
 export const ITEM_SCHEMA_VERSION = 3;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -158,6 +158,42 @@ const WOOD_TIER_LABELS = Object.freeze({
   6: "Godwood",
 });
 
+const STONE_TIER_LABELS = Object.freeze({
+  1: "Fieldstone",
+  2: "Granite",
+  3: "Obsidian",
+  4: "Runestone",
+  5: "Celestite",
+  6: "Worldstone",
+});
+
+const LEATHER_TIER_LABELS = Object.freeze({
+  1: "Rawhide",
+  2: "Hardened Leather",
+  3: "Ironhide",
+  4: "Moonhide",
+  5: "Titanhide",
+  6: "Primordial Hide",
+});
+
+const HERB_TIER_LABELS = Object.freeze({
+  1: "Greenleaf",
+  2: "Embercap",
+  3: "Ghostmoss",
+  4: "Moonbloom",
+  5: "Starspore",
+  6: "Worldroot",
+});
+
+const MANA_CRYSTAL_TIER_LABELS = Object.freeze({
+  1: "Faint Mana Crystal",
+  2: "Charged Mana Crystal",
+  3: "Resonant Mana Crystal",
+  4: "Arcane Prism",
+  5: "Astral Crystal",
+  6: "Aetherheart Crystal",
+});
+
 const DRAGON_SCALE_RESISTANCE_VALUES = Object.freeze({
   1: 0,
   2: 0,
@@ -215,7 +251,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       enabled: true,
       itemTypes: Object.freeze(["weapon", "armor"]),
       effects: defaultEffects(),
-      tierLabels: DEFAULT_TIER_LABELS,
+      tierLabels: STONE_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     leather: Object.freeze({
@@ -223,7 +259,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       enabled: true,
       itemTypes: Object.freeze(["weapon", "armor"]),
       effects: defaultEffects(),
-      tierLabels: DEFAULT_TIER_LABELS,
+      tierLabels: LEATHER_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     "dragon-scale": Object.freeze({
@@ -243,7 +279,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       enabled: true,
       itemTypes: Object.freeze(["weapon", "armor"]),
       effects: defaultEffects(),
-      tierLabels: DEFAULT_TIER_LABELS,
+      tierLabels: HERB_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     "mana-crystals": Object.freeze({
@@ -251,7 +287,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       enabled: true,
       itemTypes: Object.freeze(["weapon", "armor"]),
       effects: defaultEffects(),
-      tierLabels: DEFAULT_TIER_LABELS,
+      tierLabels: MANA_CRYSTAL_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
   }),

@@ -5,6 +5,13 @@ import {
   RULES_SCHEMA_VERSION,
 } from "./constants.js";
 import { ABILITY_BOOST_SCHEMA_VERSION, getItemAbilityBoost } from "./ability-boosts.js";
+import {
+  HERO_POINTS_MAX,
+  NEPHILIM_POINTS_MAX,
+  NEPHILIM_POINTS_SCHEMA_VERSION,
+  getPartyNephilimPoints,
+  setPartyNephilimPoints,
+} from "./campaign-resources.js";
 import { getRulesConfig, resetRulesConfig, setRulesConfig } from "./config-store.js";
 import { calculateItemEffects, getCraftingItemType, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
 import { buildPartyTravelState } from "./hexploration.js";
@@ -30,6 +37,9 @@ export function createPublicApi() {
   return Object.freeze({
     moduleId: MODULE_ID,
     abilityBoostSchemaVersion: ABILITY_BOOST_SCHEMA_VERSION,
+    heroPointsMax: HERO_POINTS_MAX,
+    nephilimPointsMax: NEPHILIM_POINTS_MAX,
+    nephilimPointsSchemaVersion: NEPHILIM_POINTS_SCHEMA_VERSION,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
     hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
@@ -119,6 +129,16 @@ export function createPublicApi() {
       });
       await party.setFlag(MODULE_ID, "hexploration", next);
       return clone(next);
+    },
+
+    getNephilimPoints(party) {
+      requireParty(party);
+      return clone(getPartyNephilimPoints(party));
+    },
+
+    async updateNephilimPoints(party, value) {
+      requireParty(party);
+      return clone(await setPartyNephilimPoints(party, value));
     },
   });
 }

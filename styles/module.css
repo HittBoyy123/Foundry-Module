@@ -3,6 +3,70 @@
   min-width: 0;
 }
 
+.sheet.party form > header .details.cmt-has-nephilim-points {
+  grid:
+    "name type" 1fr
+    "name nephilim" auto
+    "name visibility" auto
+    / 1fr auto;
+}
+
+.sheet.party .cmt-nephilim-points {
+  align-items: center;
+  display: flex;
+  font-family: var(--sans-serif);
+  gap: 0.4rem;
+  grid-area: nephilim;
+  justify-self: end;
+  line-height: 1;
+  min-height: 1rem;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.sheet.party .cmt-nephilim-heading {
+  color: var(--text-light);
+  font-size: var(--font-size-11);
+  font-weight: 700;
+}
+
+.sheet.party .cmt-nephilim-pips {
+  display: flex;
+  gap: 0.12rem;
+}
+
+.sheet.party .cmt-nephilim-pips button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #e9d7a1;
+  display: inline-flex;
+  font-size: var(--font-size-9);
+  height: 0.8rem;
+  justify-content: center;
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  width: 0.8rem;
+}
+
+.sheet.party .cmt-nephilim-pips button:not(:disabled) {
+  cursor: pointer;
+}
+
+.sheet.party .cmt-nephilim-pips button:not(:disabled):hover,
+.sheet.party .cmt-nephilim-pips button:not(:disabled):focus-visible {
+  color: #ffffff;
+  text-shadow: 0 0 5px #e9d7a1;
+}
+
+.sheet.party .cmt-nephilim-points.saving {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .cmt-rules-config {
   --cmt-charcoal: #2d2926;
   --cmt-charcoal-deep: #1d1918;

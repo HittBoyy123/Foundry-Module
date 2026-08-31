@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.0 — Campaign progression and multiple Apex items
+
+- Added independent Apex activation for all six attributes, allowing different Wrathmaker Apex items to be active at the same time.
+- Reused PF2e's native circled **A** display: filled markers are active and outlined markers are available to activate.
+- Kept worn and invested requirements, and limited same-attribute duplicates to the strongest active Item Boost.
+- Preserved ordinary PF2e Apex handling for non-Wrathmaker items and retained the selected state of existing Wrathmaker items until first toggled.
+- Added an explicit module-owned active flag so the multi-item house rule no longer depends on PF2e's single-Apex selector.
+- Increased the native character Hero Point maximum from 3 to 10 without adding a session reset, allowing stored points to carry between sessions.
+- Added a persistent 0–10 Nephilim Point tracker to the PF2e party header.
+- Grouped all Wrathmaker compendiums under one **Pathfinder 2E Wrathmaker** folder in the Compendium Packs sidebar.
+- Replaced the generic Stone, Leather/Hide, Herbs/Mushrooms, and Mana Crystal tier labels with material-specific six-tier names.
+- Migrated only unchanged generic tier placeholders to the new names, preserving every individually customized GM label.
+- Migrated world rules to schema version 11.
+
 ## 0.9.0 — Weapon damage and spell focuses
 
 - Added a second weapon modifier that increases damage by twice the configured tier bonus: +2, +4, +6, +8, and +10 at Tiers 2–6.
