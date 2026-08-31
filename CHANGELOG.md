@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.2 — Dragon Scale age tiers
+
+- Replaced the generic Dragon Scale tier names with Hatchling, Juvenile, Youth, Adult, Ancient, and Arch Dragon.
+- Migrated existing worlds that still use the default Common–Mythical scale names while preserving GM-customized scale names.
+- Kept Dragon Scale resistance values, prices, rarities, colors, and damage-type mappings independently editable.
+- Migrated world rules to schema version 9.
+
 ## 0.7.1 — Melee-only enhanced flanking
 
 - Changed the extra three-/four-side AC adjustment from a blanket target penalty to an attack-contextual modifier.

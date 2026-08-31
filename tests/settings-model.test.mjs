@@ -130,6 +130,14 @@ test("dragon-scale editor changes color mappings and resistance values", () => {
   assert.equal(editor.isDragonScale, true);
   assert.equal(editor.supportsWeapon, false);
   assert.equal(editor.dragonColors.find((color) => color.id === "red").label, "Red");
+  assert.deepEqual(editor.tiers.map((tier) => tier.label), [
+    "Hatchling",
+    "Juvenile",
+    "Youth",
+    "Adult",
+    "Ancient",
+    "Arch Dragon",
+  ]);
 
   const flat = {
     "material.label": "Dragon Scale Plating",

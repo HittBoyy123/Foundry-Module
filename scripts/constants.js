@@ -1,6 +1,6 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 8;
+export const RULES_SCHEMA_VERSION = 9;
 export const ITEM_SCHEMA_VERSION = 3;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -54,6 +54,15 @@ export const DEFAULT_TIER_LABELS = Object.freeze({
   4: "Epic",
   5: "Legendary",
   6: "Mythical",
+});
+
+export const DRAGON_SCALE_TIER_LABELS = Object.freeze({
+  1: "Hatchling",
+  2: "Juvenile",
+  3: "Youth",
+  4: "Adult",
+  5: "Ancient",
+  6: "Arch Dragon",
 });
 
 export const DEFAULT_TIER_PRICES_GP = Object.freeze({
@@ -196,7 +205,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       effects: Object.freeze([]),
       colors: DRAGON_SCALE_COLORS,
       tierBonuses: DRAGON_SCALE_RESISTANCE_VALUES,
-      tierLabels: DEFAULT_TIER_LABELS,
+      tierLabels: DRAGON_SCALE_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     herbs: Object.freeze({

@@ -166,7 +166,7 @@ test("dragon-scale armor presentation layers its name, rarity, and price", () =>
   };
 
   assert.equal(applyPreparedItemPresentation(armor, config), true);
-  assert.equal(armor.name, "+1 Resilient Steel Rare Red Dragon Scale Breastplate");
+  assert.equal(armor.name, "+1 Resilient Steel Youth Red Dragon Scale Breastplate");
   assert.equal(armor.system.price.value.gp, 135);
   assert.equal(armor.system.traits.rarity, "rare");
 });

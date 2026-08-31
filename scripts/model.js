@@ -6,6 +6,7 @@ import {
   DEFAULT_TIER_LABELS,
   DEFAULT_TIER_PRICES_GP,
   DEFAULT_TIER_RARITIES,
+  DRAGON_SCALE_TIER_LABELS,
   ITEM_SCHEMA_VERSION,
   RULES_SCHEMA_VERSION,
   cloneDefaultRulesConfig,
@@ -463,12 +464,20 @@ export function normalizeRulesConfig(input) {
     if (duplicateEffect) {
       throw new ConfigValidationError(`materials.${materialId} contains duplicate effect id "${duplicateEffect.id}".`);
     }
-    const migratedTierLabels = sourceSchemaVersion < 3 ? defaultMaterial?.tierLabels : undefined;
+    const usesLegacyDragonScaleTierLabels = materialId === "dragon-scale"
+      && sourceSchemaVersion < 9
+      && (material.tierLabels === undefined || tierMapMatches(material.tierLabels, DEFAULT_TIER_LABELS));
+    const migratedTierLabels = usesLegacyDragonScaleTierLabels
+      ? defaultMaterial?.tierLabels ?? DRAGON_SCALE_TIER_LABELS
+      : sourceSchemaVersion < 3 && material.tierLabels === undefined
+        ? defaultMaterial?.tierLabels
+        : undefined;
     const migratedTierPrices = sourceSchemaVersion < 3 ? defaultMaterial?.tierPricesGp : undefined;
-    const tierLabelOverrides = material.tierLabels === undefined && migratedTierLabels === undefined
+    const tierLabelSource = migratedTierLabels ?? material.tierLabels;
+    const tierLabelOverrides = tierLabelSource === undefined
       ? {}
       : normalizeTierLabels(
-        material.tierLabels ?? migratedTierLabels,
+        tierLabelSource,
         `materials.${materialId}.tierLabels`,
         { partial: true },
       );
