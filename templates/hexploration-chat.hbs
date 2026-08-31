@@ -13,7 +13,7 @@
     <div><span>{{localize "CMT.Hexploration.ActivityProgress"}}</span><strong>{{assignedCount}} {{localize "CMT.Hexploration.Assigned"}} · {{usedCount}} {{localize "CMT.Hexploration.Used"}} · {{remainingCount}} {{localize "CMT.Hexploration.Remaining"}}</strong></div>
     {{#if expressRider}}
       <hr>
-      <div><span>{{localize "CMT.Hexploration.ExpressRider"}}</span><strong>{{expressRider.actor}} — {{expressRider.outcome}}{{#if expressRider.hasTotal}} ({{expressRider.total}}){{/if}}{{#if expressRider.applied}} · {{localize "CMT.Hexploration.Applied"}}{{/if}}</strong></div>
+      <div><span>{{localize "CMT.Hexploration.ExpressRider"}}</span><strong>{{expressRider.actor}} — DC {{expressRider.dc}} · {{expressRider.outcome}}{{#if expressRider.hasTotal}} ({{expressRider.total}}){{/if}}{{#if expressRider.applied}} · {{localize "CMT.Hexploration.Applied"}}{{/if}}</strong></div>
       {{#if expressRider.beneficiaries}}<div><span>{{localize "CMT.Hexploration.AffectedTravellers"}}</span><strong>{{expressRider.beneficiaries}}</strong></div>{{/if}}
     {{/if}}
     {{#if slowTravel}}<p><em>{{localize "CMT.Hexploration.SlowTravel"}}</em></p>{{/if}}

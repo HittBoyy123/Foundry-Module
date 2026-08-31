@@ -80,6 +80,39 @@ export function getActorGroundSpeed(actor) {
   return 0;
 }
 
+export function getActorWillDC(actor) {
+  let statistic = null;
+  try {
+    statistic = actor?.getStatistic?.("will") ?? null;
+  } catch (_error) {
+    statistic = null;
+  }
+  const directCandidates = [
+    statistic?.dc?.value,
+    actor?.saves?.will?.dc?.value,
+    actor?.system?.saves?.will?.dc?.value,
+    actor?.system?.attributes?.will?.dc?.value,
+    actor?.system?.attributes?.will?.dc,
+  ];
+  for (const candidate of directCandidates) {
+    const dc = finiteCheckValue(candidate, MAX_CHECK_DC);
+    if (dc !== null) return dc;
+  }
+  const modifierCandidates = [
+    statistic?.mod,
+    statistic?.check?.mod,
+    actor?.saves?.will?.mod,
+    actor?.system?.saves?.will?.mod,
+    actor?.system?.saves?.will?.value,
+  ];
+  for (const candidate of modifierCandidates) {
+    if (candidate === null || candidate === undefined || candidate === "") continue;
+    const modifier = Number(candidate);
+    if (Number.isFinite(modifier)) return finiteCheckValue(10 + modifier, MAX_CHECK_DC);
+  }
+  return null;
+}
+
 export function getVehicleGroundSpeed(actor) {
   const candidates = [
     actor?.system?.movement?.speeds?.drive?.total,
@@ -137,6 +170,7 @@ export function normalizeHexplorationPlan(input) {
         actorId: cleanId(expressSource.actorId),
         skill: EXPRESS_RIDER_SKILL,
         dc: finiteCheckValue(expressSource.dc, MAX_CHECK_DC),
+        targetSignature: String(expressSource.targetSignature ?? "").trim().slice(0, 2048),
         outcome,
         rollTotal: finiteRollTotal(expressSource.rollTotal),
         beneficiaryIds: uniqueIds(expressSource.beneficiaryIds).slice(0, MAX_EXPRESS_RIDER_BENEFICIARIES),
@@ -147,6 +181,48 @@ export function normalizeHexplorationPlan(input) {
         speedBonus: finiteAdjustment(otherSource.speedBonus),
       },
     },
+  };
+}
+
+export function calculateExpressRiderDC({ plan: inputPlan, members = [], haulers = [] }) {
+  const plan = normalizeHexplorationPlan(inputPlan);
+  const memberById = indexById(members);
+  const haulerById = indexById(haulers);
+  const targets = [];
+  const seen = new Set();
+  const addTarget = (entry, kind) => {
+    if (!entry) return;
+    const key = `${kind}:${entry.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    targets.push({
+      id: entry.id,
+      key,
+      kind,
+      name: entry.name ?? entry.id,
+      willDC: finiteCheckValue(entry.willDC, MAX_CHECK_DC),
+    });
+  };
+  if (plan.mode === "hauled") {
+    for (const id of plan.haulerIds) addTarget(haulerById.get(id), "hauler");
+  }
+  for (const id of plan.travelModifiers.expressRider.beneficiaryIds) {
+    addTarget(memberById.get(id), "traveller");
+  }
+  const validTargets = targets.filter((target) => target.willDC !== null);
+  const dc = validTargets.length > 0 ? Math.max(...validTargets.map((target) => target.willDC)) : null;
+  const highestTargets = dc === null ? [] : validTargets.filter((target) => target.willDC === dc);
+  const targetSignature = targets
+    .map((target) => `${target.key}:${target.willDC ?? "unknown"}`)
+    .sort()
+    .join("|");
+  return {
+    dc,
+    targets,
+    highestTargets,
+    missingTargets: targets.filter((target) => target.willDC === null),
+    targetSignature,
+    complete: targets.length > 0 && validTargets.length === targets.length,
   };
 }
 

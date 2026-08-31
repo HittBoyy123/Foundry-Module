@@ -5,8 +5,10 @@ import {
   TRAVEL_MODES,
   applyPreparedPartyTravelSpeed,
   calculateTravelState,
+  calculateExpressRiderDC,
   expressRiderOutcomeFromDegree,
   getActorGroundSpeed,
+  getActorWillDC,
   getVehicleGroundSpeed,
   normalizeHexplorationPlan,
 } from "./hexploration-model.js";
@@ -164,6 +166,7 @@ function actorEntry(actor) {
     name: actor.name,
     img: actor.img,
     speed: getActorGroundSpeed(actor),
+    willDC: getActorWillDC(actor),
     hasExpressRider: actorHasFeat(actor, "express-rider"),
   };
 }
@@ -181,8 +184,9 @@ function vehicleEntry(actor) {
 export function buildPartyTravelState(party, config, environment = {}) {
   const actors = actorCollection(environment);
   const members = partyMembers(party).map(actorEntry);
-  const plan = normalizeHexplorationPlan(party.getFlag?.(MODULE_ID, "hexploration"));
+  let plan = normalizeHexplorationPlan(party.getFlag?.(MODULE_ID, "hexploration"));
   const { vehicles, haulers } = getTravelActorEntries(actors, plan, environment);
+  plan = resolveAutomaticExpressRiderPlan(plan, members, haulers).plan;
   return calculateTravelState({ plan, members, vehicles, haulers, config });
 }
 
@@ -242,6 +246,31 @@ function travellerStatus(member, plan) {
   return localize("CMT.Hexploration.Walking");
 }
 
+export function resolveAutomaticExpressRiderPlan(inputPlan, members, haulers) {
+  const plan = normalizeHexplorationPlan(inputPlan);
+  const automatic = calculateExpressRiderDC({ plan, members, haulers });
+  const express = plan.travelModifiers.expressRider;
+  const resultIsCurrent = express.dc === automatic.dc
+    && express.targetSignature === automatic.targetSignature;
+  return {
+    ...automatic,
+    resultIsCurrent,
+    plan: normalizeHexplorationPlan({
+      ...plan,
+      travelModifiers: {
+        ...plan.travelModifiers,
+        expressRider: {
+          ...express,
+          dc: automatic.dc,
+          targetSignature: automatic.targetSignature,
+          outcome: resultIsCurrent ? express.outcome : "unrolled",
+          rollTotal: resultIsCurrent ? express.rollTotal : null,
+        },
+      },
+    }),
+  };
+}
+
 export function buildHexplorationSheetContext(party, config, draftPlan = null, environment = {}) {
   const actors = actorCollection(environment);
   const members = partyMembers(party).map(actorEntry);
@@ -250,7 +279,7 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
   const suggestedExpressActor = savedPlan.travelModifiers.expressRider.enabled
     ? members.find((member) => member.hasExpressRider)
     : null;
-  const plan = normalizeHexplorationPlan({
+  let plan = normalizeHexplorationPlan({
     ...savedPlan,
     travelModifiers: {
       ...savedPlan.travelModifiers,
@@ -263,6 +292,8 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
   const travelActors = getTravelActorEntries(actors, plan, environment, { visibleOnly: true });
   const vehicles = travelActors.vehicles.sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
   const haulers = travelActors.haulers.sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
+  const automaticExpressRider = resolveAutomaticExpressRiderPlan(plan, members, haulers);
+  plan = automaticExpressRider.plan;
   const state = calculateTravelState({ plan, members, vehicles, haulers, config });
   const activityRows = Array.from({ length: ACTIVITY_ROWS }, (_unused, index) => {
     const activity = plan.activities[index] ?? { type: "none", actorId: "", note: "", used: false };
@@ -342,6 +373,22 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
     expressRider: {
       ...expressRider,
       dc: expressRider.dc ?? "",
+      hasAutomaticDC: expressRider.dc !== null && automaticExpressRider.complete,
+      automaticDCComplete: automaticExpressRider.complete,
+      highestWillNames: automaticExpressRider.highestTargets.map((target) => target.name).join(", "),
+      missingWillNames: automaticExpressRider.missingTargets.map((target) => target.name).join(", "),
+      targetCount: automaticExpressRider.targets.length,
+      automaticDCTitle: !automaticExpressRider.complete
+        ? (automaticExpressRider.missingTargets.length > 0
+          ? `${localize("CMT.Hexploration.ExpressRiderWillUnavailable")} ${automaticExpressRider.missingTargets.map((target) => target.name).join(", ")}`
+          : localize("CMT.Hexploration.ExpressRiderNoTargets"))
+        : format("CMT.Hexploration.AutomaticWillDCHint", {
+          dc: expressRider.dc,
+          targets: automaticExpressRider.highestTargets.map((target) => target.name).join(", "),
+        }),
+      rollButtonTitle: !automaticExpressRider.complete
+        ? localize("CMT.Hexploration.ExpressRiderIncomplete")
+        : format("CMT.Hexploration.RollNatureHint", { dc: expressRider.dc }),
       rollTotal: expressRider.rollTotal ?? "",
       hasRollTotal: expressRider.rollTotal !== null,
       outcomeLabel: outcomeLabel(expressRider.outcome),
@@ -366,7 +413,8 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
     canRollExpressRider: canEdit
       && expressRider.enabled
       && !!expressActor
-      && expressRider.dc !== null,
+      && expressRider.dc !== null
+      && automaticExpressRider.complete,
     otherModifier: plan.travelModifiers.other,
   };
 }
@@ -396,14 +444,13 @@ function collectPlan(tab) {
   }));
   const expressSection = tab.querySelector("[data-cmt-express-rider]");
   const expressActorInput = tab.querySelector('[data-cmt-field="express-rider-actor"]');
-  const expressDcInput = tab.querySelector('[data-cmt-field="express-rider-dc"]');
   const expressActorId = expressActorInput?.value ?? expressSection?.dataset.cmtExpressActor ?? "";
-  const expressDc = expressDcInput?.value ?? expressSection?.dataset.cmtExpressDc ?? "";
+  const expressDc = expressSection?.dataset.cmtExpressDc ?? "";
+  const expressTargetSignature = expressSection?.dataset.cmtExpressTargets ?? "";
   const otherSection = tab.querySelector("[data-cmt-other-modifier]");
   const otherLabelInput = tab.querySelector('[data-cmt-field="other-modifier-label"]');
   const otherSpeedInput = tab.querySelector('[data-cmt-field="other-modifier-speed"]');
-  const resultMatchesInputs = expressActorId === (expressSection?.dataset.cmtExpressActor ?? "")
-    && String(expressDc) === (expressSection?.dataset.cmtExpressDc ?? "");
+  const resultMatchesInputs = expressActorId === (expressSection?.dataset.cmtExpressActor ?? "");
 
   return normalizeHexplorationPlan({
     mode: value("mode"),
@@ -421,6 +468,7 @@ function collectPlan(tab) {
         actorId: expressActorId,
         skill: EXPRESS_RIDER_SKILL,
         dc: expressDc,
+        targetSignature: expressTargetSignature,
         outcome: resultMatchesInputs ? expressSection?.dataset.cmtExpressOutcome : "unrolled",
         rollTotal: resultMatchesInputs ? expressSection?.dataset.cmtExpressTotal : null,
         beneficiaryIds: checkedIds('[data-cmt-field="express-rider-beneficiary"]')
@@ -470,6 +518,7 @@ async function postPlanToChat(party, state) {
     slowTravel: state.activitiesPerDay === 0.5,
     expressRider: express.enabled ? {
       actor: memberById.get(express.actorId)?.name ?? localize("CMT.Hexploration.NoCharacter"),
+      dc: express.dc,
       outcome: outcomeLabel(express.outcome),
       total: express.rollTotal,
       hasTotal: express.rollTotal !== null,
@@ -491,7 +540,8 @@ function calculateStateForDraft(party, config, plan) {
   const actors = actorCollection();
   const members = partyMembers(party).map(actorEntry);
   const { vehicles, haulers } = getTravelActorEntries(actors, plan);
-  return calculateTravelState({ plan, members, vehicles, haulers, config });
+  const resolvedPlan = resolveAutomaticExpressRiderPlan(plan, members, haulers).plan;
+  return calculateTravelState({ plan: resolvedPlan, members, vehicles, haulers, config });
 }
 
 function scrollElements(explorationRoot) {
@@ -691,7 +741,6 @@ async function renderTabContents(app, party, tab, config, draftPlan = null, expl
     "activity-actor",
     "express-rider-enabled",
     "express-rider-actor",
-    "express-rider-dc",
     "other-modifier-enabled",
     "other-modifier-speed",
   ];

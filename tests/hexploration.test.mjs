@@ -5,13 +5,15 @@ import { DEFAULT_HEXPLORATION_CONFIG } from "../scripts/constants.js";
 import {
   applyPreparedPartyTravelSpeed,
   calculateActivitiesPerDay,
+  calculateExpressRiderDC,
   calculateTravelState,
   expressRiderOutcomeFromDegree,
   getActorGroundSpeed,
+  getActorWillDC,
   getVehicleGroundSpeed,
   normalizeHexplorationPlan,
 } from "../scripts/hexploration-model.js";
-import { actorIsInTravelFolder } from "../scripts/hexploration.js";
+import { actorIsInTravelFolder, resolveAutomaticExpressRiderPlan } from "../scripts/hexploration.js";
 
 const members = [
   { id: "slow", name: "Slow Hero", speed: 20 },
@@ -161,8 +163,91 @@ test("travel plans are bounded and unknown activity values are made safe", () =>
   assert.equal(plan.activities[0].actorId, "");
   assert.equal(plan.activities[0].used, false);
   assert.equal(plan.activities[0].note.length, 200);
-  assert.equal(plan.schemaVersion, 3);
+  assert.equal(plan.schemaVersion, 4);
   assert.equal(plan.travelModifiers.expressRider.skill, "nature");
+});
+
+test("PF2e Will DC is read from prepared statistics with legacy fallbacks", () => {
+  assert.equal(getActorWillDC({ getStatistic: () => ({ dc: { value: 27 } }) }), 27);
+  assert.equal(getActorWillDC({ saves: { will: { dc: { value: 24 } } } }), 24);
+  assert.equal(getActorWillDC({ system: { saves: { will: { value: 9 } } } }), 19);
+  assert.equal(getActorWillDC({}), null);
+});
+
+test("Express Rider uses the highest Will DC from pulling creatures and affected travellers", () => {
+  const result = calculateExpressRiderDC({
+    plan: {
+      mode: "hauled",
+      haulerIds: ["horse", "drake"],
+      travelModifiers: { expressRider: { beneficiaryIds: ["slow", "fast"] } },
+    },
+    members: [
+      { id: "slow", name: "Slow Hero", willDC: 18 },
+      { id: "fast", name: "Fast Hero", willDC: 23 },
+    ],
+    haulers: [
+      { id: "horse", name: "Riding Horse", willDC: 17 },
+      { id: "drake", name: "Riding Drake", willDC: 25 },
+    ],
+  });
+  assert.equal(result.dc, 25);
+  assert.deepEqual(result.highestTargets.map((target) => target.name), ["Riding Drake"]);
+  assert.equal(result.targets.length, 4);
+  assert.equal(result.complete, true);
+  assert.match(result.targetSignature, /hauler:drake:25/);
+  assert.match(result.targetSignature, /traveller:fast:23/);
+});
+
+test("Express Rider reports an incomplete automatic DC when a selected target has no Will statistic", () => {
+  const result = calculateExpressRiderDC({
+    plan: {
+      mode: "foot",
+      travelModifiers: { expressRider: { beneficiaryIds: ["known", "unknown"] } },
+    },
+    members: [
+      { id: "known", name: "Known", willDC: 20 },
+      { id: "unknown", name: "Unknown", willDC: null },
+    ],
+  });
+  assert.equal(result.dc, 20);
+  assert.equal(result.complete, false);
+  assert.deepEqual(result.missingTargets.map((target) => target.name), ["Unknown"]);
+});
+
+test("changing an Express Rider target or Will DC invalidates the previous daily roll", () => {
+  const membersWithWill = [{ id: "fast", name: "Fast Hero", speed: 30, willDC: 23 }];
+  const outdated = resolveAutomaticExpressRiderPlan({
+    mode: "foot",
+    travelModifiers: {
+      expressRider: {
+        enabled: true,
+        actorId: "fast",
+        beneficiaryIds: ["fast"],
+        dc: 15,
+        targetSignature: "traveller:fast:15",
+        outcome: "success",
+        rollTotal: 25,
+      },
+    },
+  }, membersWithWill, []);
+  assert.equal(outdated.plan.travelModifiers.expressRider.dc, 23);
+  assert.equal(outdated.plan.travelModifiers.expressRider.outcome, "unrolled");
+  assert.equal(outdated.plan.travelModifiers.expressRider.rollTotal, null);
+
+  const current = resolveAutomaticExpressRiderPlan({
+    ...outdated.plan,
+    travelModifiers: {
+      ...outdated.plan.travelModifiers,
+      expressRider: {
+        ...outdated.plan.travelModifiers.expressRider,
+        outcome: "success",
+        rollTotal: 28,
+      },
+    },
+  }, membersWithWill, []);
+  assert.equal(current.resultIsCurrent, true);
+  assert.equal(current.plan.travelModifiers.expressRider.outcome, "success");
+  assert.equal(current.plan.travelModifiers.expressRider.rollTotal, 28);
 });
 
 test("Express Rider beneficiaries are de-duplicated and limited to six", () => {

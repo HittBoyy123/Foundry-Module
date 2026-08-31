@@ -2,7 +2,7 @@ export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
 export const RULES_SCHEMA_VERSION = 7;
 export const ITEM_SCHEMA_VERSION = 2;
-export const HEXPLORATION_PLAN_SCHEMA_VERSION = 3;
+export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
 export const DEFAULT_ITEM_FLAGS = Object.freeze({
   schemaVersion: ITEM_SCHEMA_VERSION,

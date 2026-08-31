@@ -2,8 +2,8 @@
   <section class="cmt-hex-native-section">
     <header class="cmt-hex-native-heading">
       <h3><i class="fa-solid fa-route" aria-hidden="true"></i> {{localize "CMT.Hexploration.TravelSetup"}}</h3>
-      <button type="button" class="cmt-hex-heading-action" data-cmt-action="reset-day" title="{{localize 'CMT.Hexploration.ResetDayHint'}}" {{#unless canEdit}}disabled{{/unless}}>
-        <i class="fa-solid fa-sun" aria-hidden="true"></i> {{localize "CMT.Hexploration.ResetDay"}}
+      <button type="button" class="cmt-hex-heading-action cmt-hex-icon-button" data-cmt-action="reset-day" title="{{localize 'CMT.Hexploration.ResetDayHint'}}" aria-label="{{localize 'CMT.Hexploration.ResetDay'}}" {{#unless canEdit}}disabled{{/unless}}>
+        <i class="fa-solid fa-sun" aria-hidden="true"></i>
       </button>
     </header>
 
@@ -77,7 +77,7 @@
       <h3><i class="fa-solid fa-horse" aria-hidden="true"></i> {{localize "CMT.Hexploration.TravelModifiers"}}</h3>
     </header>
 
-    <article class="cmt-hex-modifier" data-cmt-express-rider data-cmt-express-actor="{{expressRider.actorId}}" data-cmt-express-dc="{{expressRider.dc}}" data-cmt-express-outcome="{{expressRider.outcome}}" data-cmt-express-total="{{expressRider.rollTotal}}">
+    <article class="cmt-hex-modifier" data-cmt-express-rider data-cmt-express-actor="{{expressRider.actorId}}" data-cmt-express-dc="{{expressRider.dc}}" data-cmt-express-targets="{{expressRider.targetSignature}}" data-cmt-express-outcome="{{expressRider.outcome}}" data-cmt-express-total="{{expressRider.rollTotal}}">
       <label class="cmt-hex-modifier-toggle">
         <input type="checkbox" data-cmt-field="express-rider-enabled" {{#if expressRider.enabled}}checked{{/if}} {{#unless canEdit}}disabled{{/unless}}>
         <span>
@@ -96,14 +96,20 @@
               {{/each}}
             </select>
           </label>
-          <label>
-            <span>{{localize "CMT.Hexploration.DC"}}</span>
-            <input type="number" min="0" max="100" step="1" value="{{expressRider.dc}}" placeholder="{{localize 'CMT.Hexploration.GMSet'}}" data-cmt-field="express-rider-dc" {{#unless canEdit}}disabled{{/unless}}>
-          </label>
-          <button type="button" class="cmt-hex-roll-button" data-cmt-action="roll-express-rider" {{#unless canRollExpressRider}}disabled{{/unless}}>
-            <i class="fa-solid fa-dice-d20" aria-hidden="true"></i> {{localize "CMT.Hexploration.RollNature"}}
+          <div class="cmt-hex-auto-dc {{#unless expressRider.automaticDCComplete}}is-incomplete{{/unless}}" title="{{expressRider.automaticDCTitle}}">
+            <span>{{localize "CMT.Hexploration.AutomaticWillDC"}}</span>
+            <strong>{{#if expressRider.hasAutomaticDC}}{{expressRider.dc}}{{else}}—{{/if}}</strong>
+          </div>
+          <button type="button" class="cmt-hex-roll-button cmt-hex-icon-button" data-cmt-action="roll-express-rider" title="{{expressRider.rollButtonTitle}}" aria-label="{{localize 'CMT.Hexploration.RollNature'}}" {{#unless canRollExpressRider}}disabled{{/unless}}>
+            <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
           </button>
         </div>
+        {{#if expressRider.missingWillNames}}
+          <div class="cmt-hex-feat-detection is-missing">
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+            {{localize "CMT.Hexploration.ExpressRiderWillUnavailable"}} {{expressRider.missingWillNames}}
+          </div>
+        {{/if}}
         {{#if expressRider.actorId}}
           <div class="cmt-hex-feat-detection {{#if expressRider.actorHasFeat}}is-found{{else}}is-missing{{/if}}">
             <i class="fa-solid {{#if expressRider.actorHasFeat}}fa-circle-check{{else}}fa-circle-exclamation{{/if}}" aria-hidden="true"></i>

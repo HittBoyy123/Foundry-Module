@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2 — Automatic Express Rider Will DC
+
+- Removed the manual Express Rider DC field and calculated the check DC from the highest prepared Will DC among selected pulling creatures and affected travellers.
+- Invalidated the previous daily Express Rider result whenever its selected targets or their Will DCs change, preventing an old roll from being reused against a different group.
+- Added a compact read-only highest-Will-DC display and disabled rolling when a selected actor has no available Will statistic.
+- Replaced the Roll Nature text button with a PF2e-style d20 icon and replaced the New Day text button with a sun icon, retaining accessible labels and explanatory tooltips.
+- Added the calculated Express Rider DC to the shared Begin Day chat card and migrated travel plans to schema version 4.
+
 ## 0.6.1 — Live travel summary and exact palette
 
 - Kept PF2e's native party travel summary synchronized with the current Wrathmaker travel plan while the Exploration tab is open.
