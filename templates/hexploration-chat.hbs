@@ -5,11 +5,15 @@
     {{#if haulers}}<p><strong>{{localize "CMT.Hexploration.Haulers"}}:</strong> {{haulers}}</p>{{/if}}
     <p><strong>{{localize "CMT.Hexploration.SharedSpeed"}}:</strong> {{sharedSpeed}} ft. ({{milesPerHour}} mph / {{milesPerDay}} miles per day)</p>
     <p><strong>{{localize "CMT.Hexploration.ActivitiesPerDay"}}:</strong> {{activitiesPerDay}}</p>
+    <p><strong>{{localize "CMT.Hexploration.ActivityProgress"}}:</strong> {{assignedCount}} {{localize "CMT.Hexploration.Assigned"}} · {{usedCount}} {{localize "CMT.Hexploration.Used"}} · {{remainingCount}} {{localize "CMT.Hexploration.Remaining"}}</p>
+    {{#if expressRider}}
+      <p><strong>{{localize "CMT.Hexploration.ExpressRider"}}:</strong> {{expressRider.actor}} — {{expressRider.outcome}}{{#if expressRider.hasTotal}} ({{expressRider.total}}){{/if}}{{#if expressRider.applied}} · {{localize "CMT.Hexploration.Applied"}}{{/if}}</p>
+    {{/if}}
     {{#if slowTravel}}<p><em>{{localize "CMT.Hexploration.SlowTravel"}}</em></p>{{/if}}
   </div>
   <ol>
     {{#each activities}}
-      <li><strong>{{label}}</strong>{{#if note}} — {{note}}{{/if}}</li>
+      <li><strong>{{label}}</strong> — {{assignee}}{{#if note}} · {{note}}{{/if}}{{#if used}} · {{localize "CMT.Hexploration.Used"}}{{/if}}</li>
     {{else}}
       <li>{{localize "CMT.Hexploration.NoActivitiesPlanned"}}</li>
     {{/each}}

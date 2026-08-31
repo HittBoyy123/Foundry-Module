@@ -1,9 +1,11 @@
 import { MODULE_ID } from "./constants.js";
 import {
   ACTIVITY_TYPES,
+  TRAVEL_CHECK_SKILLS,
   TRAVEL_MODES,
   applyPreparedPartyTravelSpeed,
   calculateTravelState,
+  expressRiderOutcomeFromDegree,
   getActorGroundSpeed,
   getVehicleGroundSpeed,
   normalizeHexplorationPlan,
@@ -31,6 +33,20 @@ function partyMembers(party) {
   return Array.isArray(party?.members) ? party.members : [];
 }
 
+function itemSlug(item) {
+  return String(item?.slug ?? item?.system?.slug ?? item?.name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function actorHasFeat(actor, slug) {
+  return [...(actor?.items ?? [])].some((item) => (
+    (item?.type === "feat" || item?.isOfType?.("feat") === true) && itemSlug(item) === slug
+  ));
+}
+
 function actorEntry(actor) {
   return {
     id: actor.id,
@@ -38,6 +54,7 @@ function actorEntry(actor) {
     name: actor.name,
     img: actor.img,
     speed: getActorGroundSpeed(actor),
+    hasExpressRider: actorHasFeat(actor, "express-rider"),
   };
 }
 
@@ -65,6 +82,10 @@ function localize(key) {
   return game.i18n.localize(key);
 }
 
+function format(key, data) {
+  return game.i18n.format(key, data);
+}
+
 function activityLabel(type) {
   const key = `CMT.Hexploration.Activities.${type}`;
   const label = localize(key);
@@ -75,6 +96,12 @@ function warningLabel(code) {
   const key = `CMT.Hexploration.Warnings.${code}`;
   const label = localize(key);
   return label === key ? code : label;
+}
+
+function outcomeLabel(outcome) {
+  const key = `CMT.Hexploration.Outcomes.${outcome}`;
+  const label = localize(key);
+  return label === key ? outcome : label;
 }
 
 function formatActivities(value) {
@@ -101,9 +128,24 @@ function activityOptions(selectedType) {
   }));
 }
 
+function skillOptions(selectedSkill) {
+  return TRAVEL_CHECK_SKILLS.map((value) => ({
+    value,
+    label: localize(`CMT.Hexploration.Skills.${value}`),
+    selected: value === selectedSkill,
+  }));
+}
+
+function travellerStatus(member, plan) {
+  if (plan.haulerIds.includes(member.id)) return localize("CMT.Hexploration.Pulling");
+  if (plan.riderIds.includes(member.id)) return localize("CMT.Hexploration.Riding");
+  return localize("CMT.Hexploration.Walking");
+}
+
 export function buildHexplorationSheetContext(party, config, draftPlan = null, environment = {}) {
   const actors = actorCollection(environment);
   const members = partyMembers(party).map(actorEntry);
+  const memberById = new Map(members.map((member) => [member.id, member]));
   const plan = normalizeHexplorationPlan(draftPlan ?? party.getFlag?.(MODULE_ID, "hexploration"));
   const vehicles = actors
     .filter((actor) => actor.type === "vehicle" && (canObserve(actor) || actor.id === plan.vehicleId))
@@ -118,21 +160,45 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
     .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
   const state = calculateTravelState({ plan, members, vehicles, haulers, config });
   const activityRows = Array.from({ length: ACTIVITY_ROWS }, (_unused, index) => {
-    const activity = plan.activities[index] ?? { type: "none", note: "" };
+    const activity = plan.activities[index] ?? { type: "none", actorId: "", note: "", used: false };
+    const assignee = memberById.get(activity.actorId);
     return {
       index,
       number: index + 1,
+      actorId: activity.actorId,
+      assigneeName: assignee?.name ?? localize("CMT.Hexploration.PartyAssignment"),
+      img: assignee?.img ?? party.img,
       note: activity.note,
+      used: activity.used,
+      assigned: activity.type !== "none",
       options: activityOptions(activity.type),
+      assigneeOptions: [
+        { id: "", label: localize("CMT.Hexploration.PartyAssignment"), selected: !activity.actorId },
+        ...members.map((member) => ({
+          id: member.id,
+          label: member.name,
+          selected: member.id === activity.actorId,
+        })),
+      ],
     };
   });
   const hauling = plan.mode === "hauled";
   const usingVehicle = plan.mode !== "foot";
   const customVehicleSelected = usingVehicle && !plan.vehicleId && !!plan.customVehicleName;
+  const savedExpressRider = plan.travelModifiers.expressRider;
+  const suggestedExpressActor = savedExpressRider.enabled
+    ? members.find((member) => member.hasExpressRider)
+    : null;
+  const expressRider = {
+    ...savedExpressRider,
+    actorId: savedExpressRider.actorId || suggestedExpressActor?.id || "",
+  };
+  const expressActor = memberById.get(expressRider.actorId);
+  const canEdit = party.canUserModify?.(game.user, "update") === true;
 
   return {
     partyId: party.id,
-    canEdit: party.canUserModify?.(game.user, "update") === true,
+    canEdit,
     usingVehicle,
     hauling,
     customVehicleSelected,
@@ -145,6 +211,7 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
       ...member,
       riding: state.riderIds.includes(member.id),
       canRide: usingVehicle && !plan.haulerIds.includes(member.id),
+      status: travellerStatus(member, plan),
     })),
     haulers: haulers.map((hauler) => ({
       ...hauler,
@@ -153,17 +220,42 @@ export function buildHexplorationSheetContext(party, config, draftPlan = null, e
     activityRows,
     warnings: state.warnings.map((warning) => warningLabel(warning)),
     hasWarnings: state.warnings.length > 0,
-    sharedSpeed: state.sharedSpeed,
-    transportSpeed: state.transportSpeed,
+    sharedSpeed: formatDistance(state.sharedSpeed),
+    transportSpeed: state.transportSpeed === null ? null : formatDistance(state.transportSpeed),
     hasTransportSpeed: state.transportSpeed !== null,
     feetPerMinute: formatDistance(state.feetPerMinute),
     milesPerHour: formatDistance(state.milesPerHour),
     milesPerDay: formatDistance(state.milesPerDay),
     activitiesPerDay: formatActivities(state.activitiesPerDay),
-    plannedCount: state.plannedActivities.length,
+    assignedCount: state.assignedCount,
+    usedCount: state.usedCount,
+    remainingCount: formatActivities(state.remainingActivities),
+    unassignedCount: state.unassignedActivities,
     daysRequired: state.daysRequired,
     slowTravel: state.activitiesPerDay === 0.5,
     valid: state.valid,
+    expressRider: {
+      ...expressRider,
+      dc: expressRider.dc ?? "",
+      rollTotal: expressRider.rollTotal ?? "",
+      hasRollTotal: expressRider.rollTotal !== null,
+      outcomeLabel: outcomeLabel(expressRider.outcome),
+      actorName: expressActor?.name ?? localize("CMT.Hexploration.NoCharacter"),
+      actorHasFeat: expressActor?.hasExpressRider === true,
+      successful: state.expressRiderSuccessful,
+      applied: state.expressRiderApplied,
+      speedBonus: formatDistance(state.expressRiderSpeedBonus),
+    },
+    expressRiderActors: members.map((member) => ({
+      ...member,
+      selected: member.id === expressRider.actorId,
+    })),
+    skillOptions: skillOptions(expressRider.skill),
+    canRollExpressRider: canEdit
+      && expressRider.enabled
+      && !!expressActor
+      && expressRider.dc !== null,
+    otherModifier: plan.travelModifiers.other,
   };
 }
 
@@ -180,13 +272,30 @@ function rootElement(html) {
 
 function collectPlan(tab) {
   const value = (field) => tab.querySelector(`[data-cmt-field="${field}"]`)?.value ?? "";
+  const checked = (field) => tab.querySelector(`[data-cmt-field="${field}"]`)?.checked === true;
   const checkedIds = (selector) => [...tab.querySelectorAll(selector)]
     .filter((input) => input.checked)
     .map((input) => input.value);
   const activities = [...tab.querySelectorAll("[data-cmt-activity-row]")].map((row) => ({
     type: row.querySelector('[data-cmt-field="activity-type"]')?.value ?? "none",
+    actorId: row.querySelector('[data-cmt-field="activity-actor"]')?.value ?? "",
     note: row.querySelector('[data-cmt-field="activity-note"]')?.value ?? "",
+    used: row.querySelector('[data-cmt-field="activity-used"]')?.checked === true,
   }));
+  const expressSection = tab.querySelector("[data-cmt-express-rider]");
+  const expressActorInput = tab.querySelector('[data-cmt-field="express-rider-actor"]');
+  const expressSkillInput = tab.querySelector('[data-cmt-field="express-rider-skill"]');
+  const expressDcInput = tab.querySelector('[data-cmt-field="express-rider-dc"]');
+  const expressActorId = expressActorInput?.value ?? expressSection?.dataset.cmtExpressActor ?? "";
+  const expressSkill = expressSkillInput?.value ?? expressSection?.dataset.cmtExpressSkill ?? "survival";
+  const expressDc = expressDcInput?.value ?? expressSection?.dataset.cmtExpressDc ?? "";
+  const otherSection = tab.querySelector("[data-cmt-other-modifier]");
+  const otherLabelInput = tab.querySelector('[data-cmt-field="other-modifier-label"]');
+  const otherSpeedInput = tab.querySelector('[data-cmt-field="other-modifier-speed"]');
+  const resultMatchesInputs = expressActorId === (expressSection?.dataset.cmtExpressActor ?? "")
+    && expressSkill === (expressSection?.dataset.cmtExpressSkill ?? "nature")
+    && String(expressDc) === (expressSection?.dataset.cmtExpressDc ?? "");
+
   return normalizeHexplorationPlan({
     mode: value("mode"),
     vehicleId: value("vehicle") === "custom" ? "" : value("vehicle"),
@@ -197,6 +306,21 @@ function collectPlan(tab) {
     riderIds: checkedIds('[data-cmt-field="rider"]'),
     haulerIds: checkedIds('[data-cmt-field="hauler"]'),
     activities,
+    travelModifiers: {
+      expressRider: {
+        enabled: checked("express-rider-enabled"),
+        actorId: expressActorId,
+        skill: expressSkill,
+        dc: expressDc,
+        outcome: resultMatchesInputs ? expressSection?.dataset.cmtExpressOutcome : "unrolled",
+        rollTotal: resultMatchesInputs ? expressSection?.dataset.cmtExpressTotal : null,
+      },
+      other: {
+        enabled: checked("other-modifier-enabled"),
+        label: otherLabelInput?.value ?? otherSection?.dataset.cmtOtherLabel ?? "",
+        speedBonus: otherSpeedInput?.value ?? otherSection?.dataset.cmtOtherSpeed ?? 0,
+      },
+    },
   });
 }
 
@@ -210,27 +334,52 @@ async function savePlan(party, plan, config) {
 }
 
 async function postPlanToChat(party, state) {
+  const memberById = new Map(partyMembers(party).map((member) => [member.id, member]));
   const activities = state.plannedActivities.map((activity) => ({
     label: activityLabel(activity.type),
+    assignee: memberById.get(activity.actorId)?.name ?? localize("CMT.Hexploration.PartyAssignment"),
     note: activity.note,
+    used: activity.used,
   }));
+  const express = state.plan.travelModifiers.expressRider;
   const content = await renderTemplate(`modules/${MODULE_ID}/templates/hexploration-chat.hbs`, {
     partyName: party.name,
     mode: localize(`CMT.Hexploration.Modes.${state.mode}`),
     vehicle: state.selectedVehicle?.name ?? null,
     haulers: state.selectedHaulers.map((hauler) => hauler.name).join(", "),
-    sharedSpeed: state.sharedSpeed,
+    sharedSpeed: formatDistance(state.sharedSpeed),
     milesPerHour: formatDistance(state.milesPerHour),
     milesPerDay: formatDistance(state.milesPerDay),
     activitiesPerDay: formatActivities(state.activitiesPerDay),
+    assignedCount: state.assignedCount,
+    usedCount: state.usedCount,
+    remainingCount: formatActivities(state.remainingActivities),
     daysRequired: state.daysRequired,
     slowTravel: state.activitiesPerDay === 0.5,
+    expressRider: express.enabled ? {
+      actor: memberById.get(express.actorId)?.name ?? localize("CMT.Hexploration.NoCharacter"),
+      outcome: outcomeLabel(express.outcome),
+      total: express.rollTotal,
+      hasTotal: express.rollTotal !== null,
+      applied: state.expressRiderApplied,
+    } : null,
     activities,
   });
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: party }),
     content,
   });
+}
+
+function calculateStateForDraft(party, config, plan) {
+  const actors = actorCollection();
+  const members = partyMembers(party).map(actorEntry);
+  const vehicles = actors.filter((actor) => actor.type === "vehicle").map(vehicleEntry);
+  const haulers = actors
+    .filter((actor) => ["character", "npc", "familiar"].includes(actor.type))
+    .map(actorEntry)
+    .filter((actor) => actor.speed > 0);
+  return calculateTravelState({ plan, members, vehicles, haulers, config });
 }
 
 async function renderTabContents(app, party, tab, config, draftPlan = null) {
@@ -244,9 +393,90 @@ async function renderTabContents(app, party, tab, config, draftPlan = null) {
       console.error(`${MODULE_ID} | Could not refresh the Hexploration planner.`, error);
     }
   };
-  for (const input of tab.querySelectorAll('[data-cmt-field="mode"], [data-cmt-field="vehicle"], [data-cmt-field="manual-speed"], [data-cmt-field="rider"], [data-cmt-field="hauler"], [data-cmt-field="activity-type"]')) {
-    input.addEventListener("change", refreshDraft);
+  const refreshFields = [
+    "mode",
+    "vehicle",
+    "manual-speed",
+    "rider",
+    "hauler",
+    "activity-type",
+    "activity-actor",
+    "express-rider-enabled",
+    "express-rider-actor",
+    "express-rider-skill",
+    "express-rider-dc",
+    "other-modifier-enabled",
+    "other-modifier-speed",
+  ];
+  for (const field of refreshFields) {
+    for (const input of tab.querySelectorAll(`[data-cmt-field="${field}"]`)) {
+      input.addEventListener("change", refreshDraft);
+    }
   }
+
+  for (const input of tab.querySelectorAll('[data-cmt-field="activity-used"]')) {
+    input.addEventListener("change", async () => {
+      try {
+        const plan = collectPlan(tab);
+        const state = calculateStateForDraft(party, config, plan);
+        if (!state.valid) throw new Error(localize("CMT.Hexploration.InvalidPlan"));
+        await savePlan(party, plan, config);
+        await renderTabContents(app, party, tab, config);
+      } catch (error) {
+        console.error(`${MODULE_ID} | Activity progress was not saved.`, error);
+        ui.notifications.error(error.message);
+        await renderTabContents(app, party, tab, config);
+      }
+    });
+  }
+
+  tab.querySelector('[data-cmt-action="roll-express-rider"]')?.addEventListener("click", async (event) => {
+    try {
+      const plan = collectPlan(tab);
+      const express = plan.travelModifiers.expressRider;
+      const actor = partyMembers(party).find((member) => member.id === express.actorId);
+      const statistic = actor?.getStatistic?.(express.skill);
+      if (!actor || !statistic || express.dc === null) {
+        throw new Error(localize("CMT.Hexploration.ExpressRiderIncomplete"));
+      }
+      const roll = await statistic.roll({
+        event,
+        dc: express.dc,
+        title: format("CMT.Hexploration.ExpressRiderRollTitle", { actor: actor.name }),
+        label: localize("CMT.Hexploration.ExpressRider"),
+        extraRollOptions: ["action:express-rider", "wrathmaker:hexploration"],
+      });
+      if (!roll) return;
+      const outcome = expressRiderOutcomeFromDegree(roll.degreeOfSuccess ?? roll.options?.degreeOfSuccess);
+      if (outcome === "unrolled") throw new Error(localize("CMT.Hexploration.ExpressRiderNoOutcome"));
+      plan.travelModifiers.expressRider.outcome = outcome;
+      plan.travelModifiers.expressRider.rollTotal = Number(roll.total);
+      await savePlan(party, plan, config);
+      ui.notifications.info(format("CMT.Hexploration.ExpressRiderRolled", {
+        actor: actor.name,
+        outcome: outcomeLabel(outcome),
+      }));
+      await renderTabContents(app, party, tab, config);
+    } catch (error) {
+      console.error(`${MODULE_ID} | Express Rider could not be rolled.`, error);
+      ui.notifications.error(error.message);
+    }
+  });
+
+  tab.querySelector('[data-cmt-action="reset-day"]')?.addEventListener("click", async () => {
+    try {
+      const plan = collectPlan(tab);
+      plan.activities = plan.activities.map((activity) => ({ ...activity, used: false }));
+      plan.travelModifiers.expressRider.outcome = "unrolled";
+      plan.travelModifiers.expressRider.rollTotal = null;
+      await savePlan(party, plan, config);
+      ui.notifications.info(localize("CMT.Hexploration.DayReset"));
+      await renderTabContents(app, party, tab, config);
+    } catch (error) {
+      console.error(`${MODULE_ID} | Hexploration day could not be reset.`, error);
+      ui.notifications.error(error.message);
+    }
+  });
 
   tab.querySelector('[data-cmt-action="save"]')?.addEventListener("click", async () => {
     try {
@@ -276,17 +506,6 @@ async function renderTabContents(app, party, tab, config, draftPlan = null) {
       ui.notifications.error(error.message);
     }
   });
-}
-
-function calculateStateForDraft(party, config, plan) {
-  const actors = actorCollection();
-  const members = partyMembers(party).map(actorEntry);
-  const vehicles = actors.filter((actor) => actor.type === "vehicle").map(vehicleEntry);
-  const haulers = actors
-    .filter((actor) => ["character", "npc", "familiar"].includes(actor.type))
-    .map(actorEntry)
-    .filter((actor) => actor.speed > 0);
-  return calculateTravelState({ plan, members, vehicles, haulers, config });
 }
 
 async function injectPartyTab(app, html, getConfig) {

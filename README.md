@@ -8,7 +8,7 @@ A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and 
 - Pathfinder Second Edition 7.1 or newer
 - Material-tier item support: weapons and armor
 - Automatic token-based custom flanking
-- Party-sheet Hexploration, vehicles, haulers, riders, and daily activity planning
+- Party-sheet Hexploration, vehicles, haulers, riders, daily assignments, progress tracking, and travel-feat checks
 - In-game world settings and per-material tier editors
 - Extensible through world configuration and a public module API
 
@@ -32,7 +32,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.4.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.5.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -54,7 +54,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.4.0`.
+3. Create and push a matching tag such as `v0.5.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -110,13 +110,19 @@ The `penalties` values are the intended final totals after normal PF2e Off-guard
 
 ## Hexploration travel
 
-Open a PF2e party sheet and select the **Hexploration** tab. The tab stores one shared travel plan on that party and presents the calculated Speed in the same PF2e-inspired parchment, crimson, charcoal, and gold style as the Wrathmaker control panel.
+Open a PF2e party sheet and select the **Hexploration** tab. The tab stores one shared travel plan on that party. Its compact travel/member sidebar, brown section bars, parchment assignment rows, and control placement follow the native PF2e party-sheet design.
 
 - **On foot** uses the slowest ground Speed among all party members.
 - **Self-propelled vehicle** reads the selected world Vehicle actor's prepared drive Speed, falling back to the numeric Speed in its PF2e details. Party members marked **Riding** use that Speed; members left on foot can still slow the group.
 - **Creature-pulled cart or vehicle** uses the slowest selected pulling creature's ground Speed. Pulling party members cannot also count as riders. An optional vehicle Speed limit can cap unusually fast haulers or supply a manual value for custom vehicle actors.
 - **Save Travel Plan** persists the selections to the party's Wrathmaker flags.
 - **Begin Day & Share** saves the plan and posts its Speed, distance, vehicle, haulers, and chosen activities to chat.
+- Each activity can be assigned to a specific party member or to the whole party. Its **Used** checkbox saves immediately so everyone sees current daily progress.
+- **Assigned**, **Used**, and **Remaining** counters appear in both the travel sidebar and daily-activity header.
+- **New Day** clears the Used checkboxes and the current Express Rider result while retaining the party's route setup and assignments.
+- **Express Rider** can be assigned to any party member. Wrathmaker detects the feat on the selected character, rolls that character's PF2e statistic against a GM-set DC, and stores the result for the day. Survival is the campaign default; Nature remains available for standard PF2e play.
+- A successful or critically successful Express Rider check increases a selected pulling creature's travel Speed by half for the current day. A vehicle Speed limit and any party members still walking continue to cap the shared Speed normally.
+- **Other travel effect or feat** supplies a named manual shared-Speed change for effects that are not yet automated.
 
 The daily allowance follows the Hexploration table used by PF2e:
 
@@ -152,7 +158,7 @@ The module never persists changes to the item's source `name`, `system.price`, `
 
 Disabling or uninstalling the module leaves inert flags on previously configured items. All PF2e item and rune data remains intact.
 
-Party travel plans are likewise stored only under `flags.pf2e-crafting-material-tiers.hexploration` on the party actor. Vehicle and creature actors are referenced by id and are never modified.
+Party travel plans are likewise stored only under `flags.pf2e-crafting-material-tiers.hexploration` on the party actor. Assignments, Used states, Express Rider results, and manual travel effects live in that versioned flag. Vehicle, creature, and character actors are referenced by id and are never modified.
 
 Version 1 item flags are read automatically. The former per-item enable and override values are ignored, leaving Material and Tier as the only item-level choices.
 
@@ -242,6 +248,7 @@ Available methods:
 - `registerMaterial(id, definition)`
 - `getItemData(item)` / `calculateItem(item)` / `updateItem(item, changes)`
 - `getHexplorationPlan(party)` / `calculateHexploration(party)` / `updateHexplorationPlan(party, changes)`
+- `hexplorationPlanSchemaVersion` reports the current saved party-plan schema.
 
 The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry is ready.
 

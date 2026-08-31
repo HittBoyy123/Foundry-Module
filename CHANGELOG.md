@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 — Native daily travel planning
+
+- Rebuilt the Wrathmaker Hexploration tab to match the PF2e party sheet's native two-column layout, brown section bars, parchment rows, compact travel summary, and member sidebar.
+- Added explicit party-member assignment to each daily Hexploration activity.
+- Added persistent Assigned, Used, and Remaining counters, with a Used checkbox on each activity that saves immediately for shared table tracking.
+- Added a New Day control that clears activity progress and the day's Express Rider result without discarding travel setup or assignments.
+- Added automatic Express Rider feat detection on party members, a selectable Nature or Survival check, a GM-set DC, and a player-usable PF2e dice roll button.
+- Applied a successful or critically successful Express Rider check as a 50% increase to the selected pulling creature's travel Speed for the current day, while respecting vehicle limits and walking party members.
+- Defaulted Express Rider to the campaign's requested Survival check and kept Nature available for standard PF2e play.
+- Added a named manual travel-Speed modifier for other feats, effects, terrain, and future house rules.
+- Added assignments, progress, and Express Rider results to the shared Hexploration chat card.
+- Migrated saved party travel plans to schema version 2 without changing PF2e actor source data.
+
 ## 0.4.0 — Party Hexploration travel
 
 - Added a Hexploration tab directly to the PF2e party sheet.

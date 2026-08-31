@@ -1,4 +1,9 @@
-import { ITEM_SCHEMA_VERSION, MODULE_ID, RULES_SCHEMA_VERSION } from "./constants.js";
+import {
+  HEXPLORATION_PLAN_SCHEMA_VERSION,
+  ITEM_SCHEMA_VERSION,
+  MODULE_ID,
+  RULES_SCHEMA_VERSION,
+} from "./constants.js";
 import { getRulesConfig, resetRulesConfig, setRulesConfig } from "./config-store.js";
 import { calculateItemEffects, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
 import { buildPartyTravelState } from "./hexploration.js";
@@ -25,6 +30,7 @@ export function createPublicApi() {
     moduleId: MODULE_ID,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
+    hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
     flagsPath: `flags.${MODULE_ID}`,
     hexplorationFlagsPath: `flags.${MODULE_ID}.hexploration`,
 
@@ -87,7 +93,23 @@ export function createPublicApi() {
     async updateHexplorationPlan(party, changes) {
       requireParty(party);
       const current = normalizeHexplorationPlan(party.getFlag(MODULE_ID, "hexploration"));
-      const next = normalizeHexplorationPlan({ ...current, ...clone(changes) });
+      const incoming = clone(changes ?? {});
+      const next = normalizeHexplorationPlan({
+        ...current,
+        ...incoming,
+        travelModifiers: {
+          ...current.travelModifiers,
+          ...incoming.travelModifiers,
+          expressRider: {
+            ...current.travelModifiers.expressRider,
+            ...incoming.travelModifiers?.expressRider,
+          },
+          other: {
+            ...current.travelModifiers.other,
+            ...incoming.travelModifiers?.other,
+          },
+        },
+      });
       await party.setFlag(MODULE_ID, "hexploration", next);
       return clone(next);
     },

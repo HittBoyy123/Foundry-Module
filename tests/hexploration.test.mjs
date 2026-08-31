@@ -6,6 +6,7 @@ import {
   applyPreparedPartyTravelSpeed,
   calculateActivitiesPerDay,
   calculateTravelState,
+  expressRiderOutcomeFromDegree,
   getActorGroundSpeed,
   getVehicleGroundSpeed,
   normalizeHexplorationPlan,
@@ -136,7 +137,134 @@ test("travel plans are bounded and unknown activity values are made safe", () =>
   assert.deepEqual(plan.riderIds, ["a"]);
   assert.equal(plan.activities.length, 4);
   assert.equal(plan.activities[0].type, "none");
+  assert.equal(plan.activities[0].actorId, "");
+  assert.equal(plan.activities[0].used, false);
   assert.equal(plan.activities[0].note.length, 200);
+  assert.equal(plan.schemaVersion, 2);
+  assert.equal(plan.travelModifiers.expressRider.skill, "survival");
+});
+
+test("daily assignments track assigned, used, and remaining activities", () => {
+  const state = calculateTravelState({
+    plan: {
+      mode: "foot",
+      activities: [
+        { type: "reconnoiter", actorId: "slow", used: true },
+        { type: "map-area", actorId: "fast", used: false },
+      ],
+    },
+    members: [
+      { id: "slow", speed: 30 },
+      { id: "fast", speed: 35 },
+    ],
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(state.activitiesPerDay, 2);
+  assert.equal(state.assignedCount, 2);
+  assert.equal(state.usedCount, 1);
+  assert.equal(state.remainingActivities, 1);
+  assert.equal(state.unassignedActivities, 0);
+  assert.equal(state.plan.activities[0].actorId, "slow");
+});
+
+test("a successful Express Rider check increases hauled travel Speed by half for the day", () => {
+  const state = calculateTravelState({
+    plan: {
+      mode: "hauled",
+      vehicleId: "wagon",
+      riderIds: ["slow", "fast"],
+      haulerIds: ["horse"],
+      travelModifiers: {
+        expressRider: {
+          enabled: true,
+          actorId: "fast",
+          skill: "nature",
+          dc: 20,
+          outcome: "success",
+          rollTotal: 24,
+        },
+      },
+    },
+    members,
+    vehicles,
+    haulers,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(state.baseTransportSpeed, 40);
+  assert.equal(state.transportSpeed, 60);
+  assert.equal(state.sharedSpeed, 60);
+  assert.equal(state.expressRiderApplied, true);
+  assert.equal(state.expressRiderSpeedBonus, 20);
+  assert.equal(state.activitiesPerDay, 4);
+});
+
+test("Express Rider does not boost foot travel or a failed check", () => {
+  const foot = calculateTravelState({
+    plan: {
+      mode: "foot",
+      travelModifiers: { expressRider: { enabled: true, outcome: "criticalSuccess" } },
+    },
+    members,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(foot.expressRiderSuccessful, true);
+  assert.equal(foot.expressRiderApplied, false);
+  assert.equal(foot.sharedSpeed, 20);
+
+  const failed = calculateTravelState({
+    plan: {
+      mode: "hauled",
+      vehicleId: "wagon",
+      riderIds: ["slow", "fast"],
+      haulerIds: ["horse"],
+      travelModifiers: { expressRider: { enabled: true, outcome: "failure" } },
+    },
+    members,
+    vehicles,
+    haulers,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(failed.transportSpeed, 40);
+  assert.equal(failed.expressRiderApplied, false);
+});
+
+test("Express Rider requires a selected party member before its daily result can apply", () => {
+  const state = calculateTravelState({
+    plan: {
+      mode: "hauled",
+      vehicleId: "wagon",
+      riderIds: ["slow", "fast"],
+      haulerIds: ["horse"],
+      travelModifiers: {
+        expressRider: { enabled: true, outcome: "success" },
+      },
+    },
+    members,
+    vehicles,
+    haulers,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(state.expressRiderSuccessful, true);
+  assert.equal(state.expressRiderEligible, false);
+  assert.equal(state.expressRiderApplied, false);
+  assert.equal(state.transportSpeed, 40);
+});
+
+test("manual travel effects adjust shared Speed and check degrees map safely", () => {
+  const state = calculateTravelState({
+    plan: {
+      mode: "foot",
+      travelModifiers: { other: { enabled: true, label: "Tailwind", speedBonus: 10 } },
+    },
+    members,
+    config: DEFAULT_HEXPLORATION_CONFIG,
+  });
+  assert.equal(state.baseSharedSpeed, 20);
+  assert.equal(state.sharedSpeed, 30);
+  assert.equal(state.customSpeedBonus, 10);
+  assert.equal(expressRiderOutcomeFromDegree(0), "criticalFailure");
+  assert.equal(expressRiderOutcomeFromDegree(2), "success");
+  assert.equal(expressRiderOutcomeFromDegree(99), "unrolled");
 });
 
 test("PF2e v13 and v14 actor and vehicle Speed paths are supported", () => {
