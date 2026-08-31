@@ -435,11 +435,14 @@ export function normalizeRulesConfig(input) {
     const defaultMaterial = DEFAULT_RULES_CONFIG.materials[materialId];
     const isLegacyDragonScale = materialId === "dragon-scale" && sourceSchemaVersion < 8;
     const augmentation = material.augmentation === true || isLegacyDragonScale;
-    const itemTypes = augmentation
+    let itemTypes = augmentation
       ? ["armor"]
       : sourceSchemaVersion < 4 && defaultMaterial
       ? [...new Set([...originalItemTypes, "armor"])]
       : originalItemTypes;
+    if (!augmentation && sourceSchemaVersion < 10 && defaultMaterial?.itemTypes.includes("spellFocus")) {
+      itemTypes = [...new Set([...itemTypes, "spellFocus"])];
+    }
     if (!Array.isArray(material.effects)) {
       throw new ConfigValidationError(`materials.${materialId}.effects must be an array.`);
     }
@@ -457,6 +460,20 @@ export function normalizeRulesConfig(input) {
     const defaultArmorEffect = defaultMaterial?.effects.find((effect) => effect.id === "armor-ac");
     if (!augmentation && sourceSchemaVersion < 4 && defaultArmorEffect && !hasArmorEffect) {
       effectSources.push(copyJson(defaultArmorEffect));
+    }
+    if (!augmentation && sourceSchemaVersion < 10) {
+      const standardEffects = DEFAULT_RULES_CONFIG.materials.metal.effects;
+      const migrationEffectIds = [
+        (defaultMaterial?.itemTypes.includes("weapon") || originalItemTypes.includes("weapon"))
+          ? "weapon-damage"
+          : null,
+        "spell-focus-potency",
+      ].filter(Boolean);
+      for (const effectId of migrationEffectIds) {
+        if (effectSources.some((effect) => isPlainObject(effect) && effect.id === effectId)) continue;
+        const template = standardEffects.find((effect) => effect.id === effectId);
+        if (template) effectSources.push(copyJson(template));
+      }
     }
     const effects = effectSources.map((effect, index) =>
       normalizeEffect(effect, `materials.${materialId}.effects[${index}]`));
@@ -581,6 +598,15 @@ export function materialsForItemType(config, itemType) {
 
 export function itemTypeIsSupported(config, itemType) {
   return materialsForItemType(config, itemType).length > 0;
+}
+
+export function getCraftingItemType(item) {
+  if (item?.type !== "equipment") return item?.type ?? null;
+  const otherTags = item.system?.traits?.otherTags;
+  const isSpellFocus = Array.isArray(otherTags)
+    ? otherTags.includes("spell-focus")
+    : otherTags?.has?.("spell-focus") === true;
+  return isSpellFocus ? "spellFocus" : item.type;
 }
 
 export function getTierPresentation(config, materialId, tier) {

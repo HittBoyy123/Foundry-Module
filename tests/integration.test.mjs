@@ -30,10 +30,12 @@ test("PF2e bridge injects rules ephemerally and restores system.rules", () => {
   });
 
   const prepared = item.prepareRuleElements();
-  assert.equal(prepared.length, 2);
+  assert.equal(prepared.length, 3);
   assert.equal(prepared[0].key, "ExistingRule");
   assert.equal(prepared[1].key, "FlatModifier");
   assert.equal(prepared[1].value, 2);
+  assert.equal(prepared[2].key, "FlatModifier");
+  assert.equal(prepared[2].value, 4);
   assert.deepEqual(item.system.rules, [{ key: "ExistingRule" }]);
 });
 
@@ -99,6 +101,37 @@ test("armor AC rules are generated only while the armor is equipped", () => {
   assert.equal(rules.length, 1);
   assert.deepEqual(rules[0].selector, ["ac"]);
   assert.equal(rules[0].value, 1);
+});
+
+test("spell-focus rules affect spell attacks and DCs only while the focus is held", () => {
+  const config = normalizeRulesConfig(cloneDefaultRulesConfig());
+  const focus = {
+    actor: {},
+    type: "equipment",
+    id: "focus1",
+    name: "Spell Focus",
+    isEquipped: false,
+    system: { traits: { otherTags: ["spell-focus"] } },
+    getFlag: () => ({ material: "wood", tier: 4 }),
+  };
+
+  assert.deepEqual(buildItemRuleElements(focus, config), []);
+  focus.isEquipped = true;
+  const rules = buildItemRuleElements(focus, config);
+  assert.equal(rules.length, 1);
+  assert.deepEqual(rules[0].selector, ["spell-attack", "spell-dc"]);
+  assert.equal(rules[0].value, 3);
+
+  const stronger = {
+    ...focus,
+    id: "focus2",
+    getFlag: () => ({ material: "metal", tier: 6 }),
+  };
+  const actor = { inventory: { contents: [focus, stronger] } };
+  focus.actor = actor;
+  stronger.actor = actor;
+  assert.deepEqual(buildItemRuleElements(focus, config), []);
+  assert.equal(buildItemRuleElements(stronger, config)[0].value, 5);
 });
 
 test("equipped metal or leather armor can add dragon-scale resistance", () => {

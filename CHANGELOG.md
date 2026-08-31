@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.0 — Weapon damage and spell focuses
+
+- Added a second weapon modifier that increases damage by twice the configured tier bonus: +2, +4, +6, +8, and +10 at Tiers 2–6.
+- Kept the existing Tier 2–6 weapon attack progression at +1 through +5.
+- Added Metal and Wood as default materials for a new held Spell Focus crafting category.
+- Added a configurable **Spell Focus** to the **Wrathmaker Crafting Items** compendium; while held, it applies the tier bonus to all spell attacks and spell DCs.
+- Added Spell Focus availability to each material's GM editor, while enabling it only for Metal and Wood by default.
+- Migrated existing world rules to schema version 10 without replacing customized material names, tier bonuses, prices, rarities, or modifier types.
+
+## 0.8.0 — Apex ability items
+
+- Added the **Wrathmaker Apex Ability Items** compendium with 30 original worn items: five each for Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma.
+- Added exact additive ability-modifier values from +1 through +5 while preserving PF2e's investment and single-selected-Apex-item workflow.
+- Tagged every item with the PF2e Apex, Invested, and Magical traits plus the `item-boost` other tag.
+- Added brief item descriptions, progressive item levels, and six original accessory-family illustrations.
+- Kept the custom bonuses inactive unless an item is invested, selected as the active Apex item, and worn.
+
 ## 0.7.2 — Dragon Scale age tiers
 
 - Replaced the generic Dragon Scale tier names with Hatchling, Juvenile, Youth, Adult, Ancient, and Arch Dragon.

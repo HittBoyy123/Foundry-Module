@@ -1,12 +1,13 @@
 # Wrathmaker
 
-A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapon and armor sheets, automates Wrathmaker's escalating multi-side flanking penalties, and adds shared vehicle-aware Hexploration travel to the PF2e party sheet. A GM-facing control panel can toggle all three systems during play.
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapons, armor, and crafted spell focuses, a collection of custom Apex ability-boost items, Wrathmaker's escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel to the PF2e party sheet. A GM-facing control panel manages the configurable systems during play.
 
 ## Compatibility
 
 - Foundry VTT 13 and 14
 - Pathfinder Second Edition 7.1 or newer
-- Material-tier item support: weapons and armor
+- Material-tier item support: weapons, armor, and held spell focuses
+- Thirty worn Apex ability items with exact +1 through +5 modifier increases
 - Automatic token-based custom flanking
 - Party-sheet Hexploration, vehicles, haulers, riders, daily assignments, progress tracking, and travel-feat checks
 - In-game world settings and per-material tier editors
@@ -26,15 +27,23 @@ The visible module name is **Wrathmaker**. Its internal id remains `pf2e-craftin
    ```
 
 3. Select **Install**, then enable **Wrathmaker** in the world's Manage Modules screen.
-4. Open a weapon or armor sheet and choose **Material** and **Tier** directly below **Quantity**.
+4. Open a supported weapon, armor, or Wrathmaker Spell Focus sheet and choose **Material** and **Tier** directly below **Quantity**.
 
 This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.7.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.9.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
+
+## Apex ability items
+
+The **Wrathmaker Apex Ability Items** compendium contains 30 original worn equipment items: five each for Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma. Their Item Boost values range from +1 to +5. Belts represent Strength, rings Dexterity, amulets Constitution, circlets Intelligence, sashes Wisdom, and brooches Charisma; none of the collection uses armor, weapons, or boots.
+
+Every item carries PF2e's **Apex**, **Invested**, and **Magical** traits and the `item-boost` other tag. PF2e continues to manage investment and which single Apex item is selected. When a Wrathmaker item is invested, selected, and worn, the module replaces the standard Apex adjustment for that item with its exact additive ability-modifier value. Removing, dropping, uninvesting, or deselecting it removes the benefit during the next normal actor preparation.
+
+The collection uses five progressive item levels—1, 5, 9, 13, and 17—but deliberately has no purchase prices so the GM can award and value these campaign-specific items as needed.
 
 ## In-game control panel
 
@@ -45,7 +54,7 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
 - The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
 - Every crafting material has an **Edit** button that opens its own pop-out.
-- The material pop-out edits the material name, enabled state, weapon/armor availability, PF2e bonus type, and all six tier names, bonuses, added prices, and PF2e rarities.
+- The material pop-out edits the material name, enabled state, weapon/armor/spell-focus availability, PF2e bonus type, and all six tier names, bonuses, added prices, and PF2e rarities.
 - Dragon Scales use a specialized editor for dragon-color names, resistance damage types, and six editable resistance values.
 - The complete configuration is presented through named fields and material pop-outs; no raw-code or JSON editor is exposed in-game.
 
@@ -55,22 +64,28 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.7.0`.
+3. Create and push a matching tag such as `v0.9.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
 ## Default rules
 
-| Tier | Metal | Wood | Other materials | Custom bonus | Added price | PF2e rarity |
-| ---: | --- | --- | --- | ---: | ---: | --- |
-| 1 | Iron | Softwood | Common | +0 | 0 gp | Common |
-| 2 | Steel | Hardwood | Uncommon | +1 | 10 gp | Uncommon |
-| 3 | Cold Iron | Blackwood | Rare | +2 | 25 gp | Rare |
-| 4 | Mithril | Darkmoon | Epic | +3 | 100 gp | Unique |
-| 5 | Adamantium | Starwood | Legendary | +4 | 1,000 gp | Unique |
-| 6 | Dark Iron | Godwood | Mythical | +5 | 5,000 gp | Unique |
+| Tier | Metal | Wood | Other materials | Attack / focus | Weapon damage | Added price | PF2e rarity |
+| ---: | --- | --- | --- | ---: | ---: | ---: | --- |
+| 1 | Iron | Softwood | Common | +0 | +0 | 0 gp | Common |
+| 2 | Steel | Hardwood | Uncommon | +1 | +2 | 10 gp | Uncommon |
+| 3 | Cold Iron | Blackwood | Rare | +2 | +4 | 25 gp | Rare |
+| 4 | Mithril | Darkmoon | Epic | +3 | +6 | 100 gp | Unique |
+| 5 | Adamantium | Starwood | Legendary | +4 | +8 | 1,000 gp | Unique |
+| 6 | Dark Iron | Godwood | Mythical | +5 | +10 | 5,000 gp | Unique |
 
-Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as base materials for weapons and armor. Weapon bonuses apply only to the selected weapon's attack selector. Armor bonuses apply only to AC and only while that armor is equipped. The default bonus type is **untyped**, and the GM can change it to item, status, or circumstance in the material editor without changing the module code.
+Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as base materials for weapons and armor. A crafted weapon adds the tier bonus to its own attack rolls and twice the tier bonus to its own damage rolls. Armor adds the tier bonus only to AC and only while equipped. The default bonus type is **untyped**, and the GM can change it to item, status, or circumstance in the material editor without changing the module code.
+
+## Crafted spell focus
+
+The **Wrathmaker Crafting Items** compendium contains one reusable **Spell Focus** equipment item. Drag it to a spellcaster, hold it in one hand, and choose Metal or Wood plus a Tier on its item sheet. Its prepared name becomes the selected material name followed by “Spell Focus,” such as `Steel Spell Focus` or `Starwood Spell Focus`.
+
+While held, the focus adds the tier bonus to every spell attack and spell DC on the character: +0 at Tier 1, then +1 through +5 at Tiers 2–6. It does not change spell damage, spell slots, traditions, or proficiency ranks. Putting it away removes the modifiers during normal PF2e actor preparation, and if more than one focus is held only the strongest applies. Only Metal and Wood support focuses by default, but the GM can enable or disable the Spell Focus category independently in each material editor.
 
 Dragon Scales are an armor-only enhancement rather than a replacement base material. Metal and Leather/Hide armor sheets gain Dragon Scale and Scale Tier controls. Their default age tiers are **Hatchling, Juvenile, Youth, Adult, Ancient, and Arch Dragon**, replacing the generic Common–Mythical names; the GM can still rename every tier in the Dragon Scales editor. Black, Blue, Green, Red, and White scales default to acid, electricity, poison, fire, and cold resistance respectively; the GM can rename every color and change its damage type. The six resistance values default to 0 because the campaign progression is still undecided, and can be edited in the Dragon Scales material pop-out. A configured resistance is generated only while the armor is equipped, without changing the armor's PF2e source rules.
 
@@ -180,9 +195,9 @@ Every material has:
 
 - `label`: the name shown on item sheets.
 - `enabled`: whether the material is available.
-- `itemTypes`: PF2e item types on which it appears.
+- `itemTypes`: Wrathmaker crafting categories on which it appears (`weapon`, `armor`, or `spellFocus`).
 - `effects`: one or more generated PF2e flat modifiers.
-- Optional effect `itemTypes`: limits an effect to weapons, armor, or future item types.
+- Optional effect `itemTypes`: limits an effect to weapons, armor, spell focuses, or future crafting categories.
 - Optional `tierLabels`: per-tier names that override the shared labels for this material.
 - Optional `tierBonuses`: per-tier custom bonuses that override the shared bonus schedule for this material.
 - Optional `tierPricesGp`: per-tier prices that override the shared prices for this material.
@@ -217,6 +232,24 @@ The default weapon effect is:
 }
 ```
 
+Weapon damage uses a second item-specific effect with twice the same tier bonus:
+
+```json
+{
+  "id": "weapon-damage",
+  "kind": "flatModifier",
+  "label": "Crafted {material} Damage ({tierLabel})",
+  "itemTypes": ["weapon"],
+  "selectors": ["{item|_id}-damage"],
+  "modifierType": "untyped",
+  "value": {
+    "mode": "tierBonus",
+    "multiplier": 2,
+    "offset": 0
+  }
+}
+```
+
 Supported value modes are:
 
 - `tierBonus`: the configured bonus for the item's tier.
@@ -234,6 +267,20 @@ The default armor effect is scoped separately from weapon attacks:
   "label": "Crafted {material} Armor ({tierLabel})",
   "itemTypes": ["armor"],
   "selectors": ["ac"],
+  "modifierType": "untyped",
+  "value": "tierBonus"
+}
+```
+
+Metal and Wood also include a held spell-focus effect:
+
+```json
+{
+  "id": "spell-focus-potency",
+  "kind": "flatModifier",
+  "label": "Crafted {material} Spell Focus ({tierLabel})",
+  "itemTypes": ["spellFocus"],
+  "selectors": ["spell-attack", "spell-dc"],
   "modifierType": "untyped",
   "value": "tierBonus"
 }
@@ -262,4 +309,4 @@ The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry i
 
 ## Current scope
 
-Wrathmaker currently automates crafting-material modifiers for weapons and armor, tier-based names/prices/rarity, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.
+Wrathmaker currently automates crafting-material modifiers for weapons, armor, and spell focuses, tier-based names/prices/rarity, custom Apex ability items, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.

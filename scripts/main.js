@@ -1,5 +1,6 @@
 import { MODULE_ID, MODULE_TITLE } from "./constants.js";
 import { createPublicApi } from "./api.js";
+import { installAbilityBoostBridge } from "./ability-boosts.js";
 import { createRulesConfigApplication } from "./config-app.js";
 import { getRulesConfig, refreshPreparedData, registerRulesSetting } from "./config-store.js";
 import { installFlankingBridge } from "./flanking.js";
@@ -8,6 +9,7 @@ import { installRuleElementBridge, registerPreparedItemHooks } from "./integrati
 import { registerItemSheetHooks } from "./item-sheet.js";
 
 let bridgeInstalled = false;
+let abilityBoostsInstalled = false;
 let flankingInstalled = false;
 let hexplorationInstalled = false;
 
@@ -29,6 +31,7 @@ Hooks.once("init", () => {
   });
 
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
+  abilityBoostsInstalled = installAbilityBoostBridge();
   flankingInstalled = installFlankingBridge(getRulesConfig);
   hexplorationInstalled = installHexploration(getRulesConfig);
   registerPreparedItemHooks(getRulesConfig);
@@ -40,10 +43,11 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   if (game.system.id !== "pf2e") return;
-  if (bridgeInstalled || flankingInstalled || hexplorationInstalled) refreshPreparedData();
+  if (bridgeInstalled || abilityBoostsInstalled || flankingInstalled || hexplorationInstalled) refreshPreparedData();
   Hooks.callAll(`${MODULE_ID}.ready`, game.modules.get(MODULE_ID)?.api);
   const unavailable = [
     !bridgeInstalled ? "item automation" : null,
+    !abilityBoostsInstalled ? "Apex item-boost automation" : null,
     !flankingInstalled ? "flanking automation" : null,
     !hexplorationInstalled ? "Hexploration automation" : null,
   ].filter(Boolean);

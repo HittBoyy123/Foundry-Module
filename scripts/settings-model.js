@@ -32,8 +32,20 @@ const DAMAGE_TYPES = Object.freeze([
   "void",
 ]);
 
+const ITEM_TYPE_LABELS = Object.freeze({
+  weapon: "Weapons",
+  armor: "Armor",
+  spellFocus: "Spell Focuses",
+});
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function formatList(values) {
+  if (values.length < 2) return values[0] ?? "";
+  if (values.length === 2) return values.join(" and ");
+  return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
 }
 
 function checked(value) {
@@ -83,10 +95,9 @@ export function buildDashboardContext(config) {
       enabled: material.enabled,
       itemTypes: material.augmentation
         ? "Metal and Leather/Hide armor enhancement"
-        : material.itemTypes
-        .filter((type) => type === "weapon" || type === "armor")
-        .map((type) => type === "weapon" ? "Weapons" : "Armor")
-        .join(" and "),
+        : formatList(material.itemTypes
+          .filter((type) => ITEM_TYPE_LABELS[type])
+          .map((type) => ITEM_TYPE_LABELS[type])),
       tiers: Array.from({ length: 6 }, (_unused, index) => {
         const tier = index + 1;
         return `${tier}: ${getTierPresentation(config, id, tier).label}`;
@@ -128,6 +139,7 @@ export function buildMaterialEditorContext(config, materialId) {
     enabled: material.enabled,
     supportsWeapon: material.itemTypes.includes("weapon"),
     supportsArmor: material.itemTypes.includes("armor"),
+    supportsSpellFocus: material.itemTypes.includes("spellFocus"),
     isDragonScale: material.augmentation === true,
     modifierTypes: MODIFIER_TYPES.map((type) => ({
       ...type,
@@ -178,14 +190,15 @@ export function applyMaterialChanges(config, materialId, form) {
       color.damageType = String(colorForm.damageType ?? color.damageType).trim().toLowerCase();
     }
   } else {
-    const preservedTypes = material.itemTypes.filter((type) => type !== "weapon" && type !== "armor");
+    const preservedTypes = material.itemTypes.filter((type) => !["weapon", "armor", "spellFocus"].includes(type));
     const selectedTypes = [
       checked(form.itemTypes?.weapon) ? "weapon" : null,
       checked(form.itemTypes?.armor) ? "armor" : null,
+      checked(form.itemTypes?.spellFocus) ? "spellFocus" : null,
     ].filter(Boolean);
     material.itemTypes = [...new Set([...preservedTypes, ...selectedTypes])];
     if (material.itemTypes.length === 0) {
-      throw new ConfigValidationError("Choose Weapons, Armor, or both for this material.");
+      throw new ConfigValidationError("Choose Weapons, Armor, Spell Focuses, or a combination for this material.");
     }
     const modifierType = String(form.material?.modifierType ?? "untyped").toLowerCase();
     material.effects = material.effects.map((effect) => effect.kind === "flatModifier"

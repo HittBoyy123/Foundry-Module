@@ -30,6 +30,7 @@
         <legend>{{localize "CMT.Settings.Material.AppliesTo"}}</legend>
         <label><input type="checkbox" name="itemTypes.weapon" {{#if supportsWeapon}}checked{{/if}}> {{localize "CMT.Settings.Material.Weapons"}}</label>
         <label><input type="checkbox" name="itemTypes.armor" {{#if supportsArmor}}checked{{/if}}> {{localize "CMT.Settings.Material.Armor"}}</label>
+        <label><input type="checkbox" name="itemTypes.spellFocus" {{#if supportsSpellFocus}}checked{{/if}}> {{localize "CMT.Settings.Material.SpellFocuses"}}</label>
       </fieldset>
 
       <div class="form-group">
@@ -94,6 +95,9 @@
       </div>
     {{/each}}
   </section>
+  {{#unless isDragonScale}}
+    <p class="hint cmt-tier-effect-hint">{{localize "CMT.Settings.Material.TierEffectHint"}}</p>
+  {{/unless}}
 
   <footer class="cmt-config-actions cmt-two-actions">
     <button type="submit">

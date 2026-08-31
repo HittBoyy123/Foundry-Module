@@ -1,6 +1,6 @@
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 9;
+export const RULES_SCHEMA_VERSION = 10;
 export const ITEM_SCHEMA_VERSION = 3;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -28,6 +28,20 @@ const defaultWeaponEffect = () => ({
   },
 });
 
+const defaultWeaponDamageEffect = () => ({
+  id: "weapon-damage",
+  kind: "flatModifier",
+  label: "Crafted {material} Damage ({tierLabel})",
+  itemTypes: ["weapon"],
+  selectors: ["{item|_id}-damage"],
+  modifierType: "untyped",
+  value: {
+    mode: "tierBonus",
+    multiplier: 2,
+    offset: 0,
+  },
+});
+
 const defaultArmorEffect = () => ({
   id: "armor-ac",
   kind: "flatModifier",
@@ -42,9 +56,25 @@ const defaultArmorEffect = () => ({
   },
 });
 
+const defaultSpellFocusEffect = () => ({
+  id: "spell-focus-potency",
+  kind: "flatModifier",
+  label: "Crafted {material} Spell Focus ({tierLabel})",
+  itemTypes: ["spellFocus"],
+  selectors: ["spell-attack", "spell-dc"],
+  modifierType: "untyped",
+  value: {
+    mode: "tierBonus",
+    multiplier: 1,
+    offset: 0,
+  },
+});
+
 const defaultEffects = () => Object.freeze([
   Object.freeze(defaultWeaponEffect()),
+  Object.freeze(defaultWeaponDamageEffect()),
   Object.freeze(defaultArmorEffect()),
+  Object.freeze(defaultSpellFocusEffect()),
 ]);
 
 export const DEFAULT_TIER_LABELS = Object.freeze({
@@ -167,7 +197,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     metal: Object.freeze({
       label: "Metal",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
+      itemTypes: Object.freeze(["weapon", "armor", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: METAL_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
@@ -175,7 +205,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     wood: Object.freeze({
       label: "Wood",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
+      itemTypes: Object.freeze(["weapon", "armor", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: WOOD_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,

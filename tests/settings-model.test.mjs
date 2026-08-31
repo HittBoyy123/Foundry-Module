@@ -19,7 +19,9 @@ test("dashboard context exposes friendly crafting, flanking, and material summar
   assert.equal(context.flankingEnabled, true);
   assert.equal(context.hexplorationEnabled, true);
   assert.equal(context.penaltyThree, -3);
-  assert.match(context.materials.find((material) => material.id === "metal").tiers, /1: Iron/);
+  const metal = context.materials.find((material) => material.id === "metal");
+  assert.match(metal.tiers, /1: Iron/);
+  assert.equal(metal.itemTypes, "Weapons, Armor, and Spell Focuses");
 });
 
 test("dashboard changes toggle both systems and update flanking totals", () => {
@@ -72,6 +74,7 @@ test("material editor changes all tier presentation fields and per-material bonu
   const editor = buildMaterialEditorContext(config, "metal");
   assert.equal(editor.tiers[1].label, "Steel");
   assert.equal(editor.tiers[1].bonus, 1);
+  assert.equal(editor.supportsSpellFocus, true);
 
   const tiers = Object.fromEntries(editor.tiers.map((row) => [row.tier, {
     label: row.tier === 2 ? "Kingssteel" : row.label,
@@ -81,7 +84,7 @@ test("material editor changes all tier presentation fields and per-material bonu
   }]));
   const changed = normalizeRulesConfig(applyMaterialChanges(config, "metal", {
     material: { label: "Forged Metal", enabled: true },
-    itemTypes: { weapon: true, armor: true },
+    itemTypes: { weapon: true, armor: true, spellFocus: true },
     tiers,
   }));
   assert.equal(changed.materials.metal.label, "Forged Metal");
@@ -89,6 +92,7 @@ test("material editor changes all tier presentation fields and per-material bonu
   assert.equal(changed.materials.metal.tierBonuses[2], 3);
   assert.equal(changed.materials.metal.tierPricesGp[2], 75);
   assert.equal(changed.materials.metal.tierRarities[2], "rare");
+  assert.equal(changed.materials.metal.itemTypes.includes("spellFocus"), true);
 
   const result = calculateItemEffects({
     itemType: "weapon",
@@ -110,6 +114,7 @@ test("flat material editor fields save names, tiers, and an untyped bonus", () =
     "material.modifierType": "untyped",
     "itemTypes.weapon": "on",
     "itemTypes.armor": "on",
+    "itemTypes.spellFocus": "on",
   };
   for (let tier = 1; tier <= 6; tier += 1) {
     flat[`tiers.${tier}.label`] = tier === 2 ? "Kingssteel" : config.materials.metal.tierLabels[tier];

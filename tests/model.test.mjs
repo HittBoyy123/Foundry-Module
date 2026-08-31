@@ -5,6 +5,7 @@ import { cloneDefaultRulesConfig } from "../scripts/constants.js";
 import {
   ConfigValidationError,
   calculateItemEffects,
+  getCraftingItemType,
   getTierPresentation,
   insertTierLabel,
   itemTypeIsSupported,
@@ -29,7 +30,13 @@ test("default tiers resolve from +0 through +5", () => {
   for (let tier = 1; tier <= 6; tier += 1) {
     const result = calculate({ material: "metal", tier });
     assert.equal(result.tierBonus, tier - 1);
-    assert.equal(result.rules.length, tier === 1 ? 0 : 1);
+    assert.equal(result.rules.length, tier === 1 ? 0 : 2);
+    if (tier > 1) {
+      const attack = result.rules.find((rule) => rule.selector.includes("{item|_id}-attack"));
+      const damage = result.rules.find((rule) => rule.selector.includes("{item|_id}-damage"));
+      assert.equal(attack.value, tier - 1);
+      assert.equal(damage.value, (tier - 1) * 2);
+    }
   }
 });
 
@@ -87,11 +94,62 @@ test("tier label is inserted between PF2e rune text and the source item name", (
 test("weapon rule is item-specific, untyped, and leaves input config unchanged", () => {
   const before = JSON.stringify(config);
   const result = calculate({ material: "wood", tier: 4 });
-  assert.deepEqual(result.rules[0].selector, ["{item|_id}-attack"]);
-  assert.equal(result.rules[0].type, "untyped");
-  assert.equal(result.rules[0].value, 3);
-  assert.match(result.rules[0].label, /Wood/);
+  const attack = result.rules.find((rule) => rule.selector.includes("{item|_id}-attack"));
+  const damage = result.rules.find((rule) => rule.selector.includes("{item|_id}-damage"));
+  assert.deepEqual(attack.selector, ["{item|_id}-attack"]);
+  assert.equal(attack.type, "untyped");
+  assert.equal(attack.value, 3);
+  assert.match(attack.label, /Wood/);
+  assert.deepEqual(damage.selector, ["{item|_id}-damage"]);
+  assert.equal(damage.type, "untyped");
+  assert.equal(damage.value, 6);
   assert.equal(JSON.stringify(config), before);
+});
+
+test("metal and wood spell focuses apply their tier bonus to spell attacks and DCs", () => {
+  const focusItem = {
+    type: "equipment",
+    system: { traits: { otherTags: ["spell-focus"] } },
+  };
+  assert.equal(getCraftingItemType(focusItem), "spellFocus");
+  assert.equal(getCraftingItemType({ ...focusItem, system: { traits: { otherTags: [] } } }), "equipment");
+
+  for (const material of ["metal", "wood"]) {
+    const result = calculateItemEffects({
+      itemType: "spellFocus",
+      itemId: "focus1",
+      itemName: "Spell Focus",
+      flags: { material, tier: 5 },
+      config,
+    });
+    assert.equal(result.active, true);
+    assert.equal(result.rules.length, 1);
+    assert.deepEqual(result.rules[0].selector, ["spell-attack", "spell-dc"]);
+    assert.equal(result.rules[0].value, 4);
+  }
+
+  const stone = calculateItemEffects({
+    itemType: "spellFocus",
+    itemId: "focus2",
+    itemName: "Spell Focus",
+    flags: { material: "stone", tier: 5 },
+    config,
+  });
+  assert.equal(stone.active, false);
+  assert.equal(stone.rules.length, 0);
+
+  const expanded = cloneDefaultRulesConfig();
+  expanded.materials.stone.itemTypes.push("spellFocus");
+  const expandedConfig = normalizeRulesConfig(expanded);
+  const enabledStone = calculateItemEffects({
+    itemType: "spellFocus",
+    itemId: "focus3",
+    itemName: "Spell Focus",
+    flags: { material: "stone", tier: 5 },
+    config: expandedConfig,
+  });
+  assert.equal(enabledStone.active, true);
+  assert.equal(enabledStone.rules[0].value, 4);
 });
 
 test("legacy enable and override fields are ignored", () => {
@@ -210,7 +268,7 @@ test("version 1 rules migrate without discarding customized materials", () => {
   delete legacy.tierPricesGp;
   legacy.materials.metal.label = "Custom Metal";
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.equal(migrated.materials.metal.label, "Custom Metal");
   assert.equal(migrated.tierLabels[3], "Rare");
   assert.equal(migrated.tierPricesGp[3], 25);
@@ -231,7 +289,7 @@ test("version 2 defaults migrate while existing material-specific overrides are 
   legacy.materials.metal.tierPricesGp = { 4: 777 };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.equal(migrated.tierLabels[4], "Epic");
   assert.equal(migrated.tierPricesGp[4], 100);
   assert.equal(migrated.materials.metal.tierLabels[4], "Moonsteel");
@@ -261,7 +319,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   const metal = migrated.materials.metal;
   const weaponEffect = metal.effects.find((effect) => effect.id === "weapon-attack");
   const armorEffect = metal.effects.find((effect) => effect.id === "armor-ac");
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.deepEqual(migrated.tierRarities, {
     1: "common",
     2: "uncommon",
@@ -270,9 +328,11 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
     5: "unique",
     6: "unique",
   });
-  assert.deepEqual(metal.itemTypes, ["weapon", "armor"]);
+  assert.deepEqual(metal.itemTypes, ["weapon", "armor", "spellFocus"]);
   assert.deepEqual(weaponEffect.itemTypes, ["weapon"]);
   assert.deepEqual(armorEffect.itemTypes, ["armor"]);
+  assert.equal(metal.effects.some((effect) => effect.id === "weapon-damage"), true);
+  assert.equal(metal.effects.some((effect) => effect.id === "spell-focus-potency"), true);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
   assert.equal(migrated.flanking.stackWithOffGuard, true);
@@ -284,7 +344,7 @@ test("version 4 flanking rules migrate to PF2e-managed two-sided flanking", () =
   delete legacy.flanking.pf2eHandlesTwoSidedFlanking;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
 });
@@ -295,7 +355,7 @@ test("version 5 rules migrate with both in-game systems enabled", () => {
   delete legacy.crafting;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.equal(migrated.hexploration.enabled, true);
   assert.equal(migrated.crafting.enabled, true);
   assert.equal(migrated.flanking.enabled, true);
@@ -307,7 +367,7 @@ test("version 6 control-panel rules migrate with Hexploration enabled", () => {
   delete legacy.hexploration;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.equal(migrated.hexploration.enabled, true);
   assert.deepEqual(migrated.hexploration.activityThresholds, [
     { maxSpeed: 10, activities: 0.5 },
@@ -330,7 +390,7 @@ test("version 7 dragon scale material migrates to an armor augmentation", () => 
   dragonScale.effects = structuredClone(legacy.materials.metal.effects);
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.equal(migrated.materials["dragon-scale"].augmentation, true);
   assert.deepEqual(migrated.materials["dragon-scale"].itemTypes, ["armor"]);
   assert.deepEqual(migrated.materials["dragon-scale"].allowedBaseMaterials, ["metal", "leather"]);
@@ -352,7 +412,7 @@ test("version 8 default dragon-scale labels migrate to age tiers without replaci
   };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 9);
+  assert.equal(migrated.schemaVersion, 10);
   assert.deepEqual(migrated.materials["dragon-scale"].tierLabels, {
     1: "Hatchling",
     2: "Juvenile",
@@ -366,6 +426,29 @@ test("version 8 default dragon-scale labels migrate to age tiers without replaci
   const customized = normalizeRulesConfig(legacy);
   assert.equal(customized.materials["dragon-scale"].tierLabels[2], "Lesser Wyrm");
   assert.equal(customized.materials["dragon-scale"].tierLabels[6], "Mythical");
+});
+
+test("version 9 materials migrate to weapon damage and metal or wood spell focuses", () => {
+  const legacy = cloneDefaultRulesConfig();
+  legacy.schemaVersion = 9;
+  for (const material of Object.values(legacy.materials)) {
+    material.itemTypes = material.itemTypes.filter((type) => type !== "spellFocus");
+    material.effects = material.effects.filter((effect) => !["weapon-damage", "spell-focus-potency"].includes(effect.id));
+  }
+
+  const migrated = normalizeRulesConfig(legacy);
+  assert.equal(migrated.schemaVersion, 10);
+  for (const [materialId, material] of Object.entries(migrated.materials)) {
+    if (material.augmentation) continue;
+    assert.equal(material.effects.some((effect) => effect.id === "weapon-damage"), true, materialId);
+    assert.equal(material.effects.some((effect) => effect.id === "spell-focus-potency"), true, materialId);
+  }
+  for (const materialId of ["metal", "wood"]) {
+    const material = migrated.materials[materialId];
+    assert.equal(material.itemTypes.includes("spellFocus"), true);
+    assert.equal(material.effects.some((effect) => effect.id === "spell-focus-potency"), true);
+  }
+  assert.equal(migrated.materials.stone.itemTypes.includes("spellFocus"), false);
 });
 
 test("crafting master switch hides controls and disables prepared effects", () => {

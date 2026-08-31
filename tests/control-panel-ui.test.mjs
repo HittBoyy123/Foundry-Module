@@ -18,6 +18,7 @@ test("control panel exposes only friendly settings actions", async () => {
   assert.match(template, /data-action="reset"/);
   assert.match(template, /name="hexploration\.enabled"/);
   assert.match(materialTemplate, /name="material\.modifierType"/);
+  assert.match(materialTemplate, /name="itemTypes\.spellFocus"/);
   assert.match(materialTemplate, /name="dragonColors\.\{\{id\}\}\.damageType"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-color"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-tier"/);

@@ -245,6 +245,7 @@
 .cmt-item-types {
   border: 1px solid var(--cmt-gold);
   display: flex;
+  flex-wrap: wrap;
   gap: 1.2rem;
   margin-top: 0.65rem;
   padding: 0.45rem 0.65rem 0.6rem;
@@ -298,6 +299,11 @@
   gap: 0.4rem;
   margin-top: 0.75rem;
   padding: 0.65rem;
+}
+
+.cmt-tier-effect-hint {
+  color: var(--cmt-muted-ink);
+  margin: 0.45rem 0 0;
 }
 
 .cmt-tier-row {

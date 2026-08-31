@@ -28,6 +28,9 @@ jobs:
       - name: Run automated tests
         run: node --test
 
+      - name: Build content packs
+        run: node tools/build-packs.mjs
+
       - name: Build Foundry release archive
         id: package
         shell: bash
@@ -36,7 +39,7 @@ jobs:
           ARCHIVE_NAME="wrathmaker-v${MODULE_VERSION}.zip"
           mkdir -p release
           cp module.json LICENSE README.md CHANGELOG.md release/
-          cp -R scripts styles templates lang release/
+          cp -R scripts styles templates lang assets packs release/
           node - <<'NODE'
           const fs = require("fs");
           const manifestPath = "release/module.json";

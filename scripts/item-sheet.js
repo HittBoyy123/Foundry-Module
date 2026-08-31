@@ -1,6 +1,7 @@
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import {
   getTierPresentation,
+  getCraftingItemType,
   itemTypeIsSupported,
   materialsForItemType,
   normalizeItemFlags,
@@ -132,7 +133,7 @@ async function saveSelection(item, root, config) {
   }
 }
 
-function insertControls(application, item, root, config) {
+function insertControls(application, item, root, config, craftingItemType) {
   const anchor = findQuantityRow(root);
   if (!anchor) {
     console.warn(`${MODULE_ID} | Could not find the physical-item field list on ${item.name}.`);
@@ -140,7 +141,7 @@ function insertControls(application, item, root, config) {
   }
   const referenceSelect = findReferenceSelect(root);
 
-  const availableMaterials = materialsForItemType(config, item.type);
+  const availableMaterials = materialsForItemType(config, craftingItemType);
   const rawFlags = item.getFlag?.(MODULE_ID) ?? item.flags?.[MODULE_ID];
   const flags = normalizeItemFlags(rawFlags, config);
   const editable = Boolean(application.isEditable ?? application.options?.editable ?? item.isOwner);
@@ -231,8 +232,9 @@ export function injectItemSheet(application, html, getConfig) {
   if (!item || !root || root.querySelector('[data-cmt-sheet-controls="true"]')) return;
 
   const config = getConfig();
-  if (!itemTypeIsSupported(config, item.type)) return;
-  insertControls(application, item, root, config);
+  const craftingItemType = getCraftingItemType(item);
+  if (!itemTypeIsSupported(config, craftingItemType)) return;
+  insertControls(application, item, root, config, craftingItemType);
 }
 
 export function registerItemSheetHooks(getConfig) {

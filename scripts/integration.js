@@ -1,5 +1,5 @@
 import { MODULE_ID } from "./constants.js";
-import { calculateItemEffects, insertTierLabel } from "./model.js";
+import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
 
 const PATCH_MARKER = Symbol.for(`${MODULE_ID}.prepareRuleElements`);
 const adjustedPrices = new WeakSet();
@@ -11,7 +11,7 @@ function getFlags(item) {
 
 function calculateItem(item, config) {
   return calculateItemEffects({
-    itemType: item.type,
+    itemType: getCraftingItemType(item),
     itemId: item.id ?? item._id ?? "item",
     itemName: item.name ?? "Item",
     flags: getFlags(item),
@@ -19,9 +19,37 @@ function calculateItem(item, config) {
   });
 }
 
+function getActorItems(actor) {
+  if (Array.isArray(actor?.inventory?.contents)) return actor.inventory.contents;
+  if (Array.isArray(actor?.items?.contents)) return actor.items.contents;
+  if (actor?.items && Symbol.iterator in Object(actor.items)) return Array.from(actor.items);
+  return [];
+}
+
+function isPrimarySpellFocus(item, config) {
+  const actorItems = getActorItems(item.actor);
+  if (actorItems.length === 0) return true;
+
+  const eligible = actorItems
+    .filter((candidate) => getCraftingItemType(candidate) === "spellFocus" && candidate.isEquipped !== false)
+    .map((candidate) => {
+      const result = calculateItem(candidate, config);
+      const focusEffect = result.previews.find((effect) => effect.id === "spell-focus-potency");
+      return { item: candidate, active: result.active, value: Number(focusEffect?.value) || 0 };
+    })
+    .filter((entry) => entry.active)
+    .sort((left, right) => right.value - left.value
+      || String(left.item.id ?? left.item._id ?? "").localeCompare(String(right.item.id ?? right.item._id ?? "")));
+  const selected = eligible[0]?.item;
+  if (!selected) return false;
+  return selected === item || (selected.id ?? selected._id) === (item.id ?? item._id);
+}
+
 export function buildItemRuleElements(item, config) {
   if (!item?.actor || !item?.type) return [];
-  if (item.type === "armor" && item.isEquipped === false) return [];
+  const craftingItemType = getCraftingItemType(item);
+  if (["armor", "spellFocus"].includes(craftingItemType) && item.isEquipped === false) return [];
+  if (craftingItemType === "spellFocus" && !isPrimarySpellFocus(item, config)) return [];
   return calculateItem(item, config).rules;
 }
 

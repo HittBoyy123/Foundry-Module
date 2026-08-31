@@ -4,8 +4,9 @@ import {
   MODULE_ID,
   RULES_SCHEMA_VERSION,
 } from "./constants.js";
+import { ABILITY_BOOST_SCHEMA_VERSION, getItemAbilityBoost } from "./ability-boosts.js";
 import { getRulesConfig, resetRulesConfig, setRulesConfig } from "./config-store.js";
-import { calculateItemEffects, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
+import { calculateItemEffects, getCraftingItemType, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
 import { buildPartyTravelState } from "./hexploration.js";
 import { normalizeHexplorationPlan } from "./hexploration-model.js";
 
@@ -28,6 +29,7 @@ function requireParty(actor) {
 export function createPublicApi() {
   return Object.freeze({
     moduleId: MODULE_ID,
+    abilityBoostSchemaVersion: ABILITY_BOOST_SCHEMA_VERSION,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
     hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
@@ -61,10 +63,15 @@ export function createPublicApi() {
       return normalizeItemFlags(item.getFlag(MODULE_ID), getRulesConfig());
     },
 
+    getItemAbilityBoost(item) {
+      requireItem(item);
+      return clone(getItemAbilityBoost(item));
+    },
+
     calculateItem(item) {
       requireItem(item);
       return calculateItemEffects({
-        itemType: item.type,
+        itemType: getCraftingItemType(item),
         itemId: item.id ?? item._id ?? "item",
         itemName: item.name,
         flags: item.getFlag(MODULE_ID),
