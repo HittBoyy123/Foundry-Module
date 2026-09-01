@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.13.0 — character professions
+
+- Added a native-style **Profession** field beside Deity on the PF2e character overview.
+- Added a **Wrathmaker Professions** compendium with Blacksmithing, Alchemy, Enchanting, Leatherwork, Carpentry, Stonemasonry, Glassmaking, Pottery, Weaving, Bookmaking, and Tailoring.
+- Added a player-facing profession picker that reads the compendium-backed definitions and allows one active profession per character.
+- Added an automatically managed profession Lore skill that is trained at level 1, expert at level 4, master at level 10, and legendary at level 16.
+- Added visible PF2e Additional Lore and Specialty Crafting feat grants for every profession, including a custom Enchanting specialty.
+- Added Quick Repair for Blacksmithing, Alchemical Crafting for Alchemy, Magical Crafting for Enchanting, Experienced Tracker for Leatherwork, and Hefty Hauler for Carpentry.
+- Reserved three named placeholder specialty records on every profession for later campaign definitions.
+- Added a +2 circumstance bonus framework for relevant profession checks and connected current material-gathering checks to it.
+- Added profession helpers to the public API and grouped the new compendium under **Pathfinder 2E Wrathmaker**.
+
 ## 0.12.0 — Kingmaker-aware gathering and party-stash rewards
 
 - Restyled the gathering window with Wrathmaker's shared PF2e party-sheet palette: gray `#605856`, red `#5E0000`, soft parchment `#E7D9CF`, and yellow `#E9D7A1`.

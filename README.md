@@ -1,6 +1,6 @@
 # Wrathmaker
 
-A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and tier controls to PF2e weapons, armor, and crafted spell focuses, tiered crafting resources and resource gathering, custom Apex ability-boost items, campaign Hero and Nephilim Points, escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel. A GM-facing control panel manages the configurable systems during play.
+A Foundry VTT module for custom Pathfinder 2e house rules. It adds character professions, material and tier controls to PF2e weapons, armor, and crafted spell focuses, tiered crafting resources and resource gathering, custom Apex ability-boost items, campaign Hero and Nephilim Points, escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel. A GM-facing control panel manages the configurable systems during play.
 
 ## Compatibility
 
@@ -9,6 +9,7 @@ A Foundry VTT module for custom Pathfinder 2e house rules. It adds material and 
 - Material-tier item support: weapons, armor, and held spell focuses
 - Stackable tiered resources for every material, including color-specific Dragon Scales
 - PF2e skill-based gathering with GM-controlled environments and tier availability
+- Eleven compendium-backed character professions with automatic Lore progression and feat grants
 - Thirty worn Apex ability items with exact +1 through +5 modifier increases
 - Persistent Hero Points up to 10 and party-level Nephilim Points up to 10
 - Automatic token-based custom flanking
@@ -36,7 +37,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.12.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.13.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -50,6 +51,23 @@ Wrathmaker applies the exact additive modifier from the active item. Different a
 
 The collection uses five progressive item levels—1, 5, 9, 13, and 17—but deliberately has no purchase prices so the GM can award and value these campaign-specific items as needed.
 
+## Character professions
+
+Every PF2e character sheet gains a native-style **Profession** field beside **Deity**. Its search or menu button opens the Wrathmaker profession picker, which reads the **Wrathmaker Professions** compendium and keeps one profession active on that character. A profession can also be dragged from the compendium; Wrathmaker treats the newly added profession as the active selection and removes the previous module-managed profession benefits.
+
+The available professions are **Blacksmithing, Alchemy, Enchanting, Leatherwork, Carpentry, Stonemasonry, Glassmaking, Pottery, Weaving, Bookmaking,** and **Tailoring**. Each profession currently contains three placeholder specialties so their later subcategories can be added without replacing the profession data model.
+
+Selecting a profession creates normal PF2e items on the character:
+
+- A visible profession feat containing the profession's relevant-check automation.
+- A profession Lore skill and the **Additional Lore** feat.
+- **Specialty Crafting** preselected for that profession. Enchanting uses a Wrathmaker specialty because Enchanting is not one of PF2e's standard Specialty Crafting choices.
+- The determined additional feat: **Quick Repair** for Blacksmithing, **Alchemical Crafting** for Alchemy, **Magical Crafting** for Enchanting, **Experienced Tracker** for Leatherwork, and **Hefty Hauler** for Carpentry. The remaining profession feats stay marked *To be determined*.
+
+Profession Lore advances automatically from **trained at level 1**, to **expert at level 4**, **master at level 10**, and **legendary at level 16**. Wrathmaker updates only the Lore item it created for that profession and preserves unrelated Lore skills and feats.
+
+Relevant profession checks receive a **+2 circumstance bonus**. The current gathering mappings are Metal → Blacksmithing, Herbs/Mushrooms → Alchemy, Mana Crystals → Enchanting, Leather/Dragon Scales → Leatherwork, Wood → Carpentry, and Stone → Stonemasonry. Glassmaking, Pottery, Weaving, Bookmaking, and Tailoring are ready for their future resource and recipe categories. PF2e's ordinary Specialty Crafting bonus remains a circumstance bonus, so it does not double-stack with the profession bonus on the same check.
+
 ## Campaign points
 
 Character Hero Points use PF2e's normal header control with a maximum of **10** instead of 3. Their value is stored on the character normally and Wrathmaker does not perform a session reset, so unspent Hero Points carry into later sessions.
@@ -58,7 +76,7 @@ Every PF2e party sheet also displays **Nephilim Points** in its native green hea
 
 ## Compendium organization
 
-Foundry groups every module compendium under **Pathfinder 2E Wrathmaker** in the Compendium Packs sidebar. The folder contains the Apex Ability Items, Crafting Items, and Crafting Resources packs and is the parent for future Wrathmaker packs.
+Foundry groups every module compendium under **Pathfinder 2E Wrathmaker** in the Compendium Packs sidebar. The folder contains the Apex Ability Items, Crafting Items, Crafting Resources, and Professions packs and is the parent for future Wrathmaker packs.
 
 ## In-game control panel
 
@@ -80,7 +98,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.12.0`.
+3. Create and push a matching tag such as `v0.13.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 

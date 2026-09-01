@@ -1,0 +1,43 @@
+<section class="cmt-profession-picker-body">
+  <header class="cmt-profession-picker-header">
+    <i class="fa-solid fa-hammer" aria-hidden="true"></i>
+    <div>
+      <h2>{{localize "CMT.Profession.PickerHeading"}}</h2>
+      <p>{{localize "CMT.Profession.PickerIntro" actor=actorName}}</p>
+    </div>
+  </header>
+
+  <div class="cmt-profession-progression">
+    <strong>{{localize "CMT.Profession.Progression"}}</strong>
+    <span>{{localize "CMT.Profession.ProgressionSummary"}}</span>
+  </div>
+
+  <div class="cmt-profession-list">
+    {{#each professions}}
+      <label class="cmt-profession-option{{#if selected}} is-selected{{/if}}">
+        <input type="radio" name="professionId" value="{{id}}" {{checked selected}} required />
+        <img src="{{img}}" alt="" />
+        <span class="cmt-profession-option-details">
+          <strong>{{name}}</strong>
+          <small>{{loreName}}</small>
+          <small>{{localize "CMT.Profession.CraftingCoverage" categories=materialLabel}}</small>
+          <small>{{localize "CMT.Profession.BonusFeat" feat=bonusFeatLabel}}</small>
+        </span>
+        <span class="cmt-profession-bonus">+{{checkBonus}}</span>
+      </label>
+    {{/each}}
+  </div>
+
+  <footer class="cmt-profession-actions">
+    {{#if hasProfession}}
+      <button type="button" data-action="removeProfession">
+        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+        {{localize "CMT.Profession.Remove"}}
+      </button>
+    {{/if}}
+    <button type="submit">
+      <i class="fa-solid fa-check" aria-hidden="true"></i>
+      {{localize "CMT.Profession.Select"}}
+    </button>
+  </footer>
+</section>

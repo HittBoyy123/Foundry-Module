@@ -9,6 +9,7 @@ import { registerGathering } from "./gathering.js";
 import { installHexploration } from "./hexploration.js";
 import { installRuleElementBridge, registerPreparedItemHooks } from "./integration.js";
 import { registerItemSheetHooks } from "./item-sheet.js";
+import { registerProfessionHooks } from "./professions.js";
 
 let bridgeInstalled = false;
 let abilityBoostsInstalled = false;
@@ -16,6 +17,7 @@ let campaignResourcesInstalled = false;
 let flankingInstalled = false;
 let hexplorationInstalled = false;
 let gatheringInstalled = false;
+let professionsInstalled = false;
 
 Hooks.once("init", () => {
   if (game.system.id !== "pf2e") {
@@ -54,6 +56,7 @@ Hooks.once("init", () => {
   hexplorationInstalled = installHexploration(getRulesConfig);
   registerPreparedItemHooks(getRulesConfig);
   registerItemSheetHooks(getRulesConfig);
+  professionsInstalled = registerProfessionHooks();
 
   const module = game.modules.get(MODULE_ID);
   if (module) module.api = createPublicApi();
@@ -72,6 +75,7 @@ Hooks.once("ready", () => {
     !flankingInstalled ? "flanking automation" : null,
     !hexplorationInstalled ? "Hexploration automation" : null,
     !gatheringInstalled ? "gathering" : null,
+    !professionsInstalled ? "professions" : null,
   ].filter(Boolean);
   console.info(`${MODULE_ID} | Ready${unavailable.length ? ` (${unavailable.join(" and ")} unavailable)` : ""}.`);
 });

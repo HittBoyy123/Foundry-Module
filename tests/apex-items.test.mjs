@@ -78,6 +78,6 @@ test("the generated NeDB pack matches its human-readable catalog", async () => {
     name: "Pathfinder 2E Wrathmaker",
     sorting: "m",
     color: "#5E0000",
-    packs: ["apex-items", "crafting-items", "crafting-resources"],
+    packs: ["apex-items", "crafting-items", "crafting-resources", "professions"],
   }]);
 });

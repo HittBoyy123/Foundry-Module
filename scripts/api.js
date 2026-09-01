@@ -47,6 +47,15 @@ import {
   GATHERING_ENVIRONMENT_SOURCES,
   GATHERING_TASK_SOURCES,
 } from "../content/gathering-presets.js";
+import { PROFESSION_DEFINITIONS, PROFESSION_SCHEMA_VERSION } from "../content/professions.js";
+import {
+  clearActorProfession,
+  getActorProfession,
+  openProfessionPicker,
+  professionCheckRollOptions,
+  professionRankForLevel,
+  setActorProfession,
+} from "./professions.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -64,6 +73,13 @@ function requireParty(actor) {
   return actor;
 }
 
+function requireCharacter(actor) {
+  if (actor?.documentName !== "Actor" || actor.type !== "character") {
+    throw new TypeError("Expected a PF2e character Actor document.");
+  }
+  return actor;
+}
+
 export function createPublicApi() {
   return Object.freeze({
     moduleId: MODULE_ID,
@@ -75,6 +91,7 @@ export function createPublicApi() {
     craftingResourceSchemaVersion: CRAFTING_RESOURCE_SCHEMA_VERSION,
     craftingRecipeSchemaVersion: CRAFTING_RECIPE_SCHEMA_VERSION,
     gatheringSchemaVersion: GATHERING_SCHEMA_VERSION,
+    professionSchemaVersion: PROFESSION_SCHEMA_VERSION,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
     hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
@@ -206,6 +223,42 @@ export function createPublicApi() {
 
     openGathering(options = {}) {
       return openGatheringApplication(options);
+    },
+
+    listProfessions() {
+      return clone(PROFESSION_DEFINITIONS);
+    },
+
+    getProfession(actor) {
+      requireCharacter(actor);
+      const profession = getActorProfession(actor);
+      if (!profession) return null;
+      const { item, ...data } = profession;
+      return { ...clone(data), itemId: item.id };
+    },
+
+    professionRankForLevel(level) {
+      return professionRankForLevel(level);
+    },
+
+    professionCheckRollOptions(actor, context) {
+      requireCharacter(actor);
+      return professionCheckRollOptions(actor, context);
+    },
+
+    async setProfession(actor, professionId) {
+      requireCharacter(actor);
+      return setActorProfession(actor, professionId);
+    },
+
+    async clearProfession(actor) {
+      requireCharacter(actor);
+      return clearActorProfession(actor);
+    },
+
+    openProfessionPicker(actor) {
+      requireCharacter(actor);
+      return openProfessionPicker(actor);
     },
 
     getHexplorationPlan(party) {

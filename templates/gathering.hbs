@@ -88,6 +88,12 @@
         <div><dt>{{localize "CMT.Gathering.Time"}}</dt><dd>{{task.timeMinutes}} {{localize "CMT.Gathering.Minutes"}}</dd></div>
         <div><dt>{{localize "CMT.Gathering.Bundle"}}</dt><dd>{{resource.unitsPerItem}} {{resource.unit}}</dd></div>
       </dl>
+      {{#if professionBonus}}
+        <div class="cmt-gathering-profession-bonus">
+          <i class="fa-solid fa-hammer" aria-hidden="true"></i>
+          <span>{{localize "CMT.Gathering.ProfessionBonus" profession=professionBonus.name bonus=professionBonus.value type=professionBonus.type}}</span>
+        </div>
+      {{/if}}
       <div class="cmt-gathering-yields">
         <span><strong>{{localize "CMT.Gathering.Success"}}:</strong> {{task.successQuantity}} × {{resource.name}}</span>
         <span><strong>{{localize "CMT.Gathering.CriticalSuccess"}}:</strong> {{task.criticalSuccessQuantity}} × {{resource.name}}</span>

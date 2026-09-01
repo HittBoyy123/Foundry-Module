@@ -1358,6 +1358,21 @@
   color: var(--cmt-gather-ink);
 }
 
+.cmt-gathering-profession-bonus {
+  align-items: center;
+  background: var(--cmt-gather-soft);
+  border-left: 4px solid var(--cmt-gather-red);
+  color: var(--cmt-gather-ink);
+  display: flex;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.cmt-gathering-profession-bonus > i {
+  color: var(--cmt-gather-red);
+}
+
 .cmt-gathering-notice,
 .cmt-gathering-result {
   background: var(--cmt-gather-soft);
@@ -1448,6 +1463,190 @@
 
 .cmt-gathering-chat > p.is-failure {
   border-left: 5px solid #5e0000;
+}
+
+.sheet.actor.character .tab.character .detail.profession h3 {
+  min-width: 0;
+}
+
+.sheet.actor.character .tab.character .detail.profession .value {
+  cursor: pointer;
+}
+
+.sheet.actor.character .tab.character .detail.profession:not(.selected) .value {
+  color: #706963;
+  cursor: default;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.cmt-profession-control {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: auto;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  min-height: 0;
+  padding: 0 0.2rem;
+  width: auto;
+}
+
+.cmt-profession-control:hover {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: #5e0000;
+  text-shadow: 0 0 8px var(--color-shadow-primary);
+}
+
+.cmt-profession-picker {
+  --cmt-profession-brown: #605856;
+  --cmt-profession-red: #5e0000;
+  --cmt-profession-soft: #e7d9cf;
+  --cmt-profession-yellow: #e9d7a1;
+  --cmt-profession-paper: #f4eee6;
+  --cmt-profession-ink: #2a211d;
+}
+
+.cmt-profession-picker .window-content {
+  background: var(--cmt-profession-paper);
+  color: var(--cmt-profession-ink);
+  overflow: hidden;
+}
+
+.cmt-profession-picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  height: 100%;
+  overflow: hidden;
+  padding: 0.55rem;
+}
+
+.cmt-profession-picker-header {
+  align-items: center;
+  background: var(--cmt-profession-brown);
+  border-left: 6px solid var(--cmt-profession-red);
+  color: #fff8e9;
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.cmt-profession-picker-header > i {
+  color: var(--cmt-profession-yellow);
+  font-size: 1.65rem;
+}
+
+.cmt-profession-picker-header h2,
+.cmt-profession-picker-header p {
+  color: inherit;
+  margin: 0;
+}
+
+.cmt-profession-picker-header p {
+  margin-top: 0.2rem;
+}
+
+.cmt-profession-progression {
+  align-items: center;
+  background: var(--cmt-profession-yellow);
+  border: 1px solid #9a8366;
+  border-left: 5px solid var(--cmt-profession-red);
+  display: flex;
+  gap: 0.6rem;
+  justify-content: space-between;
+  padding: 0.45rem 0.6rem;
+}
+
+.cmt-profession-list {
+  display: grid;
+  gap: 0.38rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.cmt-profession-option {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid #b5a49b;
+  cursor: pointer;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: auto 44px minmax(0, 1fr) auto;
+  min-height: 58px;
+  padding: 0.4rem 0.55rem;
+}
+
+.cmt-profession-option:hover,
+.cmt-profession-option.is-selected {
+  background: var(--cmt-profession-soft);
+  border-color: var(--cmt-profession-red);
+}
+
+.cmt-profession-option input {
+  accent-color: var(--cmt-profession-red);
+  margin: 0;
+}
+
+.cmt-profession-option img {
+  border: 1px solid var(--cmt-profession-brown);
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
+.cmt-profession-option-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cmt-profession-option-details strong {
+  color: var(--cmt-profession-red);
+}
+
+.cmt-profession-option-details small {
+  color: #5b514c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmt-profession-bonus {
+  align-items: center;
+  background: var(--cmt-profession-red);
+  border-radius: 50%;
+  color: #fff8e9;
+  display: flex;
+  font-weight: 700;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.cmt-profession-actions {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.cmt-profession-actions button {
+  background: var(--cmt-profession-yellow);
+  border: 1px solid var(--cmt-profession-red);
+  color: var(--cmt-profession-ink);
+  font-weight: 700;
+  min-height: 34px;
+}
+
+.cmt-profession-actions button[data-action="removeProfession"] {
+  background: var(--cmt-profession-soft);
 }
 
 @media (max-width: 600px) {

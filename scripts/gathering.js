@@ -20,6 +20,7 @@ import {
   resolveGatheringOutcome,
 } from "./gathering-model.js";
 import { resolveGatheringRegion } from "./gathering-regions.js";
+import { getActorProfession, professionCheckRollOptions } from "./professions.js";
 
 let GatheringApplication = null;
 
@@ -181,6 +182,7 @@ async function attemptGathering(application, formData, event) {
       "action:gather",
       `action:gather:${evaluation.task.materialId}`,
       `wrathmaker:gathering:tier:${evaluation.task.tier}`,
+      ...professionCheckRollOptions(actor, { materialId: evaluation.task.materialId }),
     ],
   });
   if (!roll) return null;
@@ -246,6 +248,10 @@ function applicationContext(application) {
     sceneUuid: currentSceneUuid(),
   }) : null;
   const resourceData = resource ? getCraftingResourceData(resource) : null;
+  const profession = getActorProfession(actor);
+  const professionApplies = Boolean(task && professionCheckRollOptions(actor, {
+    materialId: task.materialId,
+  }).length);
 
   return {
     gatheringEnabled: config.gathering?.enabled !== false,
@@ -283,6 +289,11 @@ function applicationContext(application) {
       img: resource.img,
       unitsPerItem: resourceData.unitsPerItem,
       unit: resourceData.unit.replaceAll("-", " "),
+    } : null,
+    professionBonus: professionApplies ? {
+      name: profession.name,
+      value: profession.checkBonus,
+      type: profession.checkBonusType,
     } : null,
     rewardDestinationLabel: GATHERING_REWARD_DESTINATIONS[recipientResolution.destination],
     rewardRecipientName: recipientResolution.recipient?.name ?? "",
