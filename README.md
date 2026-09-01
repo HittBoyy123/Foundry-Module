@@ -37,7 +37,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.13.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.14.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -53,20 +53,24 @@ The collection uses five progressive item levels—1, 5, 9, 13, and 17—but del
 
 ## Character professions
 
-Every PF2e character sheet gains a native-style **Profession** field beside **Deity**. Its search or menu button opens the Wrathmaker profession picker, which reads the **Wrathmaker Professions** compendium and keeps one profession active on that character. A profession can also be dragged from the compendium; Wrathmaker treats the newly added profession as the active selection and removes the previous module-managed profession benefits.
+Every PF2e character sheet gains a native-style **Profession** field beside **Deity**. Its search or menu button opens the Wrathmaker profession picker, which reads the **Wrathmaker Professions** compendium and manages the character's starting profession and later profession-development choices. The sheet field shows the starting profession plus a count when additional professions are active.
 
 The available professions are **Blacksmithing, Alchemy, Enchanting, Leatherwork, Carpentry, Stonemasonry, Glassmaking, Pottery, Weaving, Bookmaking,** and **Tailoring**. Each profession currently contains three placeholder specialties so their later subcategories can be added without replacing the profession data model.
 
 Selecting a profession creates normal PF2e items on the character:
 
 - A visible profession feat containing the profession's relevant-check automation.
-- A profession Lore skill and the **Additional Lore** feat.
+- A plainly named profession Lore skill—such as **Blacksmithing** or **Enchanting**, without a redundant “Lore” suffix—and the **Additional Lore** feat.
 - **Specialty Crafting** preselected for that profession. Enchanting uses a Wrathmaker specialty because Enchanting is not one of PF2e's standard Specialty Crafting choices.
 - The determined additional feat: **Quick Repair** for Blacksmithing, **Alchemical Crafting** for Alchemy, **Magical Crafting** for Enchanting, **Experienced Tracker** for Leatherwork, and **Hefty Hauler** for Carpentry. The remaining profession feats stay marked *To be determined*.
 
-Profession Lore advances automatically from **trained at level 1**, to **expert at level 4**, **master at level 10**, and **legendary at level 16**. Wrathmaker updates only the Lore item it created for that profession and preserves unrelated Lore skills and feats.
+Profession Lore advances automatically from **trained at level 1**, to **expert at level 3**, **master at level 7**, and **legendary at level 15**. Wrathmaker updates only the Lore items it created and preserves unrelated Lore skills and feats.
+
+At character levels **4, 10, and 16**, the picker unlocks one profession-development choice. Each choice can be either one of the three specialties belonging to the starting profession or a different new profession. New professions receive their normal Wrathmaker Lore, Specialty Crafting, and determined bonus-feat package. A specialty creates its own visible Lore skill and uses the same 1/3/7/15 proficiency progression as its parent profession. Duplicate professions and duplicate specialties are rejected.
 
 Relevant profession checks receive a **+2 circumstance bonus**. The current gathering mappings are Metal → Blacksmithing, Herbs/Mushrooms → Alchemy, Mana Crystals → Enchanting, Leather/Dragon Scales → Leatherwork, Wood → Carpentry, and Stone → Stonemasonry. Glassmaking, Pottery, Weaving, Bookmaking, and Tailoring are ready for their future resource and recipe categories. PF2e's ordinary Specialty Crafting bonus remains a circumstance bonus, so it does not double-stack with the profession bonus on the same check.
+
+Alchemy, Pottery, and Tailoring use bundled Wrathmaker artwork so their picker and compendium entries remain available even when a Foundry installation lacks the referenced core icon path.
 
 ## Campaign points
 
@@ -98,7 +102,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.13.0`.
+3. Create and push a matching tag such as `v0.14.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 

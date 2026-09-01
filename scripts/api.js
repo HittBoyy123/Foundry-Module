@@ -51,10 +51,13 @@ import { PROFESSION_DEFINITIONS, PROFESSION_SCHEMA_VERSION } from "../content/pr
 import {
   clearActorProfession,
   getActorProfession,
+  getActorProfessionPlan,
+  getActorProfessions,
   openProfessionPicker,
   professionCheckRollOptions,
   professionRankForLevel,
   setActorProfession,
+  setActorProfessionPlan,
 } from "./professions.js";
 
 function clone(value) {
@@ -237,6 +240,24 @@ export function createPublicApi() {
       return { ...clone(data), itemId: item.id };
     },
 
+    getProfessions(actor) {
+      requireCharacter(actor);
+      return getActorProfessions(actor).map(({ item, selection, ...data }) => ({
+        ...clone(data),
+        selection: clone(selection),
+        itemId: item.id,
+      }));
+    },
+
+    getProfessionPlan(actor) {
+      requireCharacter(actor);
+      const plan = getActorProfessionPlan(actor);
+      return {
+        primaryProfessionId: plan.primary?.id ?? "",
+        milestones: clone(plan.milestones),
+      };
+    },
+
     professionRankForLevel(level) {
       return professionRankForLevel(level);
     },
@@ -249,6 +270,11 @@ export function createPublicApi() {
     async setProfession(actor, professionId) {
       requireCharacter(actor);
       return setActorProfession(actor, professionId);
+    },
+
+    async setProfessionPlan(actor, plan) {
+      requireCharacter(actor);
+      return setActorProfessionPlan(actor, plan);
     },
 
     async clearProfession(actor) {

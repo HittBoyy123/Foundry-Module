@@ -1,6 +1,6 @@
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
-export const PROFESSION_SCHEMA_VERSION = 1;
+export const PROFESSION_SCHEMA_VERSION = 2;
 
 export const PF2E_PROFESSION_FEAT_UUIDS = Object.freeze({
   additionalLore: "Compendium.pf2e.feats-srd.Item.BocFD2KV0qgUC76x",
@@ -22,7 +22,7 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "blacksmithing",
     name: "Blacksmithing",
-    loreName: "Blacksmithing Lore",
+    loreName: "Blacksmithing",
     craftingSpecialty: "blacksmithing",
     materialIds: Object.freeze(["metal"]),
     bonusFeatUuid: PF2E_PROFESSION_FEAT_UUIDS.quickRepair,
@@ -32,17 +32,17 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "alchemy",
     name: "Alchemy",
-    loreName: "Alchemy Lore",
+    loreName: "Alchemy",
     craftingSpecialty: "alchemy",
     materialIds: Object.freeze(["herbs"]),
     bonusFeatUuid: PF2E_PROFESSION_FEAT_UUIDS.alchemicalCrafting,
     bonusFeatName: "Alchemical Crafting",
-    img: "icons/consumables/potions/potion-bottle-corked-fumes-blue.webp",
+    img: `modules/${MODULE_ID}/assets/professions/alchemy.png`,
   }),
   Object.freeze({
     id: "enchanting",
     name: "Enchanting",
-    loreName: "Enchanting Lore",
+    loreName: "Enchanting",
     craftingSpecialty: "enchanting",
     materialIds: Object.freeze(["mana-crystals"]),
     bonusFeatUuid: PF2E_PROFESSION_FEAT_UUIDS.magicalCrafting,
@@ -52,7 +52,7 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "leatherwork",
     name: "Leatherwork",
-    loreName: "Leatherworking Lore",
+    loreName: "Leatherworking",
     craftingSpecialty: "leatherworking",
     materialIds: Object.freeze(["leather", "dragon-scale"]),
     bonusFeatUuid: PF2E_PROFESSION_FEAT_UUIDS.experiencedTracker,
@@ -62,7 +62,7 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "carpentry",
     name: "Carpentry",
-    loreName: "Carpentry Lore",
+    loreName: "Carpentry",
     craftingSpecialty: "woodworking",
     materialIds: Object.freeze(["wood"]),
     bonusFeatUuid: PF2E_PROFESSION_FEAT_UUIDS.heftyHauler,
@@ -72,7 +72,7 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "stonemason",
     name: "Stonemasonry",
-    loreName: "Stonemasonry Lore",
+    loreName: "Stonemasonry",
     craftingSpecialty: "stonemasonry",
     materialIds: Object.freeze(["stone"]),
     bonusFeatUuid: "",
@@ -82,7 +82,7 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "glassmaking",
     name: "Glassmaking",
-    loreName: "Glassmaking Lore",
+    loreName: "Glassmaking",
     craftingSpecialty: "glassmaking",
     materialIds: Object.freeze([]),
     bonusFeatUuid: "",
@@ -92,17 +92,17 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "pottery",
     name: "Pottery",
-    loreName: "Pottery Lore",
+    loreName: "Pottery",
     craftingSpecialty: "pottery",
     materialIds: Object.freeze([]),
     bonusFeatUuid: "",
     bonusFeatName: "To be determined",
-    img: "icons/containers/kitchenware/jug-terracotta.webp",
+    img: `modules/${MODULE_ID}/assets/professions/pottery.png`,
   }),
   Object.freeze({
     id: "weaving",
     name: "Weaving",
-    loreName: "Weaving Lore",
+    loreName: "Weaving",
     craftingSpecialty: "weaving",
     materialIds: Object.freeze([]),
     bonusFeatUuid: "",
@@ -112,7 +112,7 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "bookmaking",
     name: "Bookmaking",
-    loreName: "Bookmaking Lore",
+    loreName: "Bookmaking",
     craftingSpecialty: "bookmaking",
     materialIds: Object.freeze([]),
     bonusFeatUuid: "",
@@ -122,12 +122,12 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "tailoring",
     name: "Tailoring",
-    loreName: "Tailoring Lore",
+    loreName: "Tailoring",
     craftingSpecialty: "tailoring",
     materialIds: Object.freeze([]),
     bonusFeatUuid: "",
     bonusFeatName: "To be determined",
-    img: "icons/tools/hand/scissors-steel-grey.webp",
+    img: `modules/${MODULE_ID}/assets/professions/tailoring.png`,
   }),
 ].map((profession) => Object.freeze({
   ...profession,
@@ -151,7 +151,8 @@ function professionDescription(profession) {
     "<p>This is a Wrathmaker profession chosen at 1st level. It supplies the appropriate Specialty Crafting benefit and Additional Lore for the profession.</p>",
     "<ul>",
     `<li><strong>Profession Lore:</strong> ${profession.loreName}</li>`,
-    "<li><strong>Automatic Lore proficiency:</strong> trained at level 1, expert at level 4, master at level 10, and legendary at level 16.</li>",
+    "<li><strong>Automatic Lore proficiency:</strong> trained at level 1, expert at level 3, master at level 7, and legendary at level 15.</li>",
+    "<li><strong>Profession development:</strong> at levels 4, 10, and 16, choose a specialty of the starting profession or learn a new profession.</li>",
     `<li><strong>Relevant profession checks:</strong> +${profession.checkBonus} ${profession.checkBonusType} bonus.</li>`,
     bonusFeat,
     "</ul>",

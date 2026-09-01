@@ -12,6 +12,7 @@
     <span>{{localize "CMT.Profession.ProgressionSummary"}}</span>
   </div>
 
+  <h3 class="cmt-profession-section-title">{{localize "CMT.Profession.StartingProfession"}}</h3>
   <div class="cmt-profession-list">
     {{#each professions}}
       <label class="cmt-profession-option{{#if selected}} is-selected{{/if}}">
@@ -27,6 +28,51 @@
       </label>
     {{/each}}
   </div>
+
+  <section class="cmt-profession-milestones">
+    <header>
+      <div>
+        <h3>{{localize "CMT.Profession.Development"}}</h3>
+        <p>{{localize "CMT.Profession.DevelopmentHint"}}</p>
+      </div>
+    </header>
+    <div class="cmt-profession-milestone-list">
+      {{#each milestones}}
+        <fieldset class="cmt-profession-milestone{{#unless unlocked}} is-locked{{/unless}}" data-cmt-milestone="{{level}}" {{#unless unlocked}}disabled{{/unless}}>
+          <legend>{{localize "CMT.Profession.LevelChoice" level=level}}</legend>
+          {{#unless unlocked}}
+            <span class="cmt-profession-milestone-lock"><i class="fa-solid fa-lock" aria-hidden="true"></i> {{localize "CMT.Profession.UnlocksAt" level=level}}</span>
+          {{/unless}}
+          <label>
+            <span>{{localize "CMT.Profession.ChoiceType"}}</span>
+            <select name="milestone{{level}}Kind" data-cmt-milestone-kind>
+              <option value="" {{#if noneSelected}}selected{{/if}}>{{localize "CMT.Profession.NoChoice"}}</option>
+              <option value="specialty" {{#if specialtySelected}}selected{{/if}}>{{localize "CMT.Profession.SpecialtyChoice"}}</option>
+              <option value="profession" {{#if professionSelected}}selected{{/if}}>{{localize "CMT.Profession.NewProfessionChoice"}}</option>
+            </select>
+          </label>
+          <label data-cmt-specialty-field>
+            <span>{{localize "CMT.Profession.Specialty"}}</span>
+            <select name="milestone{{level}}Specialty">
+              <option value="">{{localize "CMT.Profession.ChooseSpecialty"}}</option>
+              {{#each specialtyOptions}}
+                <option value="{{id}}" data-profession-id="{{professionId}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label data-cmt-profession-field-choice>
+            <span>{{localize "CMT.Profession.NewProfession"}}</span>
+            <select name="milestone{{level}}Profession" data-cmt-milestone-profession>
+              <option value="">{{localize "CMT.Profession.ChooseNewProfession"}}</option>
+              {{#each professionOptions}}
+                <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+              {{/each}}
+            </select>
+          </label>
+        </fieldset>
+      {{/each}}
+    </div>
+  </section>
 
   <footer class="cmt-profession-actions">
     {{#if hasProfession}}

@@ -1564,8 +1564,15 @@
   padding: 0.45rem 0.6rem;
 }
 
+.cmt-profession-section-title {
+  color: var(--cmt-profession-red);
+  font-size: 1rem;
+  margin: 0.1rem 0 0;
+}
+
 .cmt-profession-list {
   display: grid;
+  flex: 1 1 280px;
   gap: 0.38rem;
   min-height: 0;
   overflow-y: auto;
@@ -1573,15 +1580,15 @@
 }
 
 .cmt-profession-option {
-  align-items: center;
+  align-items: start;
   background: #fffdf8;
   border: 1px solid #b5a49b;
   cursor: pointer;
   display: grid;
   gap: 0.55rem;
-  grid-template-columns: auto 44px minmax(0, 1fr) auto;
-  min-height: 58px;
-  padding: 0.4rem 0.55rem;
+  grid-template-columns: auto 52px minmax(0, 1fr) auto;
+  min-height: 82px;
+  padding: 0.5rem 0.6rem;
 }
 
 .cmt-profession-option:hover,
@@ -1592,19 +1599,22 @@
 
 .cmt-profession-option input {
   accent-color: var(--cmt-profession-red);
+  align-self: center;
   margin: 0;
 }
 
 .cmt-profession-option img {
   border: 1px solid var(--cmt-profession-brown);
-  height: 44px;
+  height: 52px;
   object-fit: cover;
-  width: 44px;
+  width: 52px;
 }
 
 .cmt-profession-option-details {
   display: flex;
   flex-direction: column;
+  gap: 0.13rem;
+  line-height: 1.18;
   min-width: 0;
 }
 
@@ -1614,9 +1624,8 @@
 
 .cmt-profession-option-details small {
   color: #5b514c;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .cmt-profession-bonus {
@@ -1628,7 +1637,78 @@
   font-weight: 700;
   height: 2rem;
   justify-content: center;
+  align-self: center;
   width: 2rem;
+}
+
+.cmt-profession-milestones {
+  background: #fffdf8;
+  border: 1px solid #b5a49b;
+  padding: 0.5rem;
+}
+
+.cmt-profession-milestones > header h3,
+.cmt-profession-milestones > header p {
+  margin: 0;
+}
+
+.cmt-profession-milestones > header h3 {
+  color: var(--cmt-profession-red);
+}
+
+.cmt-profession-milestones > header p {
+  color: #5b514c;
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+
+.cmt-profession-milestone-list {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0.45rem;
+}
+
+.cmt-profession-milestone {
+  background: var(--cmt-profession-soft);
+  border: 1px solid #9a8366;
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  min-width: 0;
+  padding: 0.45rem;
+}
+
+.cmt-profession-milestone legend {
+  color: var(--cmt-profession-red);
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.cmt-profession-milestone label {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cmt-profession-milestone label > span {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cmt-profession-milestone select {
+  min-width: 0;
+  width: 100%;
+}
+
+.cmt-profession-milestone.is-locked {
+  filter: grayscale(0.55);
+  opacity: 0.72;
+}
+
+.cmt-profession-milestone-lock {
+  color: #5b514c;
+  font-size: 0.75rem;
 }
 
 .cmt-profession-actions {
@@ -1664,6 +1744,10 @@
   .cmt-hex-native-layout,
   .cmt-hex-native-fields,
   .cmt-hex-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .cmt-profession-milestone-list {
     grid-template-columns: 1fr;
   }
 

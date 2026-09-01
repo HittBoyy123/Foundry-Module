@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.14.0 — profession progression and development
+
+- Changed automatic profession Lore progression to trained at level 1, expert at level 3, master at level 7, and legendary at level 15.
+- Removed the redundant “Lore” suffix from the managed profession skill names while preserving the underlying PF2e Lore item type.
+- Added level 4, 10, and 16 profession-development choices: a character can select a specialty of their starting profession or learn a different new profession at each milestone.
+- Added managed specialty Lore skills that follow the same 1/3/7/15 progression as their parent profession.
+- Added support for multiple active milestone professions and their complete Wrathmaker benefits without replacing the starting profession.
+- Increased picker card spacing and allowed detail text to wrap so profession descriptions no longer overlap.
+- Added bundled matching profession artwork for Alchemy, Pottery, and Tailoring.
+
 ## 0.13.0 — character professions
 
 - Added a native-style **Profession** field beside Deity on the PF2e character overview.
