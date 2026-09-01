@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.1 — PF2e 7.3.1 enhanced-flanking fix
+
+- Fixed enhanced flanking modifiers being discarded during PF2e 7.3.1 Armor Class preparation because AC synthetic factories do not receive the eventual attack test options.
+- Moved the melee and active-flanking restrictions onto the PF2e modifier predicate so the final -3 or -4 circumstance penalty is evaluated in the contextual attack roll while ranged attacks remain excluded.
+
 ## 0.15.0 — native profession feat trees and rebuilt flanking
 
 - Restyled the profession picker with the PF2e party sheet's green textured masthead, brown framing, parchment surfaces, crimson headings, and gold controls.

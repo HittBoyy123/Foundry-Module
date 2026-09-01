@@ -378,16 +378,13 @@ export function injectFlankingModifier(actor, config, environment = {}) {
   const modifiers = (actor.synthetics.modifiers.ac ??= []);
   const label = globalThis.game?.i18n?.format?.("CMT.Flanking.Modifier", { participants: state.participants })
     ?? `Wrathmaker Flanking (${state.participants} combatants)`;
-  modifiers.push(({ test } = {}) => {
-    if (!isEligibleWrathmakerFlankingAttack(test)) return null;
-    const options = asRollOptionSet(test);
+  modifiers.push(() => {
     const offGuardable = actor.attributes?.flanking?.offGuardable
       ?? actor.system?.attributes?.flanking?.offGuardable;
     if (offGuardable === false) return null;
-    if (typeof offGuardable === "number") {
-      const originLevel = numericRollOption(options, "origin:level");
-      if (originLevel === null || originLevel <= offGuardable) return null;
-    }
+    const predicate = ["item:melee", "origin:flanking"];
+    if (typeof offGuardable === "number") predicate.push({ gt: ["origin:level", offGuardable] });
+
     return new Modifier({
       slug: "wrathmaker-flanking",
       label,
@@ -397,6 +394,11 @@ export function injectFlankingModifier(actor, config, environment = {}) {
       // only this more severe value at three or four qualifying combatants.
       type: "circumstance",
       domains: ["ac"],
+      // PF2e extracts AC synthetic factories while preparing the statistic and
+      // does not pass the eventual attack test to the factory. Keep the
+      // attack-specific restrictions on the Modifier predicate so PF2e can
+      // evaluate them later against the contextual target roll options.
+      predicate,
     });
   });
   return true;

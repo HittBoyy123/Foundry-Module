@@ -226,14 +226,11 @@ test("PF2e handles two-sided Off-guard while Wrathmaker supplies the final -3 an
   });
   assert.equal(threeApplied, true);
   const modifierFactory = contextualTarget.synthetics.modifiers.ac[0];
-  assert.equal(modifierFactory({ test: new Set(["item:ranged", "origin:distance:5"]) }), null);
-  assert.equal(modifierFactory({ test: new Set(["item:melee", "origin:distance:10", "origin:size:medium"]) }), null);
-  const modifier = modifierFactory({
-    test: new Set(["item:melee", "item:trait:reach", "origin:distance:10", "origin:size:medium"]),
-  });
+  const modifier = modifierFactory();
   assert.equal(modifier.modifier, -3);
   assert.equal(modifier.type, "circumstance");
   assert.deepEqual(modifier.domains, ["ac"]);
+  assert.deepEqual(modifier.predicate, ["item:melee", "origin:flanking"]);
 
   target.actor.synthetics = { modifiers: {} };
   const fourApplied = injectFlankingModifier(target.actor, config, {
@@ -241,9 +238,44 @@ test("PF2e handles two-sided Off-guard while Wrathmaker supplies the final -3 an
     grid: { size: 100, distance: 5 },
   });
   assert.equal(fourApplied, true);
-  assert.equal(target.actor.synthetics.modifiers.ac[0]({
-    test: new Set(["item:melee", "origin:flanking"]),
-  }).modifier, -4);
+  assert.equal(target.actor.synthetics.modifiers.ac[0]().modifier, -4);
+});
+
+test("the AC synthetic retains PF2e's level gate for limited Off-guard targets", () => {
+  class MockModifier {
+    constructor(data) {
+      Object.assign(this, data);
+    }
+  }
+  globalThis.game = {
+    pf2e: { Modifier: MockModifier },
+    i18n: { format: (_key, { participants }) => `Wrathmaker Flanking (${participants} combatants)` },
+  };
+
+  const target = token({
+    x: 100,
+    y: 100,
+    alliance: "opposition",
+    target: true,
+    offGuardable: 5,
+  });
+  target.actor.id = "limited-target";
+  target.actor.uuid = "Actor.limited-target";
+  target.actor.isOfType = () => true;
+  target.actor.synthetics = { modifiers: {} };
+  const north = token({ x: 100, y: 0 });
+  const south = token({ x: 100, y: 200 });
+  const east = token({ x: 200, y: 100 });
+
+  assert.equal(injectFlankingModifier(target.actor, config, {
+    tokens: [target, north, south, east],
+    grid: { size: 100, distance: 5 },
+  }), true);
+  assert.deepEqual(target.actor.synthetics.modifiers.ac[0]().predicate, [
+    "item:melee",
+    "origin:flanking",
+    { gt: ["origin:level", 5] },
+  ]);
 });
 
 test("the bridge patches PF2e concrete actor classes instead of the generic actor proxy", () => {
