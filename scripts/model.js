@@ -413,6 +413,10 @@ export function normalizeRulesConfig(input) {
       "gathering.maxTier",
       { integer: true, fallback: DEFAULT_RULES_CONFIG.gathering.maxTier },
     ))),
+    useSceneRegion: parsed.gathering?.useSceneRegion !== false,
+    rewardDestination: ["party-stash", "character"].includes(parsed.gathering?.rewardDestination)
+      ? parsed.gathering.rewardDestination
+      : DEFAULT_RULES_CONFIG.gathering.rewardDestination,
   };
   const tierBonuses = normalizeTierBonuses(parsed.tierBonuses, "tierBonuses");
   const useNewTierLabels = sourceSchemaVersion < 3 && (

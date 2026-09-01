@@ -20,6 +20,8 @@ test("control panel exposes only friendly settings actions", async () => {
   assert.match(template, /name="gathering\.enabled"/);
   assert.match(template, /name="gathering\.environmentId"/);
   assert.match(template, /name="gathering\.maxTier"/);
+  assert.match(template, /name="gathering\.useSceneRegion"/);
+  assert.match(template, /name="gathering\.rewardDestination"/);
   assert.match(materialTemplate, /name="material\.modifierType"/);
   assert.match(materialTemplate, /name="itemTypes\.spellFocus"/);
   assert.match(materialTemplate, /name="dragonColors\.\{\{id\}\}\.damageType"/);
@@ -88,18 +90,23 @@ test("gathering exposes a PF2e-styled player workflow and safe inventory awards"
   ]);
 
   assert.match(application, /Hooks\.on\("renderItemDirectory"/);
-  assert.match(application, /actor\?\.canUserModify\?\.\(game\.user, "update"\)/);
-  assert.match(application, /actor\.createEmbeddedDocuments\("Item"/);
+  assert.match(application, /recipient\?\.canUserModify\?\.\(game\.user, "update"\)/);
+  assert.match(application, /recipient\.createEmbeddedDocuments\("Item"/);
   assert.match(application, /existing\.update\(\{ "system\.quantity"/);
   assert.match(application, /config\.gathering\?\.environmentId/);
-  assert.match(application, /taskSource\.tier > \(config\.gathering\?\.maxTier/);
+  assert.match(application, /taskSource\.tier > region\.maxTier/);
+  assert.match(application, /resolveGatheringRecipient/);
+  assert.match(application, /resolveGatheringRegion/);
   assert.match(template, /name="actorId"/);
   assert.match(template, /name="environmentId"/);
   assert.match(template, /name="taskId"/);
+  assert.match(template, /\{\{optionLabel\}\}/);
+  assert.match(template, /rewardDestinationLabel/);
   assert.match(template, /fa-dice-d20/);
   assert.match(chatTemplate, /cmt-gathering-chat/);
   assert.match(css, /--cmt-gather-brown:\s*#605856/i);
   assert.match(css, /--cmt-gather-red:\s*#5e0000/i);
   assert.match(css, /--cmt-gather-soft:\s*#e7d9cf/i);
   assert.match(css, /--cmt-gather-yellow:\s*#e9d7a1/i);
+  assert.match(css, /\.cmt-gathering-stat-grid dd\s*\{[^}]*color:\s*var\(--cmt-gather-ink\)/is);
 });

@@ -36,7 +36,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.11.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.12.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -65,7 +65,7 @@ Foundry groups every module compendium under **Pathfinder 2E Wrathmaker** in the
 The Wrathmaker control panel stores world-level settings and applies changes immediately to prepared actors and items.
 
 - **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
-- **Resource gathering** enables the player gathering screen and lets the GM choose the active environment and maximum available material tier.
+- **Resource gathering** enables the player gathering screen, defaults rewards to the native PF2e party Stash, and can read the current Stolen Lands Scene Region's terrain and level. The GM's active environment and maximum tier remain the fallback.
 - **Enhanced flanking** turns only Wrathmaker's three- and four-side adjustments on or off. PF2e's ordinary two-sided flanking remains unchanged.
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
 - The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
@@ -80,7 +80,7 @@ Only a GM can open this world-settings menu. Turning a system off is reversible 
 
 1. Update the version in `module.json` and `package.json`.
 2. Commit and push the changes.
-3. Create and push a matching tag such as `v0.11.0`.
+3. Create and push a matching tag such as `v0.12.0`.
 
 The included GitHub Actions workflow validates the module, builds a Foundry-ready ZIP, and publishes both the ZIP and `module.json` to a GitHub Release. The tag must match the version in `module.json`.
 
@@ -162,7 +162,13 @@ The current API is deliberately a non-destructive foundation: it validates recip
 
 ### Gathering resources
 
-Wrathmaker includes an independent, Fabricate-inspired gathering screen for all 66 crafting resources. Players can open **Gather Resources** from the Items Directory header or from Wrathmaker's settings entry, then choose an owned character and visible resource task. The GM chooses the **Active gathering environment** and **Maximum available resource tier** in Wrathmaker Game Settings, so players cannot browse locations the party has not reached or attempt materials above the current location's ceiling. GMs can inspect every environment in the gathering window, subject to the same tier ceiling.
+Wrathmaker includes an independent, Fabricate-inspired gathering screen for all 66 crafting resources. Players can open **Gather Resources** from the Items Directory header or from Wrathmaker's settings entry, then choose an owned character and visible resource task. Every task option ends with its tier, such as `Gather Steel Ingot — Tier 2`, for quick comparison in the native dropdown.
+
+By default, **Use current Stolen Lands / Scene region** is enabled. Wrathmaker checks which Foundry Region contains the selected character's token and reads PF2e's Environment behavior from that Region. A Forest region offers Wood, Leather/Hide, and Herbs/Mushrooms; Mountain terrain offers Metal and Stone; Swamp terrain uses Wetlands; and PF2e's Plains and Underground terrain map directly to their gathering environments. If the map uses environment data on the Scene instead of a containing Region, the Scene is used as the fallback.
+
+The location's level sets the highest available resource tier using the existing campaign thresholds: levels 1, 4, 8, 12, 16, and 20 unlock Tiers 1–6. Wrathmaker recognises a level in a Scene or Region name such as `Narlmarches — Level 8` or `Kamelands Lv. 4`. A GM can therefore use the Kingmaker map's own locations by applying the appropriate PF2e Environment behavior and adding the noted level to the Region name. When the current map has no compatible Region, environment, or level metadata, the **Active gathering environment** and **Maximum available resource tier** settings continue to control availability exactly as before.
+
+Gathering rewards default to **Party Stash**. Wrathmaker finds the PF2e party containing the selected character and adds or merges the resource on that party actor, so it appears in the native **Stash** tab for everyone. The GM can change **Gathered resource destination** to **Gathering Character** in Wrathmaker Game Settings. If Party Stash is selected but the character has not been added to a PF2e party, the gathering button is disabled with a visible explanation instead of silently putting the reward somewhere else.
 
 The supplied environments are **Forest, Plains, Mountains, Wetlands, Underground, Arcane Nexus,** and **Dragon Hunting Grounds**. Environments compose reusable tasks rather than containing copied reward items. This means one task definition can be offered in several suitable environments while its reward continues to point to the stable material, tier, and Dragon-color flags in the resource compendium.
 
@@ -175,7 +181,7 @@ Default PF2e checks are:
 | Leather/Hide and Dragon Scales | Survival |
 | Mana Crystals | Arcana |
 
-The check uses the resource's existing tier level and DC. A **Success** awards one inventory bundle and a **Critical Success** awards two; Failure and Critical Failure award nothing. Mana Crystal inventory bundles still represent ten crystals and Dragon Scale bundles represent five scales, so the result screen reports both inventory quantity and crafting units. Awarded resources merge into an identical stack on the character or create the correct PF2e Treasure item when no stack exists.
+The check uses the resource's existing tier level and DC. A **Success** awards one inventory bundle and a **Critical Success** awards two; Failure and Critical Failure award nothing. Mana Crystal inventory bundles still represent ten crystals and Dragon Scale bundles represent five scales, so the result screen reports both inventory quantity and crafting units. Awarded resources merge into an identical stack in the configured destination or create the correct PF2e Treasure item when no stack exists.
 
 Each task currently displays a default attempt time of 60 minutes, but Wrathmaker does not advance world time automatically. Task records already keep their skill, DC adjustment, time, outcome quantities, environments, and future tool references separate so a later GM editor can change these without rewriting the gathering code. Stamina, finite resource nodes, weather gates, random events, and blind gathering are not enforced in this first gathering pass.
 

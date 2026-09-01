@@ -10,6 +10,16 @@
     <div class="cmt-gathering-notice is-warning">{{localize "CMT.Gathering.Disabled"}}</div>
   {{/unless}}
 
+  {{#if region.active}}
+    <section class="cmt-gathering-region">
+      <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+      <div>
+        <strong>{{region.name}}</strong>
+        <span>{{region.levelLabel}} · {{region.tierLabel}} {{localize "CMT.Gathering.RegionMaximum"}}</span>
+      </div>
+    </section>
+  {{/if}}
+
   <section class="cmt-gathering-controls">
     <label>
       <span>{{localize "CMT.Gathering.Character"}}</span>
@@ -33,10 +43,22 @@
       <span>{{localize "CMT.Gathering.Task"}}</span>
       <select name="taskId">
         {{#each tasks}}
-          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{optionLabel}}</option>
         {{/each}}
       </select>
     </label>
+  </section>
+
+  <section class="cmt-gathering-destination {{#unless rewardTargetAvailable}}is-warning{{/unless}}">
+    <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+    <div>
+      <strong>{{localize "CMT.Gathering.RewardDestination"}}: {{rewardDestinationLabel}}</strong>
+      {{#if rewardTargetAvailable}}
+        <span>{{rewardRecipientName}}</span>
+      {{else}}
+        <span>{{localize "CMT.Gathering.PartyMissing"}}</span>
+      {{/if}}
+    </div>
   </section>
 
   {{#if environment}}
@@ -79,7 +101,7 @@
     <section class="cmt-gathering-result">
       <h3>{{lastResult.outcome}}</h3>
       {{#if lastResult.quantity}}
-        <p>{{lastResult.actorName}} received {{lastResult.quantity}} × {{lastResult.resourceName}} ({{lastResult.units}} crafting units).</p>
+        <p>{{lastResult.actorName}} gathered {{lastResult.quantity}} × {{lastResult.resourceName}} for {{lastResult.recipientName}} ({{lastResult.units}} crafting units).</p>
       {{else}}
         <p>{{lastResult.actorName}} did not gather a resource from this attempt.</p>
       {{/if}}

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0 — Kingmaker-aware gathering and party-stash rewards
+
+- Restyled the gathering window with Wrathmaker's shared PF2e party-sheet palette: gray `#605856`, red `#5E0000`, soft parchment `#E7D9CF`, and yellow `#E9D7A1`.
+- Added explicit dark text colors to gathering statistics, descriptions, controls, yields, and results so values remain readable under PF2e and Foundry themes.
+- Added optional active Scene/Region integration for Kingmaker and other Hexploration maps.
+- Read PF2e Region Environment behaviors to restrict gathering resources by the selected character's current terrain.
+- Parsed level labels from Foundry Region or Scene names and mapped levels 1/4/8/12/16/20 to gathering Tiers 1–6.
+- Kept the GM's active environment and maximum tier as a safe fallback for maps without compatible region metadata.
+- Added each resource tier to the task dropdown label.
+- Added a world setting for reward destination, defaulting to the native PF2e Party Stash with Gathering Character as the alternative.
+- Added party membership and edit-permission checks before awarding or stacking resources.
+- Migrated world rules to schema version 13 while preserving existing gathering settings.
+
 ## 0.11.0 — Crafting resources, recipes, and gathering
 
 - Added a player-facing **Gather Resources** application inspired by established Foundry gathering workflows without requiring another module.

@@ -19,6 +19,11 @@ test("dashboard context exposes friendly crafting, flanking, and material summar
   assert.equal(context.gatheringEnabled, true);
   assert.equal(context.gatheringEnvironments.find((environment) => environment.selected).id, "forest");
   assert.equal(context.gatheringTiers.find((tier) => tier.selected).value, 1);
+  assert.equal(context.gatheringUsesSceneRegion, true);
+  assert.equal(
+    context.gatheringRewardDestinations.find((destination) => destination.selected).value,
+    "party-stash",
+  );
   assert.equal(context.flankingEnabled, true);
   assert.equal(context.hexplorationEnabled, true);
   assert.equal(context.penaltyThree, -3);
@@ -30,7 +35,13 @@ test("dashboard context exposes friendly crafting, flanking, and material summar
 test("dashboard changes toggle both systems and update flanking totals", () => {
   const changed = normalizeRulesConfig(applyDashboardChanges(config, {
     crafting: { enabled: false },
-    gathering: { enabled: false, environmentId: "underground", maxTier: 4 },
+    gathering: {
+      enabled: false,
+      environmentId: "underground",
+      maxTier: 4,
+      useSceneRegion: false,
+      rewardDestination: "character",
+    },
     flanking: {
       enabled: false,
       penalties: { 3: -4, 4: -6 },
@@ -43,6 +54,8 @@ test("dashboard changes toggle both systems and update flanking totals", () => {
   assert.equal(changed.gathering.enabled, false);
   assert.equal(changed.gathering.environmentId, "underground");
   assert.equal(changed.gathering.maxTier, 4);
+  assert.equal(changed.gathering.useSceneRegion, false);
+  assert.equal(changed.gathering.rewardDestination, "character");
   assert.equal(changed.flanking.enabled, false);
   assert.equal(changed.hexploration.enabled, false);
   assert.deepEqual(changed.flanking.penalties, { 2: -2, 3: -4, 4: -6 });
@@ -56,13 +69,21 @@ test("Foundry dotted form fields expand before dashboard toggles are saved", () 
     "gathering.enabled": "on",
     "gathering.environmentId": "mountains",
     "gathering.maxTier": "3",
+    "gathering.useSceneRegion": "on",
+    "gathering.rewardDestination": "party-stash",
     "flanking.enabled": "on",
     "hexploration.enabled": "on",
     "flanking.penalties.3": "-3",
     "flanking.penalties.4": "-4",
   }), {
     crafting: { enabled: "on" },
-    gathering: { enabled: "on", environmentId: "mountains", maxTier: "3" },
+    gathering: {
+      enabled: "on",
+      environmentId: "mountains",
+      maxTier: "3",
+      useSceneRegion: "on",
+      rewardDestination: "party-stash",
+    },
     flanking: { enabled: "on", penalties: { 3: "-3", 4: "-4" } },
     hexploration: { enabled: "on" },
   });
@@ -72,6 +93,8 @@ test("Foundry dotted form fields expand before dashboard toggles are saved", () 
     "gathering.enabled": "on",
     "gathering.environmentId": "mountains",
     "gathering.maxTier": "3",
+    "gathering.useSceneRegion": "on",
+    "gathering.rewardDestination": "party-stash",
     "flanking.enabled": "on",
     "hexploration.enabled": "on",
     "flanking.penalties.3": "-3",
@@ -83,6 +106,8 @@ test("Foundry dotted form fields expand before dashboard toggles are saved", () 
   assert.equal(changed.gathering.enabled, true);
   assert.equal(changed.gathering.environmentId, "mountains");
   assert.equal(changed.gathering.maxTier, 3);
+  assert.equal(changed.gathering.useSceneRegion, true);
+  assert.equal(changed.gathering.rewardDestination, "party-stash");
   assert.equal(changed.flanking.enabled, true);
   assert.equal(changed.hexploration.enabled, true);
 });

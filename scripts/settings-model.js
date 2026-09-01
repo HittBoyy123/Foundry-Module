@@ -1,5 +1,6 @@
 import { ConfigValidationError, getTierPresentation } from "./model.js";
 import { GATHERING_ENVIRONMENT_SOURCES } from "../content/gathering-presets.js";
+import { GATHERING_REWARD_DESTINATIONS } from "./gathering-destination.js";
 
 const RARITIES = Object.freeze([
   Object.freeze({ value: "common", label: "Common" }),
@@ -94,6 +95,12 @@ export function buildDashboardContext(config) {
       value: index + 1,
       selected: index + 1 === config.gathering?.maxTier,
     })),
+    gatheringUsesSceneRegion: config.gathering?.useSceneRegion !== false,
+    gatheringRewardDestinations: Object.entries(GATHERING_REWARD_DESTINATIONS).map(([value, label]) => ({
+      value,
+      label,
+      selected: value === config.gathering?.rewardDestination,
+    })),
     flankingEnabled: config.flanking.enabled !== false,
     hexplorationEnabled: config.hexploration?.enabled !== false,
     penaltyThree: config.flanking.penalties[3],
@@ -131,6 +138,10 @@ export function applyDashboardChanges(config, form) {
     form.gathering?.maxTier,
     updated.gathering.maxTier ?? 1,
   );
+  updated.gathering.useSceneRegion = checked(form.gathering?.useSceneRegion);
+  updated.gathering.rewardDestination = String(
+    form.gathering?.rewardDestination ?? updated.gathering.rewardDestination ?? "party-stash",
+  ).trim();
   updated.flanking.enabled = checked(form.flanking?.enabled);
   updated.hexploration ??= {};
   updated.hexploration.enabled = checked(form.hexploration?.enabled);

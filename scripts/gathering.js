@@ -6,6 +6,10 @@ import {
 import { MODULE_ID } from "./constants.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
 import {
+  GATHERING_REWARD_DESTINATIONS,
+  resolveGatheringRecipient,
+} from "./gathering-destination.js";
+import {
   evaluateGatheringTask,
   findGatheringResource,
   gatheringResourceKey,
@@ -15,6 +19,7 @@ import {
   normalizeGatheringTask,
   resolveGatheringOutcome,
 } from "./gathering-model.js";
+import { resolveGatheringRegion } from "./gathering-regions.js";
 
 let GatheringApplication = null;
 
@@ -51,6 +56,28 @@ function currentSceneUuid() {
   return globalThis.canvas?.scene?.uuid ?? game.scenes?.current?.uuid ?? "";
 }
 
+function currentScene() {
+  return globalThis.canvas?.scene ?? game.scenes?.current ?? null;
+}
+
+function gatheringRegion(actor, config) {
+  return resolveGatheringRegion({
+    actor,
+    scene: currentScene(),
+    useSceneRegion: config.gathering?.useSceneRegion !== false,
+    fallbackEnvironmentId: config.gathering?.environmentId ?? "forest",
+    fallbackMaxTier: config.gathering?.maxTier ?? 1,
+  });
+}
+
+function gatheringRecipient(actor, config) {
+  return resolveGatheringRecipient(actor, {
+    actors: game.actors,
+    activeParty: game.actors?.party ?? null,
+    destination: config.gathering?.rewardDestination,
+  });
+}
+
 function outcomeLabel(outcome) {
   return localize(`CMT.Gathering.Outcomes.${outcome}`, outcome);
 }
@@ -61,16 +88,16 @@ async function resourceDocuments() {
   return pack.getDocuments();
 }
 
-export async function grantGatheringResource(actor, resourceDocument, quantity) {
+export async function grantGatheringResource(recipient, resourceDocument, quantity) {
   const amount = Math.max(0, Math.trunc(Number(quantity) || 0));
-  if (!actor?.canUserModify?.(game.user, "update")) {
+  if (!recipient?.canUserModify?.(game.user, "update")) {
     throw new Error(localize("CMT.Gathering.NotEditable"));
   }
   if (amount === 0) return null;
   const identity = resourceIdentity(resourceDocument);
   if (!identity) throw new Error(localize("CMT.Gathering.ResourceInvalid"));
 
-  const existing = Array.from(actor.items ?? []).find((item) => resourceIdentity(item) === identity);
+  const existing = Array.from(recipient.items ?? []).find((item) => resourceIdentity(item) === identity);
   if (existing) {
     const current = Math.max(0, Math.trunc(Number(existing.system?.quantity) || 0));
     await existing.update({ "system.quantity": current + amount });
@@ -81,13 +108,14 @@ export async function grantGatheringResource(actor, resourceDocument, quantity) 
   delete source._id;
   source.system ??= {};
   source.system.quantity = amount;
-  const created = await actor.createEmbeddedDocuments("Item", [source]);
+  const created = await recipient.createEmbeddedDocuments("Item", [source]);
   return created?.[0] ?? null;
 }
 
-async function postGatheringResult({ actor, task, evaluation, resource, resolution, roll }) {
+async function postGatheringResult({ actor, recipient, task, evaluation, resource, resolution, roll }) {
   const content = await renderTemplate(`modules/${MODULE_ID}/templates/gathering-chat.hbs`, {
     actorName: actor.name,
+    recipientName: recipient?.name ?? actor.name,
     taskName: task.name,
     taskImg: task.img,
     skill: task.check.skill.replace(/(^|-)([a-z])/gu, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`),
@@ -111,13 +139,20 @@ async function attemptGathering(application, formData, event) {
   if (config.gathering?.enabled === false) throw new Error(localize("CMT.Gathering.Disabled"));
   const actor = ownedCharacters().find((candidate) => candidate.id === formData.actorId);
   if (!actor) throw new Error(localize("CMT.Gathering.SelectCharacter"));
+  const region = gatheringRegion(actor, config);
+  const recipientResolution = gatheringRecipient(actor, config);
+  if (recipientResolution.missingParty) throw new Error(localize("CMT.Gathering.PartyMissing"));
+  const recipient = recipientResolution.recipient;
   const environmentSource = GATHERING_ENVIRONMENT_SOURCES.find((entry) => entry.id === formData.environmentId);
   const taskSource = GATHERING_TASK_SOURCES.find((entry) => entry.id === formData.taskId);
   if (!environmentSource || !taskSource) throw new Error(localize("CMT.Gathering.SelectTask"));
-  if (!game.user.isGM && environmentSource.id !== config.gathering?.environmentId) {
+  const availableEnvironmentIds = region.active
+    ? region.environmentIds
+    : [config.gathering?.environmentId];
+  if ((region.active || !game.user.isGM) && !availableEnvironmentIds.includes(environmentSource.id)) {
     throw new Error(localize("CMT.Gathering.EnvironmentUnavailable"));
   }
-  if (taskSource.tier > (config.gathering?.maxTier ?? 1)) {
+  if (taskSource.tier > region.maxTier) {
     throw new Error(localize("CMT.Gathering.TierUnavailable"));
   }
 
@@ -152,10 +187,11 @@ async function attemptGathering(application, formData, event) {
   const degree = normalizeDegreeOfSuccess(roll.degreeOfSuccess ?? roll.options?.degreeOfSuccess);
   const resolution = resolveGatheringOutcome(evaluation.task, degree, evaluation.resource);
   const resource = evaluation.resource;
-  if (resolution.quantity > 0) await grantGatheringResource(actor, resource, resolution.quantity);
-  await postGatheringResult({ actor, task: evaluation.task, evaluation, resource, resolution, roll });
+  if (resolution.quantity > 0) await grantGatheringResource(recipient, resource, resolution.quantity);
+  await postGatheringResult({ actor, recipient, task: evaluation.task, evaluation, resource, resolution, roll });
   application.gatheringState.lastResult = {
     actorName: actor.name,
+    recipientName: recipient.name,
     outcome: outcomeLabel(resolution.outcome),
     quantity: resolution.quantity,
     resourceName: resource.name,
@@ -163,7 +199,7 @@ async function attemptGathering(application, formData, event) {
   };
   ui.notifications.info(resolution.quantity > 0
     ? format("CMT.Gathering.Awarded", {
-      actor: actor.name,
+      actor: recipient.name,
       quantity: resolution.quantity,
       resource: resource.name,
     })
@@ -174,20 +210,25 @@ async function attemptGathering(application, formData, event) {
 function applicationContext(application) {
   const config = application.getConfig();
   const actors = ownedCharacters();
+  application.gatheringState.actorId = actors.some((actor) => actor.id === application.gatheringState.actorId)
+    ? application.gatheringState.actorId
+    : actors[0]?.id ?? "";
+  const actor = actors.find((entry) => entry.id === application.gatheringState.actorId) ?? null;
+  const region = gatheringRegion(actor, config);
+  const recipientResolution = gatheringRecipient(actor, config);
   const enabledTasks = GATHERING_TASK_SOURCES.filter((task) => (
     config.materials?.[task.materialId]?.enabled !== false
-    && task.tier <= (config.gathering?.maxTier ?? 1)
+    && task.tier <= region.maxTier
   ));
-  const visibleEnvironmentSources = game.user.isGM
+  const visibleEnvironmentSources = region.active
+    ? GATHERING_ENVIRONMENT_SOURCES.filter((environment) => region.environmentIds.includes(environment.id))
+    : game.user.isGM
     ? GATHERING_ENVIRONMENT_SOURCES
     : GATHERING_ENVIRONMENT_SOURCES.filter((environment) => environment.id === config.gathering?.environmentId);
   const environments = visibleEnvironmentSources
     .map((source) => normalizeGatheringEnvironment(source))
     .filter((environment) => environment.enabled && listTasksForEnvironment(environment, enabledTasks).length > 0);
 
-  application.gatheringState.actorId = actors.some((actor) => actor.id === application.gatheringState.actorId)
-    ? application.gatheringState.actorId
-    : actors[0]?.id ?? "";
   application.gatheringState.environmentId = environments.some((entry) => entry.id === application.gatheringState.environmentId)
     ? application.gatheringState.environmentId
     : environments[0]?.id ?? "";
@@ -218,9 +259,15 @@ function applicationContext(application) {
       ...entry,
       selected: entry.id === application.gatheringState.environmentId,
     })),
+    region: {
+      ...region,
+      levelLabel: region.level ? `Level ${region.level}` : localize("CMT.Gathering.ManualTierFallback"),
+      tierLabel: `Tier ${region.maxTier}`,
+    },
     environment,
     tasks: tasks.map((entry) => ({
       ...entry,
+      optionLabel: `${entry.name} — Tier ${entry.tier}`,
       selected: entry.id === application.gatheringState.taskId,
     })),
     task: task ? {
@@ -237,7 +284,13 @@ function applicationContext(application) {
       unitsPerItem: resourceData.unitsPerItem,
       unit: resourceData.unit.replaceAll("-", " "),
     } : null,
-    canAttempt: config.gathering?.enabled !== false && actors.length > 0 && evaluation?.available === true,
+    rewardDestinationLabel: GATHERING_REWARD_DESTINATIONS[recipientResolution.destination],
+    rewardRecipientName: recipientResolution.recipient?.name ?? "",
+    rewardTargetAvailable: !recipientResolution.missingParty,
+    canAttempt: config.gathering?.enabled !== false
+      && actors.length > 0
+      && evaluation?.available === true
+      && !recipientResolution.missingParty,
     lastResult: application.gatheringState.lastResult,
   };
 }
