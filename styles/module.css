@@ -1505,6 +1505,8 @@
 }
 
 .cmt-profession-picker {
+  --cmt-profession-green: #0d4b2a;
+  --cmt-profession-green-dark: #08351d;
   --cmt-profession-brown: #605856;
   --cmt-profession-red: #5e0000;
   --cmt-profession-soft: #e7d9cf;
@@ -1514,7 +1516,7 @@
 }
 
 .cmt-profession-picker .window-content {
-  background: var(--cmt-profession-paper);
+  background: repeating-linear-gradient(125deg, #f4eee6 0 4px, #f2ebe2 4px 5px);
   color: var(--cmt-profession-ink);
   overflow: hidden;
 }
@@ -1530,8 +1532,10 @@
 
 .cmt-profession-picker-header {
   align-items: center;
-  background: var(--cmt-profession-brown);
-  border-left: 6px solid var(--cmt-profession-red);
+  background: repeating-linear-gradient(115deg, var(--cmt-profession-green) 0 4px, #104f2e 4px 5px, #0b4527 5px 9px);
+  border: 1px solid #907b59;
+  border-left: 6px solid var(--cmt-profession-yellow);
+  box-shadow: inset 0 0 0 1px #315e43, inset 0 -5px 0 #08351d;
   color: #fff8e9;
   display: flex;
   gap: 0.8rem;
@@ -1550,6 +1554,7 @@
 }
 
 .cmt-profession-picker-header p {
+  color: #f4eee6;
   margin-top: 0.2rem;
 }
 
@@ -1565,9 +1570,11 @@
 }
 
 .cmt-profession-section-title {
+  border-bottom: 1px solid #b5a49b;
   color: var(--cmt-profession-red);
   font-size: 1rem;
   margin: 0.1rem 0 0;
+  padding-bottom: 0.2rem;
 }
 
 .cmt-profession-list {
@@ -1589,12 +1596,14 @@
   grid-template-columns: auto 52px minmax(0, 1fr) auto;
   min-height: 82px;
   padding: 0.5rem 0.6rem;
+  box-shadow: inset 3px 0 0 #d8cbc2;
 }
 
 .cmt-profession-option:hover,
 .cmt-profession-option.is-selected {
   background: var(--cmt-profession-soft);
   border-color: var(--cmt-profession-red);
+  box-shadow: inset 4px 0 0 var(--cmt-profession-red);
 }
 
 .cmt-profession-option input {
@@ -1643,7 +1652,8 @@
 
 .cmt-profession-milestones {
   background: #fffdf8;
-  border: 1px solid #b5a49b;
+  border: 1px solid var(--cmt-profession-brown);
+  box-shadow: inset 0 3px 0 #ded3c9;
   padding: 0.5rem;
 }
 
@@ -1654,6 +1664,7 @@
 
 .cmt-profession-milestones > header h3 {
   color: var(--cmt-profession-red);
+  font-family: var(--serif, Georgia, serif);
 }
 
 .cmt-profession-milestones > header p {
@@ -1697,6 +1708,9 @@
 }
 
 .cmt-profession-milestone select {
+  background: #fffdf8;
+  border: 1px solid #9a8366;
+  color: var(--cmt-profession-ink);
   min-width: 0;
   width: 100%;
 }
@@ -1727,6 +1741,18 @@
 
 .cmt-profession-actions button[data-action="removeProfession"] {
   background: var(--cmt-profession-soft);
+}
+
+.cmt-profession-feats > header {
+  color: #5e0000;
+}
+
+.cmt-profession-feats > .feats-list > li.slot {
+  box-shadow: inset 3px 0 0 #d3b8b8;
+}
+
+.cmt-profession-feats .nested-items {
+  border-left-color: #605856;
 }
 
 @media (max-width: 600px) {

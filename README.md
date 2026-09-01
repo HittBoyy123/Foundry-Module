@@ -37,7 +37,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.14.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.15.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -54,6 +54,8 @@ The collection uses five progressive item levels—1, 5, 9, 13, and 17—but del
 ## Character professions
 
 Every PF2e character sheet gains a native-style **Profession** field beside **Deity**. Its search or menu button opens the Wrathmaker profession picker, which reads the **Wrathmaker Professions** compendium and manages the character's starting profession and later profession-development choices. The sheet field shows the starting profession plus a count when additional professions are active.
+
+The picker uses the PF2e party sheet's green textured masthead, brown framing, parchment surfaces, crimson headings, and gold controls. On the character's Feats tab, Wrathmaker adds a dedicated **Profession Feats** section. Each selected profession is the parent entry, with its profession-created specialty choices, Additional Lore, Specialty Crafting, and determined bonus feat nested underneath using PF2e's native item-grant hierarchy. The actual Lore skill remains in the Lore list, and feats the character owned independently are left in their normal section.
 
 The available professions are **Blacksmithing, Alchemy, Enchanting, Leatherwork, Carpentry, Stonemasonry, Glassmaking, Pottery, Weaving, Bookmaking,** and **Tailoring**. Each profession currently contains three placeholder specialties so their later subcategories can be added without replacing the profession data model.
 
@@ -88,9 +90,9 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 
 - **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
 - **Resource gathering** enables the player gathering screen, defaults rewards to the native PF2e party Stash, and can read the current Stolen Lands Scene Region's terrain and level. The GM's active environment and maximum tier remain the fallback.
-- **Enhanced flanking** turns only Wrathmaker's three- and four-side adjustments on or off. PF2e's ordinary two-sided flanking remains unchanged.
+- **Enhanced flanking** turns Wrathmaker's detector and three-/four-combatant final penalties on or off. When off, PF2e's ordinary flanking detector remains unchanged.
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
-- The flanking section also edits the final three- and four-side AC totals, the normal size difference, and how many flankers are needed per side against an oversized target.
+- The flanking section also edits the final three- and four-combatant AC penalties, the normal size difference, and the enhanced-threshold multiplier against an oversized target.
 - Every crafting material has an **Edit** button that opens its own pop-out.
 - The material pop-out edits the material name, enabled state, weapon/armor/spell-focus availability, PF2e bonus type, and all six tier names, bonuses, added prices, and PF2e rarities.
 - Dragon Scales use a specialized editor for dragon-color names, resistance damage types, and six editable resistance values.
@@ -221,19 +223,19 @@ PF2e first generates the ordinary rune-aware item name and price. Wrathmaker the
 
 ## Custom flanking
 
-Wrathmaker calculates flanking from creature tokens on the active scene and updates AC automatically when tokens move or relevant actor state changes.
+Wrathmaker calculates flanking from creature tokens on the active scene and updates attack-context AC automatically when tokens move or relevant actor state changes.
 
-- One qualifying side means no penalty.
-- Two opposite qualifying sides use PF2e's ordinary flanking automation and Off-guard penalty. Wrathmaker adds nothing.
-- Three qualifying sides retain normal PF2e Off-guard and receive an additional **-1 AC** from Wrathmaker, for **-3 AC total**.
-- All four qualifying sides retain normal PF2e Off-guard and receive an additional **-2 AC** from Wrathmaker, for **-4 AC total**.
-- Two adjacent sides alone do not flank; the two-side case must surround the target on north/south or east/west sides.
-- If the target is more than one size category larger than a flanker, that flanker contributes half a side. Two such flankers are therefore required on that side.
-- A conscious, living flanker must be opposed to the target, able to flank under PF2e's prepared data, and have attack reach to the target.
+- Two qualifying opponents must first form a normal opposite-side flank. Wrathmaker passes that result into PF2e's attack context so PF2e applies its ordinary **-2 circumstance penalty from Off-guard** and all rules that depend on the target being Off-guard.
+- With three qualifying melee combatants, Wrathmaker makes the final flanking penalty **-3 AC**.
+- With four or more qualifying melee combatants, Wrathmaker caps the final flanking penalty at **-4 AC**.
+- A third or fourth combatant can contribute from any reachable side once the original opposite-side pair has established the flank.
+- Two adjacent combatants alone do not flank; the initial pair must surround the target on north/south or east/west sides.
+- If the target is more than one size category larger than the largest qualifying flanker, the enhanced thresholds are doubled: six combatants are required for **-3 AC** and eight for **-4 AC**. Ordinary two-person Off-guard still works normally.
+- A qualifying flanker must be opposed to the target, able to attack and flank under PF2e's prepared data, and have melee reach to the target.
 - A target that PF2e marks as unflankable or immune to Off-guard receives no Wrathmaker flanking penalty.
-- The extra three-/four-side adjustment is evaluated for each attack. It applies only to a melee attack that can currently reach the target, including a qualifying reach weapon; ranged attacks never inherit the penalty, even when the target is surrounded.
+- The three-/four-combatant result is evaluated for each attack. It applies only to a melee attack that can currently reach the target, including a qualifying reach weapon; ranged attacks never inherit the penalty, even when the target is surrounded.
 
-Wrathmaker does not reproduce PF2e's normal two-sided penalty. PF2e applies Off-guard in the usual way, and Wrathmaker adds only the difference needed at three or four sides. The extra adjustment is an **untyped, attack-contextual** PF2e AC modifier, so it stacks with Off-guard instead of replacing or altering that condition and is not stored as a blanket reduction on the enemy. The AC breakdown labels it `Wrathmaker Flanking Extra (3 sides)` or `Wrathmaker Flanking Extra (4 sides)`.
+Wrathmaker replaces token flanking detection while the rule is enabled, then hands the result back through PF2e's normal attack context so Off-guard, Sneak Attack, and similar downstream rules still work. At the enhanced thresholds, Wrathmaker supplies the **full -3 or -4 attack-contextual circumstance penalty**. PF2e's modifier stacking keeps the more severe circumstance penalty instead of adding both values, so the result cannot become -5 or -6 and is not stored as a blanket reduction on the enemy. The AC breakdown labels it `Wrathmaker Flanking (3 combatants)` or `Wrathmaker Flanking (4 combatants)`.
 
 The default configuration is:
 
@@ -251,7 +253,7 @@ The default configuration is:
 }
 ```
 
-The `penalties` values are the intended final totals after normal PF2e Off-guard. With `pf2eHandlesTwoSidedFlanking` enabled, Wrathmaker subtracts the two-side total and applies only the remaining adjustment. These fields are part of the same validated world rules JSON as the material definitions, so the GM can change the penalties or thresholds later without changing the module code.
+The `penalties` values are the intended final circumstance penalties. `oversizedParticipantsPerSide` is retained as the stored setting name for compatibility, but now acts as the enhancement-threshold multiplier: its default of 2 changes the three-/four-combatant thresholds to six/eight when the target is oversized. The legacy `pf2eHandlesTwoSidedFlanking` and `stackWithOffGuard` fields remain readable so existing world settings migrate cleanly; the resolver always preserves PF2e's normal two-person Off-guard and uses modifier stacking for the enhanced total.
 
 ## Hexploration travel
 

@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 
 const PATCH_MARKER = Symbol.for(`${MODULE_ID}.prepareSynthetics.flanking`);
+const TOKEN_PATCH_MARKER = Symbol.for(`${MODULE_ID}.token.isFlanking`);
 const SIDES = Object.freeze(["north", "east", "south", "west"]);
 const OPPOSITE_PAIRS = Object.freeze([
   Object.freeze(["north", "south"]),
@@ -34,6 +35,8 @@ const BASE_ATTACK_REACH_BY_SIZE_RANK = Object.freeze([0, 5, 5, 5, 10, 15]);
 
 let refreshTimer = null;
 let warnedAboutModifier = false;
+let refreshHooksRegistered = false;
+const actorsPreparingSynthetics = new WeakSet();
 
 function numeric(value, fallback = 0) {
   const number = Number(value);
@@ -130,35 +133,63 @@ function hasOppositePair(sides) {
 }
 
 export function calculateFlankingState({ targetSize, flankers, config }) {
+  const validFlankers = flankers.filter((flanker) => SIDES.includes(flanker.side));
   const sideWeights = Object.fromEntries(SIDES.map((side) => [side, 0]));
   const targetRank = getSizeRank(targetSize);
-  for (const flanker of flankers) {
-    if (!SIDES.includes(flanker.side)) continue;
-    const sizeDifference = targetRank - getSizeRank(flanker.size);
-    const contribution = sizeDifference > config.maxNormalSizeDifference
-      ? 1 / config.oversizedParticipantsPerSide
-      : 1;
-    sideWeights[flanker.side] += contribution;
+  for (const flanker of validFlankers) {
+    sideWeights[flanker.side] += 1;
   }
 
-  const qualifiedSides = SIDES.filter((side) => sideWeights[side] >= 1 - Number.EPSILON);
-  let sides = Math.min(qualifiedSides.length, 4);
-  if (sides === 2 && config.requireOppositeSidesForTwo && !hasOppositePair(qualifiedSides)) sides = 0;
-  if (sides < 2) {
-    return { active: false, penalty: 0, wrathmakerPenalty: 0, sides: 0, qualifiedSides, sideWeights };
+  const occupiedSides = SIDES.filter((side) => sideWeights[side] > 0);
+  const hasBaseFlank = validFlankers.length >= 2
+    && (!config.requireOppositeSidesForTwo || hasOppositePair(occupiedSides));
+  const largestFlankerRank = validFlankers.reduce(
+    (largest, flanker) => Math.max(largest, getSizeRank(flanker.size)),
+    Number.NEGATIVE_INFINITY,
+  );
+  const oversized = Number.isFinite(largestFlankerRank)
+    && targetRank - largestFlankerRank > config.maxNormalSizeDifference;
+  const enhancementMultiplier = oversized
+    ? Math.max(2, numeric(config.oversizedParticipantsPerSide, 2))
+    : 1;
+  const participants = validFlankers.length;
+
+  if (!hasBaseFlank) {
+    return {
+      active: false,
+      penalty: 0,
+      wrathmakerPenalty: 0,
+      sides: 0,
+      participants,
+      occupiedSides,
+      qualifiedSides: occupiedSides,
+      sideWeights,
+      oversized,
+      requiredParticipants: { 3: 3 * enhancementMultiplier, 4: 4 * enhancementMultiplier },
+    };
   }
-  const penalty = numeric(config.penalties[sides]);
+
+  // Ordinary two-creature flanking always remains available. Only the enhanced
+  // three- and four-combatant thresholds are multiplied for an oversized target.
+  const sides = participants >= 4 * enhancementMultiplier
+    ? 4
+    : participants >= 3 * enhancementMultiplier
+      ? 3
+      : 2;
+  const penalty = numeric(config.penalties[sides], numeric(config.penalties[2], -2));
   const basePenalty = numeric(config.penalties[2]);
-  const wrathmakerPenalty = config.pf2eHandlesTwoSidedFlanking
-    ? Math.min(penalty - basePenalty, 0)
-    : penalty;
+  const wrathmakerPenalty = penalty < basePenalty ? penalty : 0;
   return {
     active: true,
     penalty,
     wrathmakerPenalty,
     sides,
-    qualifiedSides,
+    participants,
+    occupiedSides,
+    qualifiedSides: occupiedSides,
     sideWeights,
+    oversized,
+    requiredParticipants: { 3: 3 * enhancementMultiplier, 4: 4 * enhancementMultiplier },
   };
 }
 
@@ -185,16 +216,28 @@ function tokenDisposition(token) {
 }
 
 function actorsAreOpposed(targetToken, flankerToken) {
-  const targetAlliance = targetToken.actor?.system?.details?.alliance ?? null;
-  const flankerAlliance = flankerToken.actor?.system?.details?.alliance ?? null;
+  const targetAlliance = targetToken.actor?.system?.details?.alliance ?? targetToken.actor?.alliance ?? null;
+  const flankerAlliance = flankerToken.actor?.system?.details?.alliance ?? flankerToken.actor?.alliance ?? null;
   if (targetAlliance && flankerAlliance) return targetAlliance !== flankerAlliance;
   return tokenDisposition(targetToken) * tokenDisposition(flankerToken) < 0;
 }
 
+function actorsAreAllied(firstToken, secondToken) {
+  if (firstToken.actor === secondToken.actor && firstToken.document?.isLinked && secondToken.document?.isLinked) {
+    return true;
+  }
+  const firstAlliance = firstToken.actor?.system?.details?.alliance ?? firstToken.actor?.alliance ?? null;
+  const secondAlliance = secondToken.actor?.system?.details?.alliance ?? secondToken.actor?.alliance ?? null;
+  if (firstAlliance && secondAlliance) return firstAlliance === secondAlliance;
+  return tokenDisposition(firstToken) * tokenDisposition(secondToken) > 0;
+}
+
 function canParticipate(token) {
   const actor = token.actor;
-  if (!actor || actor.isDead || actor.canAttack === false || actor.hasCondition?.("unconscious")) return false;
-  return actor.system?.attributes?.flanking?.canFlank !== false;
+  if (token.document?.hidden || !actor || actor.isDead || actor.canAttack === false || actor.hasCondition?.("unconscious")) {
+    return false;
+  }
+  return (actor.attributes?.flanking?.canFlank ?? actor.system?.attributes?.flanking?.canFlank) !== false;
 }
 
 function flankerReachPixels(token, gridSize, gridDistance) {
@@ -211,7 +254,8 @@ function flankerReachPixels(token, gridSize, gridDistance) {
 
 export function calculateTokenFlankingState(targetToken, tokens, config, grid = {}) {
   if (!targetToken?.actor || !config.enabled) return null;
-  const flanking = targetToken.actor.system?.attributes?.flanking;
+  if (targetToken.document?.hidden) return null;
+  const flanking = targetToken.actor.attributes?.flanking ?? targetToken.actor.system?.attributes?.flanking;
   if (flanking?.flankable === false || flanking?.offGuardable === false) return null;
   if (targetToken.actor.isImmuneTo?.("off-guard")) return null;
 
@@ -231,6 +275,71 @@ export function calculateTokenFlankingState(targetToken, tokens, config, grid = 
     });
   }
   return calculateFlankingState({ targetSize: actorSize(targetToken.actor), flankers, config });
+}
+
+function tokenCanMakeCurrentMeleeAttack(originToken, targetToken, context = {}, grid = {}) {
+  if (!canParticipate(originToken) || !actorsAreOpposed(targetToken, originToken)) return false;
+  const originActor = originToken.actor;
+  if (originActor?.isOfType && !originActor.isOfType("creature")) return false;
+  if (targetToken.actor?.isOfType && !targetToken.actor.isOfType("creature")) return false;
+
+  const reach = numeric(
+    context.reach,
+    numeric(originActor?.getReach?.({ action: "attack" }), numeric(grid.distance, 5)),
+  );
+  if (typeof originToken.distanceTo === "function") {
+    const distance = originToken.distanceTo(targetToken, { reach });
+    return typeof distance === "number" && Number.isFinite(distance) && reach >= distance;
+  }
+
+  const gridSize = numeric(grid.size, 100);
+  const gridDistance = numeric(grid.distance, 5);
+  const extraSquares = Math.max((reach / Math.max(gridDistance, 1)) - 1, 0);
+  const allowedGap = (extraSquares * gridSize) + Math.max(2, gridSize * 0.02);
+  return rectanglesWithinReach(
+    tokenRectangle(targetToken, gridSize),
+    tokenRectangle(originToken, gridSize),
+    allowedGap,
+  );
+}
+
+function tokensAreOnOppositeSides(originToken, buddyToken, targetToken, gridSize) {
+  if (typeof originToken.onOppositeSides === "function") {
+    return originToken.onOppositeSides(originToken, buddyToken, targetToken);
+  }
+  const targetRect = tokenRectangle(targetToken, gridSize);
+  const originSide = classifyFlankingSide(targetRect, tokenRectangle(originToken, gridSize));
+  const buddySide = classifyFlankingSide(targetRect, tokenRectangle(buddyToken, gridSize));
+  return OPPOSITE_PAIRS.some(([first, second]) => (
+    (originSide === first && buddySide === second) || (originSide === second && buddySide === first)
+  ));
+}
+
+function originHasOppositeBuddy(originToken, targetToken, tokens, grid) {
+  const gridSize = numeric(grid.size, 100);
+  return tokens.some((buddyToken) => (
+    buddyToken !== originToken
+    && canParticipate(buddyToken)
+    && actorsAreAllied(originToken, buddyToken)
+    && actorsAreOpposed(targetToken, buddyToken)
+    && rectanglesWithinReach(
+      tokenRectangle(targetToken, gridSize),
+      tokenRectangle(buddyToken, gridSize),
+      flankerReachPixels(buddyToken, gridSize, numeric(grid.distance, 5)),
+    )
+    && tokensAreOnOppositeSides(originToken, buddyToken, targetToken, gridSize)
+  ));
+}
+
+export function isWrathmakerFlankingOrigin(originToken, targetToken, tokens, config, context = {}, grid = {}) {
+  if (!config.enabled || !tokenCanMakeCurrentMeleeAttack(originToken, targetToken, context, grid)) return false;
+  const state = calculateTokenFlankingState(targetToken, tokens, config, grid);
+  if (!state?.active) return false;
+
+  // Once the enhanced threshold is met, every qualifying melee combatant in
+  // reach shares the flank. At the ordinary two-person threshold, the attacker
+  // must itself be one half of the opposite-side pair.
+  return state.sides >= 3 || originHasOppositeBuddy(originToken, targetToken, tokens, grid);
 }
 
 export function calculateActorFlankingState(actor, config, environment = {}) {
@@ -267,15 +376,26 @@ export function injectFlankingModifier(actor, config, environment = {}) {
   }
 
   const modifiers = (actor.synthetics.modifiers.ac ??= []);
-  const label = globalThis.game?.i18n?.format?.("CMT.Flanking.Modifier", { sides: state.sides })
-    ?? `Wrathmaker Flanking (${state.sides} sides)`;
+  const label = globalThis.game?.i18n?.format?.("CMT.Flanking.Modifier", { participants: state.participants })
+    ?? `Wrathmaker Flanking (${state.participants} combatants)`;
   modifiers.push(({ test } = {}) => {
     if (!isEligibleWrathmakerFlankingAttack(test)) return null;
+    const options = asRollOptionSet(test);
+    const offGuardable = actor.attributes?.flanking?.offGuardable
+      ?? actor.system?.attributes?.flanking?.offGuardable;
+    if (offGuardable === false) return null;
+    if (typeof offGuardable === "number") {
+      const originLevel = numericRollOption(options, "origin:level");
+      if (originLevel === null || originLevel <= offGuardable) return null;
+    }
     return new Modifier({
       slug: "wrathmaker-flanking",
       label,
       modifier: state.wrathmakerPenalty,
-      type: config.pf2eHandlesTwoSidedFlanking || config.stackWithOffGuard ? "untyped" : "circumstance",
+      // This is the final circumstance penalty, not an extra penalty. PF2e's
+      // normal -2 Off-guard modifier remains present and stacking rules retain
+      // only this more severe value at three or four qualifying combatants.
+      type: "circumstance",
       domains: ["ac"],
     });
   });
@@ -297,6 +417,8 @@ export function scheduleFlankingRefresh() {
 }
 
 function registerRefreshHooks() {
+  if (refreshHooksRegistered) return;
+  refreshHooksRegistered = true;
   Hooks.on("canvasReady", scheduleFlankingRefresh);
   Hooks.on("createToken", scheduleFlankingRefresh);
   Hooks.on("deleteToken", scheduleFlankingRefresh);
@@ -311,29 +433,92 @@ function registerRefreshHooks() {
   Hooks.on("updateCombatant", scheduleFlankingRefresh);
 }
 
-export function installFlankingBridge(getConfig) {
-  const ActorClass = CONFIG.Actor?.documentClass;
-  const prototype = ActorClass?.prototype;
-  const original = prototype?.prepareSynthetics;
+function installTokenFlankingOverride(getConfig) {
+  const prototype = CONFIG.Token?.objectClass?.prototype;
+  const original = prototype?.isFlanking;
   if (typeof original !== "function") {
-    console.error(`${MODULE_ID} | PF2e Actor.prepareSynthetics was not found; custom flanking cannot be automated.`);
+    console.error(`${MODULE_ID} | PF2e Token.isFlanking was not found; Off-guard flanking detection cannot be replaced.`);
     return false;
   }
-  if (original[PATCH_MARKER]) return true;
+  if (original[TOKEN_PATCH_MARKER]) return true;
 
-  function prepareSyntheticsWithWrathmakerFlanking(...args) {
-    const result = original.apply(this, args);
+  function isFlankingWithWrathmaker(flankee, context = {}) {
+    const normalFlanking = original.apply(this, [flankee, context]);
+    const config = getConfig().flanking;
+    if (!config.enabled || normalFlanking) return normalFlanking;
+
+    const tokens = this.layer?.placeables ?? globalThis.canvas?.tokens?.placeables ?? [];
+    const grid = {
+      size: globalThis.canvas?.grid?.size,
+      distance: globalThis.canvas?.scene?.grid?.distance,
+    };
     try {
-      injectFlankingModifier(this, getConfig().flanking);
+      return isWrathmakerFlankingOrigin(this, flankee, tokens, config, context, grid);
     } catch (error) {
-      console.error(`${MODULE_ID} | Could not calculate custom flanking for ${this?.name ?? "an actor"}.`, error);
+      console.error(`${MODULE_ID} | Could not resolve Off-guard flanking for ${this?.name ?? "a token"}.`, error);
+      return false;
     }
-    return result;
   }
 
-  Object.defineProperty(prepareSyntheticsWithWrathmakerFlanking, PATCH_MARKER, { value: true });
-  Object.defineProperty(prepareSyntheticsWithWrathmakerFlanking, "name", { value: original.name });
-  prototype.prepareSynthetics = prepareSyntheticsWithWrathmakerFlanking;
-  registerRefreshHooks();
+  Object.defineProperty(isFlankingWithWrathmaker, TOKEN_PATCH_MARKER, { value: true });
+  Object.defineProperty(isFlankingWithWrathmaker, "name", { value: original.name });
+  Object.defineProperty(prototype, "isFlanking", {
+    configurable: true,
+    writable: true,
+    value: isFlankingWithWrathmaker,
+  });
   return true;
+}
+
+export function installFlankingBridge(getConfig) {
+  const documentClasses = Object.values(CONFIG.PF2E?.Actor?.documentClasses ?? {});
+  const prototypes = [...new Set(documentClasses.map((ActorClass) => ActorClass?.prototype).filter(Boolean))];
+  const patchTargets = prototypes
+    .map((prototype) => ({ prototype, original: prototype.prepareSynthetics }))
+    .filter(({ original }) => typeof original === "function");
+
+  if (patchTargets.length === 0) {
+    console.error(`${MODULE_ID} | PF2e creature preparation classes were not found; custom flanking cannot be automated.`);
+    return false;
+  }
+
+  let installed = 0;
+  for (const { prototype, original } of patchTargets) {
+    if (Object.hasOwn(prototype, "prepareSynthetics") && prototype.prepareSynthetics?.[PATCH_MARKER]) {
+      installed += 1;
+      continue;
+    }
+
+    function prepareSyntheticsWithWrathmakerFlanking(...args) {
+      const outermostCall = !actorsPreparingSynthetics.has(this);
+      if (outermostCall) actorsPreparingSynthetics.add(this);
+      try {
+        const result = original.apply(this, args);
+        if (outermostCall) {
+          try {
+            injectFlankingModifier(this, getConfig().flanking);
+          } catch (error) {
+            console.error(`${MODULE_ID} | Could not calculate custom flanking for ${this?.name ?? "an actor"}.`, error);
+          }
+        }
+        return result;
+      } finally {
+        if (outermostCall) actorsPreparingSynthetics.delete(this);
+      }
+    }
+
+    Object.defineProperty(prepareSyntheticsWithWrathmakerFlanking, PATCH_MARKER, { value: true });
+    Object.defineProperty(prepareSyntheticsWithWrathmakerFlanking, "name", { value: original.name });
+    Object.defineProperty(prototype, "prepareSynthetics", {
+      configurable: true,
+      writable: true,
+      value: prepareSyntheticsWithWrathmakerFlanking,
+    });
+    installed += 1;
+  }
+
+  if (installed === 0) return false;
+  const tokenOverrideInstalled = installTokenFlankingOverride(getConfig);
+  registerRefreshHooks();
+  return tokenOverrideInstalled;
 }

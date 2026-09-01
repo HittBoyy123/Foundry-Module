@@ -15,6 +15,7 @@ import {
   createProfessionSpecialtyLoreSource,
   createProfessionSpecialtySource,
   getActorProfession,
+  getActorProfessionFeatGroups,
   getActorProfessionPlan,
   getActorProfessions,
   getProfessionData,
@@ -22,6 +23,7 @@ import {
   professionCheckRollOptions,
   professionRankForLevel,
   setActorProfessionPlan,
+  synchronizeProfessionFeatHierarchy,
   synchronizeActorProfession,
 } from "../scripts/professions.js";
 
@@ -117,6 +119,63 @@ test("profession milestone specialties create visible feats and Lore at the same
     specialtyId: "specialty-1",
     milestoneLevel: 4,
   });
+});
+
+test("profession feat groups keep each profession as the parent of only its module-granted feats", () => {
+  const blacksmith = selectedProfessionItem("blacksmithing", "primary", 1);
+  const alchemist = selectedProfessionItem("alchemy", "milestone", 4);
+  const specialty = createProfessionSpecialtySource(getProfessionData(blacksmith), "specialty-1", 10);
+  specialty.id = "BlacksmithSpecialty";
+  const additionalLore = {
+    id: "BlacksmithAdditionalLore",
+    name: "Additional Lore (Blacksmithing)",
+    type: "feat",
+    flags: { [MODULE_ID]: { professionGrant: { professionId: "blacksmithing", kind: "additional-lore" } } },
+  };
+  const alchemyCrafting = {
+    id: "AlchemySpecialtyCrafting",
+    name: "Specialty Crafting (Alchemy)",
+    type: "feat",
+    flags: { [MODULE_ID]: { professionGrant: { professionId: "alchemy", kind: "specialty-crafting" } } },
+  };
+  const loreSkill = {
+    id: "BlacksmithLoreSkill",
+    name: "Blacksmithing",
+    type: "lore",
+    flags: { [MODULE_ID]: { professionGrant: { professionId: "blacksmithing", kind: "lore" } } },
+  };
+  const actor = { level: 10, items: [blacksmith, alchemist, specialty, additionalLore, alchemyCrafting, loreSkill] };
+  const groups = getActorProfessionFeatGroups(actor);
+  assert.deepEqual(groups.map((group) => group.professionId), ["blacksmithing", "alchemy"]);
+  assert.deepEqual(groups[0].children.map((item) => item.id), ["BlacksmithSpecialty", "BlacksmithAdditionalLore"]);
+  assert.deepEqual(groups[1].children.map((item) => item.id), ["AlchemySpecialtyCrafting"]);
+});
+
+test("profession hierarchy writes native PF2e nested grant links without replacing unrelated grants", async () => {
+  const parent = selectedProfessionItem("blacksmithing", "primary", 1);
+  parent.flags.pf2e = { itemGrants: { existingGrant: { id: "UnrelatedFeat", onDelete: "restrict" } } };
+  const child = {
+    id: "ProfessionChild",
+    name: "Specialty Crafting (Blacksmithing)",
+    type: "feat",
+    flags: { [MODULE_ID]: { professionGrant: { professionId: "blacksmithing", kind: "specialty-crafting" } } },
+  };
+  const updates = [];
+  const actor = {
+    level: 1,
+    items: [parent, child],
+    async updateEmbeddedDocuments(_type, itemUpdates) {
+      updates.push(...itemUpdates);
+    },
+  };
+  assert.equal(await synchronizeProfessionFeatHierarchy(actor), true);
+  const parentUpdate = updates.find((update) => update._id === parent.id);
+  const childUpdate = updates.find((update) => update._id === child.id);
+  assert.deepEqual(parentUpdate["flags.pf2e.itemGrants"], {
+    existingGrant: { id: "UnrelatedFeat", onDelete: "restrict" },
+    wrathmakerProfessionProfessionChild: { id: "ProfessionChild", onDelete: "detach", nested: true },
+  });
+  assert.deepEqual(childUpdate["flags.pf2e.grantedBy"], { id: parent.id, onDelete: "detach" });
 });
 
 test("profession checks activate only for related Wrathmaker materials", () => {
@@ -240,6 +299,14 @@ test("profession synchronization creates PF2e-visible grants and advances only i
           if (Object.hasOwn(update, professionKey)) item.flags[MODULE_ID].profession = structuredClone(update[professionKey]);
           const selectionKey = `flags.${MODULE_ID}.professionSelection`;
           if (Object.hasOwn(update, selectionKey)) item.flags[MODULE_ID].professionSelection = structuredClone(update[selectionKey]);
+          if (Object.hasOwn(update, "flags.pf2e.itemGrants")) {
+            item.flags.pf2e ??= {};
+            item.flags.pf2e.itemGrants = structuredClone(update["flags.pf2e.itemGrants"]);
+          }
+          if (Object.hasOwn(update, "flags.pf2e.grantedBy")) {
+            item.flags.pf2e ??= {};
+            item.flags.pf2e.grantedBy = structuredClone(update["flags.pf2e.grantedBy"]);
+          }
         }
       },
     };
@@ -259,6 +326,9 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     assert.match(profession.system.description.value, /expert at level 3/i);
     const specialty = grants.find((item) => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting");
     assert.equal(specialty.system.rules[0].selection, "blacksmithing");
+    assert.deepEqual(specialty.flags.pf2e.grantedBy, { id: profession.id, onDelete: "detach" });
+    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 3);
+    assert.equal(Object.values(profession.flags.pf2e.itemGrants).every((grant) => grant.nested === true), true);
 
     actor.level = 16;
     assert.equal(await synchronizeActorProfession(actor), true);
@@ -398,6 +468,9 @@ test("the PF2e character overview exposes the profession picker and gathering us
   assert.match(professionScript, /\.subsection\.details \.abcd/);
   assert.match(professionScript, /deity\.insertAdjacentElement\("afterend", field\)/);
   assert.match(professionScript, /templates\/profession-picker\.hbs/);
+  assert.match(professionScript, /data-cmt-profession-feats/);
+  assert.match(professionScript, /"flags\.pf2e\.itemGrants"/);
+  assert.match(professionScript, /"flags\.pf2e\.grantedBy"/);
   assert.match(professionScript, /createEmbeddedDocuments\("Item", sources/);
   assert.match(professionScript, /"system\.proficient\.value"/);
   assert.match(pickerTemplate, /name="professionId"/);
@@ -412,6 +485,9 @@ test("the PF2e character overview exposes the profession picker and gathering us
   assert.match(css, /--cmt-profession-red:\s*#5e0000/i);
   assert.match(css, /--cmt-profession-soft:\s*#e7d9cf/i);
   assert.match(css, /--cmt-profession-yellow:\s*#e9d7a1/i);
+  assert.match(css, /--cmt-profession-green:\s*#0d4b2a/i);
+  assert.match(css, /\.cmt-profession-picker-header\s*\{[\s\S]*repeating-linear-gradient[\s\S]*var\(--cmt-profession-green\)/i);
+  assert.match(css, /\.cmt-profession-feats\s*>\s*header/);
   assert.match(css, /\.cmt-profession-option-details small[\s\S]*white-space:\s*normal/i);
   assert.match(css, /\.cmt-profession-milestone-list/);
 });

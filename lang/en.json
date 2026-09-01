@@ -11,6 +11,7 @@
       "Choose": "Choose Profession",
       "PickerTitle": "Choose a Wrathmaker Profession",
       "PickerHeading": "Professions",
+      "FeatSection": "Profession Feats",
       "PickerIntro": "Choose the profession {actor} began at 1st level.",
       "Progression": "Profession Lore progression",
       "ProgressionSummary": "Trained 1 • Expert 3 • Master 7 • Legendary 15",
@@ -57,7 +58,7 @@
       "Unavailable": "Unavailable material"
     },
     "Flanking": {
-      "Modifier": "Wrathmaker Flanking Extra ({sides} sides)"
+      "Modifier": "Wrathmaker Flanking ({participants} combatants)"
     },
     "Settings": {
       "Rules": {
@@ -85,15 +86,15 @@
         "MaximumGatheringTier": "Maximum available resource tier",
         "GatheringRewardDestination": "Gathered resource destination",
         "Flanking": "Enhanced flanking",
-        "FlankingHint": "Add Wrathmaker's extra penalty at three and four qualifying sides. PF2e still handles ordinary two-sided flanking.",
+        "FlankingHint": "Use Wrathmaker's melee-only flanking detector for ordinary two-person Off-guard and final -3/-4 penalties at the enhanced thresholds.",
         "Hexploration": "Hexploration travel",
         "HexplorationHint": "Add travel setup, vehicles, Express Rider, and daily planning to the party's existing Exploration tab.",
         "FlankingOptions": "Enhanced Flanking Options",
-        "FlankingOptionsHint": "The three- and four-side values are the final AC totals after PF2e's normal -2 Off-guard penalty.",
-        "ThreeSides": "Total AC penalty at 3 sides",
-        "FourSides": "Total AC penalty at 4 sides",
+        "FlankingOptionsHint": "The three- and four-combatant values are final circumstance penalties. Against an oversized target, only these enhanced thresholds are multiplied; ordinary two-person Off-guard remains unchanged.",
+        "ThreeSides": "Total AC penalty at 3 combatants",
+        "FourSides": "Total AC penalty at 4 combatants",
         "SizeDifference": "Normal size difference",
-        "OversizedCount": "Flankers required per side when oversized",
+        "OversizedCount": "Enhanced threshold multiplier when oversized",
         "Materials": "Crafting Materials",
         "MaterialsHint": "Open a material to rename it, enable or disable it, and edit all six tiers.",
         "Edit": "Edit"

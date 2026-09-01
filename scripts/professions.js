@@ -30,6 +30,13 @@ const PROFESSION_MILESTONE_KINDS = Object.freeze({
   profession: "profession",
   specialty: "specialty",
 });
+const PROFESSION_GRANT_LINK_PREFIX = "wrathmakerProfession";
+const PROFESSION_FEAT_CHILD_ORDER = Object.freeze({
+  specialty: 0,
+  [PROFESSION_GRANT_KINDS.additionalLore]: 1,
+  [PROFESSION_GRANT_KINDS.specialtyCrafting]: 2,
+  [PROFESSION_GRANT_KINDS.bonusFeat]: 3,
+});
 const syncingActors = new Set();
 const scheduledActors = new Map();
 let ProfessionPickerApplication = null;
@@ -233,6 +240,82 @@ export function getActorProfessions(actor) {
 
 export function getActorProfession(actor) {
   return getActorProfessions(actor)[0] ?? null;
+}
+
+function professionFeatChildOrder(item) {
+  const specialty = getProfessionSpecialty(item);
+  if (specialty) {
+    return [PROFESSION_FEAT_CHILD_ORDER.specialty, specialty.milestoneLevel, item.name ?? ""];
+  }
+  const grant = getProfessionGrant(item);
+  return [PROFESSION_FEAT_CHILD_ORDER[grant?.kind] ?? 99, 0, item.name ?? ""];
+}
+
+/** Return the module-owned feat tree shown in the character sheet's Profession Feats section. */
+export function getActorProfessionFeatGroups(actor) {
+  const items = actorItems(actor);
+  return getActorProfessions(actor).map((profession) => {
+    const children = items
+      .filter((item) => {
+        if (item?.type !== "feat" || item === profession.item) return false;
+        const specialty = getProfessionSpecialty(item);
+        const grant = getProfessionGrant(item);
+        return specialty?.professionId === profession.id || grant?.professionId === profession.id;
+      })
+      .sort((left, right) => {
+        const leftOrder = professionFeatChildOrder(left);
+        const rightOrder = professionFeatChildOrder(right);
+        return leftOrder[0] - rightOrder[0]
+          || leftOrder[1] - rightOrder[1]
+          || String(leftOrder[2]).localeCompare(String(rightOrder[2]), globalThis.game?.i18n?.lang);
+      });
+    return {
+      professionId: profession.id,
+      parent: profession.item,
+      children,
+    };
+  });
+}
+
+function sameData(left, right) {
+  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+}
+
+/** Establish native PF2e grant links so profession feats prepare as parent/child feat trees. */
+export async function synchronizeProfessionFeatHierarchy(actor) {
+  const updates = new Map();
+  for (const group of getActorProfessionFeatGroups(actor)) {
+    const parentId = itemId(group.parent);
+    if (!parentId) continue;
+    const existingGrants = group.parent?.flags?.pf2e?.itemGrants ?? {};
+    const desiredGrants = Object.fromEntries(Object.entries(existingGrants)
+      .filter(([key]) => !key.startsWith(PROFESSION_GRANT_LINK_PREFIX)));
+    for (const child of group.children) {
+      const childId = itemId(child);
+      if (!childId) continue;
+      desiredGrants[`${PROFESSION_GRANT_LINK_PREFIX}${childId}`] = {
+        id: childId,
+        onDelete: "detach",
+        nested: true,
+      };
+      const desiredGrantedBy = { id: parentId, onDelete: "detach" };
+      if (!sameData(child?.flags?.pf2e?.grantedBy, desiredGrantedBy)) {
+        updates.set(childId, {
+          ...(updates.get(childId) ?? { _id: childId }),
+          "flags.pf2e.grantedBy": desiredGrantedBy,
+        });
+      }
+    }
+    if (!sameData(existingGrants, desiredGrants)) {
+      updates.set(parentId, {
+        ...(updates.get(parentId) ?? { _id: parentId }),
+        "flags.pf2e.itemGrants": desiredGrants,
+      });
+    }
+  }
+  if (updates.size === 0) return false;
+  await actor.updateEmbeddedDocuments("Item", [...updates.values()], { render: false });
+  return true;
 }
 
 export function professionCheckRollOptions(actor, { materialId = "" } = {}) {
@@ -682,6 +765,8 @@ export async function synchronizeActorProfession(actor, _options = {}) {
       await actor.createEmbeddedDocuments("Item", sources, { render: false });
       changed = true;
     }
+    const hierarchyChanged = await synchronizeProfessionFeatHierarchy(actor);
+    changed = hierarchyChanged || changed;
     return changed;
   } finally {
     syncingActors.delete(key);
@@ -885,6 +970,63 @@ function injectProfessionField(application, html) {
   });
 }
 
+/** Move PF2e's native profession feat rows into their own section without replacing sheet item controls. */
+export function injectProfessionFeatSection(application, html) {
+  const actor = characterActor(application);
+  const root = asElement(html) ?? asElement(application?.element);
+  const pane = root?.matches?.("section.tab.feats, .feats-pane")
+    ? root
+    : root?.querySelector?.("section.tab.feats, .feats-pane");
+  if (!actor || !pane) return false;
+  const existing = pane.querySelector("[data-cmt-profession-feats]");
+  if (existing) return true;
+
+  const groups = getActorProfessionFeatGroups(actor);
+  const rowsById = new Map(Array.from(pane.querySelectorAll("li[data-item-id]"))
+    .map((row) => [row.dataset.itemId, row]));
+  const visibleGroups = groups.filter((group) => rowsById.has(itemId(group.parent)));
+  if (visibleGroups.length === 0) return false;
+
+  const firstParentRow = rowsById.get(itemId(visibleGroups[0].parent));
+  const sourceSection = firstParentRow?.closest("section.feat-section");
+  if (!sourceSection) return false;
+
+  const section = document.createElement("section");
+  section.className = "feat-section major cmt-profession-feats";
+  section.dataset.groupId = "wrathmaker-professions";
+  section.dataset.cmtProfessionFeats = "true";
+  const header = document.createElement("header");
+  header.textContent = localize("CMT.Profession.FeatSection", "Profession Feats");
+  const list = document.createElement("ol");
+  list.className = "feats-list";
+  section.append(header, list);
+  sourceSection.insertAdjacentElement("beforebegin", section);
+
+  for (const group of visibleGroups) {
+    const parentRow = rowsById.get(itemId(group.parent));
+    if (!parentRow) continue;
+    parentRow.querySelector(":scope > .item-name")?.removeAttribute("data-drag-handle");
+    parentRow.querySelector(":scope > .item-name")?.classList.remove("drag-handle");
+    list.append(parentRow);
+    for (const child of group.children) {
+      const childRow = rowsById.get(itemId(child));
+      if (!childRow || parentRow.contains(childRow)) continue;
+      let nested = parentRow.querySelector(":scope > ol.nested-items");
+      if (!nested) {
+        nested = document.createElement("ol");
+        nested.className = "nested-items";
+        parentRow.append(nested);
+      }
+      childRow.classList.remove("slot");
+      childRow.removeAttribute("data-slot-id");
+      const slotTitle = childRow.querySelector(":scope > .item-name > .feat-slot-title");
+      if (slotTitle) slotTitle.textContent = "";
+      nested.append(childRow);
+    }
+  }
+  return true;
+}
+
 function createProfessionPickerApplication() {
   const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
   return class WrathmakerProfessionPicker extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -1080,7 +1222,10 @@ export function openProfessionPicker(actor) {
 export function registerProfessionHooks() {
   ProfessionPickerApplication = createProfessionPickerApplication();
   for (const hook of ["renderActorSheet", "renderActorSheetV2", "renderCharacterSheetPF2e"]) {
-    Hooks.on(hook, (application, html) => injectProfessionField(application, html));
+    Hooks.on(hook, (application, html) => {
+      injectProfessionField(application, html);
+      injectProfessionFeatSection(application, html);
+    });
   }
   Hooks.on("createItem", (item) => {
     if (item?.actor?.type !== "character") return;

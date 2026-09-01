@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.0 — native profession feat trees and rebuilt flanking
+
+- Restyled the profession picker with the PF2e party sheet's green textured masthead, brown framing, parchment surfaces, crimson headings, and gold controls.
+- Added a dedicated **Profession Feats** section to the character Feats tab.
+- Linked each selected profession to its Wrathmaker-created specialties, Additional Lore, Specialty Crafting, and determined bonus feat using PF2e's native nested item-grant hierarchy.
+- Kept managed Lore skills in the Lore list and left independently owned feats in their normal PF2e sections.
+- Rebuilt Wrathmaker flanking detection around a required opposite-side melee pair while preserving PF2e's normal two-person Off-guard behavior.
+- Applied final contextual circumstance penalties of -3 with three qualifying melee combatants and -4 with four or more, without double-stacking the ordinary -2 Off-guard penalty.
+- Doubled only the enhanced thresholds against targets more than one size category larger than the largest qualifying flanker, requiring six combatants for -3 and eight for -4 while retaining ordinary two-person Off-guard.
+- Restricted all enhanced flanking benefits to melee attacks that can currently reach the target, including reach weapons, and excluded ranged attacks.
+- Updated PF2e actor and token integration so the flanking bridge patches the concrete creature document classes and native token flanking method.
+
 ## 0.14.0 — profession progression and development
 
 - Changed automatic profession Lore progression to trained at level 1, expert at level 3, master at level 7, and legendary at level 15.
