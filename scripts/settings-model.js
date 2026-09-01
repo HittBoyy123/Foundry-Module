@@ -1,6 +1,7 @@
 import { ConfigValidationError, getTierPresentation } from "./model.js";
 import { GATHERING_ENVIRONMENT_SOURCES } from "../content/gathering-presets.js";
 import { GATHERING_REWARD_DESTINATIONS } from "./gathering-destination.js";
+import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 const RARITIES = Object.freeze([
   Object.freeze({ value: "common", label: "Common" }),
@@ -101,12 +102,16 @@ export function buildDashboardContext(config) {
       label,
       selected: value === config.gathering?.rewardDestination,
     })),
-    flankingEnabled: config.flanking.enabled !== false,
     hexplorationEnabled: config.hexploration?.enabled !== false,
-    penaltyThree: config.flanking.penalties[3],
-    penaltyFour: config.flanking.penalties[4],
-    maxNormalSizeDifference: config.flanking.maxNormalSizeDifference,
-    oversizedParticipantsPerSide: config.flanking.oversizedParticipantsPerSide,
+    professions: PROFESSION_DEFINITIONS.map((profession) => {
+      const specialties = config.professions?.[profession.id]?.specialties ?? profession.specialties;
+      return {
+        id: profession.id,
+        name: profession.name,
+        img: profession.img,
+        specialties: specialties.map((specialty) => specialty.label).join(" · "),
+      };
+    }),
     materials: Object.entries(config.materials).map(([id, material]) => ({
       id,
       label: material.label,
@@ -142,22 +147,50 @@ export function applyDashboardChanges(config, form) {
   updated.gathering.rewardDestination = String(
     form.gathering?.rewardDestination ?? updated.gathering.rewardDestination ?? "party-stash",
   ).trim();
-  updated.flanking.enabled = checked(form.flanking?.enabled);
+  updated.flanking.enabled = true;
   updated.hexploration ??= {};
   updated.hexploration.enabled = checked(form.hexploration?.enabled);
   updated.flanking.penalties[2] = -2;
-  updated.flanking.penalties[3] = number(form.flanking?.penalties?.[3], updated.flanking.penalties[3]);
-  updated.flanking.penalties[4] = number(form.flanking?.penalties?.[4], updated.flanking.penalties[4]);
-  updated.flanking.maxNormalSizeDifference = number(
-    form.flanking?.maxNormalSizeDifference,
-    updated.flanking.maxNormalSizeDifference,
-  );
-  updated.flanking.oversizedParticipantsPerSide = number(
-    form.flanking?.oversizedParticipantsPerSide,
-    updated.flanking.oversizedParticipantsPerSide,
-  );
   updated.flanking.pf2eHandlesTwoSidedFlanking = true;
   updated.flanking.stackWithOffGuard = true;
+  return updated;
+}
+
+export function buildProfessionEditorContext(config, professionId) {
+  const definition = PROFESSION_DEFINITIONS.find((profession) => profession.id === professionId);
+  if (!definition) throw new ConfigValidationError(`Profession "${professionId}" does not exist.`);
+  return {
+    professionId,
+    name: definition.name,
+    img: definition.img,
+    specialties: (config.professions?.[professionId]?.specialties ?? definition.specialties).map((specialty, index) => ({
+      id: specialty.id,
+      number: index + 1,
+      label: specialty.label,
+      description: specialty.description,
+    })),
+  };
+}
+
+export function applyProfessionChanges(config, professionId, form) {
+  form = expandDottedFormData(form);
+  const updated = clone(config);
+  const definition = PROFESSION_DEFINITIONS.find((profession) => profession.id === professionId);
+  if (!definition) throw new ConfigValidationError(`Profession "${professionId}" does not exist.`);
+  updated.professions ??= {};
+  const specialtyForm = form.specialties ?? {};
+  updated.professions[professionId] = {
+    specialties: definition.specialties.map((fallback) => {
+      const values = specialtyForm[fallback.id] ?? {};
+      const label = String(values.label ?? "").trim();
+      if (!label) throw new ConfigValidationError("A specialty name cannot be blank.");
+      return {
+        id: fallback.id,
+        label,
+        description: String(values.description ?? "").trim(),
+      };
+    }),
+  };
   return updated;
 }
 

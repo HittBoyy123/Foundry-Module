@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0 — unified settings and configurable profession specialties
+
+- Renamed the enhanced flanking AC breakdowns to `Outnumbered (Flanked)` at three combatants and `Surrounded (Flanked)` at four or more combatants so they read naturally beside PF2e's `Off-Guard (Flanked)` label.
+- Restyled the Game Settings window with the party sheet's green textured masthead, gray section bars, parchment surfaces, crimson accents, and gold controls.
+- Shortened the settings copy and compacted the feature controls for quicker use during play.
+- Made Wrathmaker flanking a permanent world rule and removed its toggle and numeric options from the control panel; legacy settings migrate to the canonical -2/-3/-4 rule and oversized thresholds.
+- Added a Professions & Specialties section with an editor for all three specialty names and descriptions on each of the eleven professions.
+- Applied edited specialty details to the profession picker and synchronized specialty feats and Lore entries on existing characters.
+- Migrated world rules to schema version 14 while preserving existing crafting, gathering, Hexploration, and material settings.
+
 ## 0.15.1 — PF2e 7.3.1 enhanced-flanking fix
 
 - Fixed enhanced flanking modifiers being discarded during PF2e 7.3.1 Armor Class preparation because AC synthetic factories do not receive the eventual attack test options.

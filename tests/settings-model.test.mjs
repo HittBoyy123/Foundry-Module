@@ -6,14 +6,16 @@ import { calculateItemEffects, normalizeRulesConfig } from "../scripts/model.js"
 import {
   applyDashboardChanges,
   applyMaterialChanges,
+  applyProfessionChanges,
   buildDashboardContext,
   buildMaterialEditorContext,
+  buildProfessionEditorContext,
   expandDottedFormData,
 } from "../scripts/settings-model.js";
 
 const config = normalizeRulesConfig(cloneDefaultRulesConfig());
 
-test("dashboard context exposes friendly crafting, flanking, and material summaries", () => {
+test("dashboard context exposes friendly crafting, profession, and material summaries", () => {
   const context = buildDashboardContext(config);
   assert.equal(context.craftingEnabled, true);
   assert.equal(context.gatheringEnabled, true);
@@ -24,15 +26,15 @@ test("dashboard context exposes friendly crafting, flanking, and material summar
     context.gatheringRewardDestinations.find((destination) => destination.selected).value,
     "party-stash",
   );
-  assert.equal(context.flankingEnabled, true);
   assert.equal(context.hexplorationEnabled, true);
-  assert.equal(context.penaltyThree, -3);
+  assert.equal(context.professions.length, 11);
+  assert.match(context.professions.find((profession) => profession.id === "blacksmithing").specialties, /Specialty I/);
   const metal = context.materials.find((material) => material.id === "metal");
   assert.match(metal.tiers, /1: Iron/);
   assert.equal(metal.itemTypes, "Weapons, Armor, and Spell Focuses");
 });
 
-test("dashboard changes toggle both systems and update flanking totals", () => {
+test("dashboard changes toggle optional systems while flanking stays permanent", () => {
   const changed = normalizeRulesConfig(applyDashboardChanges(config, {
     crafting: { enabled: false },
     gathering: {
@@ -56,11 +58,28 @@ test("dashboard changes toggle both systems and update flanking totals", () => {
   assert.equal(changed.gathering.maxTier, 4);
   assert.equal(changed.gathering.useSceneRegion, false);
   assert.equal(changed.gathering.rewardDestination, "character");
-  assert.equal(changed.flanking.enabled, false);
+  assert.equal(changed.flanking.enabled, true);
   assert.equal(changed.hexploration.enabled, false);
-  assert.deepEqual(changed.flanking.penalties, { 2: -2, 3: -4, 4: -6 });
-  assert.equal(changed.flanking.maxNormalSizeDifference, 2);
-  assert.equal(changed.flanking.oversizedParticipantsPerSide, 3);
+  assert.deepEqual(changed.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
+  assert.equal(changed.flanking.maxNormalSizeDifference, 1);
+  assert.equal(changed.flanking.oversizedParticipantsPerSide, 2);
+});
+
+test("profession editor saves three world-configurable specialty names and descriptions", () => {
+  const editor = buildProfessionEditorContext(config, "blacksmithing");
+  assert.equal(editor.name, "Blacksmithing");
+  assert.equal(editor.specialties.length, 3);
+
+  const changed = normalizeRulesConfig(applyProfessionChanges(config, "blacksmithing", {
+    "specialties.specialty-1.label": "Weaponsmith",
+    "specialties.specialty-1.description": "Creates and repairs martial weapons.",
+    "specialties.specialty-2.label": "Armorsmith",
+    "specialties.specialty-2.description": "Creates and repairs armor.",
+    "specialties.specialty-3.label": "Farrier",
+    "specialties.specialty-3.description": "Works with shoes, tack, and fittings.",
+  }));
+  assert.equal(changed.professions.blacksmithing.specialties[0].label, "Weaponsmith");
+  assert.equal(changed.professions.blacksmithing.specialties[1].description, "Creates and repairs armor.");
 });
 
 test("Foundry dotted form fields expand before dashboard toggles are saved", () => {

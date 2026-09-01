@@ -229,7 +229,11 @@ export function createPublicApi() {
     },
 
     listProfessions() {
-      return clone(PROFESSION_DEFINITIONS);
+      const configured = getRulesConfig().professions ?? {};
+      return clone(PROFESSION_DEFINITIONS.map((profession) => ({
+        ...profession,
+        specialties: configured[profession.id]?.specialties ?? profession.specialties,
+      })));
     },
 
     getProfession(actor) {

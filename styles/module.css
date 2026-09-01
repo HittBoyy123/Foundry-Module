@@ -68,20 +68,23 @@
 }
 
 .cmt-rules-config {
-  --cmt-charcoal: #2d2926;
-  --cmt-charcoal-deep: #1d1918;
-  --cmt-crimson: #68131f;
-  --cmt-crimson-bright: #861d2c;
-  --cmt-gold: #b58a45;
-  --cmt-gold-light: #dfc38e;
+  --cmt-charcoal: #605856;
+  --cmt-charcoal-deep: #403937;
+  --cmt-crimson: #5e0000;
+  --cmt-crimson-bright: #7a0808;
+  --cmt-gold: #e9d7a1;
+  --cmt-gold-light: #fff0bd;
+  --cmt-green: #0d4b2a;
+  --cmt-green-dark: #08351d;
   --cmt-ink: #2a211d;
   --cmt-muted-ink: #5f5146;
-  --cmt-parchment: #eadfc5;
-  --cmt-parchment-light: #f7f0df;
+  --cmt-parchment: #f4eee6;
+  --cmt-parchment-light: #fffdf8;
+  --cmt-soft: #e7d9cf;
 }
 
 .cmt-rules-config .window-content {
-  background: var(--cmt-parchment);
+  background: repeating-linear-gradient(125deg, #f4eee6 0 4px, #f2ebe2 4px 5px);
   color: var(--cmt-ink);
   overflow: hidden;
 }
@@ -100,6 +103,10 @@
   gap: 0.5rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 0.65rem;
+}
+
+.cmt-config-actions.cmt-one-action {
+  grid-template-columns: 1fr;
 }
 
 .cmt-rules-config button {
@@ -128,12 +135,44 @@
 }
 
 .cmt-config-header {
-  border-bottom: 3px double var(--cmt-crimson);
   margin-bottom: 0.75rem;
-  padding-bottom: 0.55rem;
 }
 
-.cmt-config-header h2,
+.cmt-dashboard-masthead {
+  align-items: center;
+  background: repeating-linear-gradient(115deg, var(--cmt-green) 0 4px, #104f2e 4px 5px, #0b4527 5px 9px);
+  border: 1px solid #907b59;
+  border-left: 6px solid var(--cmt-gold);
+  box-shadow: inset 0 0 0 1px #315e43, inset 0 -5px 0 var(--cmt-green-dark);
+  color: #fff8e9;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.cmt-dashboard-masthead > i {
+  color: var(--cmt-gold);
+  font-size: 1.65rem;
+}
+
+.cmt-dashboard-masthead > img {
+  border: 1px solid var(--cmt-gold);
+  height: 52px;
+  object-fit: cover;
+  width: 52px;
+}
+
+.cmt-dashboard-masthead h2,
+.cmt-dashboard-masthead p {
+  color: inherit;
+  margin: 0;
+}
+
+.cmt-dashboard-masthead p {
+  color: #f4eee6;
+  margin-top: 0.15rem;
+}
+
 .cmt-section-heading h3,
 .cmt-panel h3 {
   color: var(--cmt-crimson);
@@ -149,21 +188,21 @@
 .cmt-switch-grid {
   display: grid;
   gap: 0.65rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .cmt-setting-card {
   align-items: center;
-  background: var(--cmt-crimson);
-  border: 2px solid var(--cmt-gold);
-  border-radius: 5px;
-  color: #fff3da;
+  background: var(--cmt-charcoal);
+  border: 1px solid #907b59;
+  border-left: 5px solid var(--cmt-crimson);
+  color: #fff8e9;
   cursor: pointer;
   display: grid;
   gap: 0.65rem;
   grid-template-columns: auto 1fr auto;
-  min-height: 74px;
-  padding: 0.65rem;
+  min-height: 48px;
+  padding: 0.5rem 0.6rem;
 }
 
 .cmt-setting-card:hover {
@@ -203,20 +242,27 @@
 }
 
 .cmt-panel,
-.cmt-materials-section {
+.cmt-materials-section,
+.cmt-professions-section {
   background: var(--cmt-parchment-light);
-  border: 2px solid var(--cmt-crimson);
-  border-radius: 5px;
-  box-shadow: inset 0 0 0 1px var(--cmt-gold-light);
+  border: 1px solid #9a8366;
+  box-shadow: inset 0 3px 0 #ded3c9;
   margin-top: 0.75rem;
-  padding: 0.7rem;
+  padding: 0.55rem;
 }
 
-.cmt-flanking-grid {
-  display: grid;
-  gap: 0.55rem 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 0.65rem;
+.cmt-panel > h3,
+.cmt-section-heading {
+  background: var(--cmt-charcoal);
+  border-left: 5px solid var(--cmt-crimson);
+  color: #fff8e9;
+  margin: -0.55rem -0.55rem 0.5rem;
+  padding: 0.42rem 0.55rem;
+}
+
+.cmt-panel > h3,
+.cmt-section-heading h3 {
+  color: inherit;
 }
 
 .cmt-dashboard-select {
@@ -258,28 +304,18 @@
   width: 100%;
 }
 
-.cmt-flanking-grid label {
-  align-items: center;
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: minmax(0, 1fr) 80px;
-}
-
-.cmt-flanking-grid input {
-  text-align: center;
-  width: 100%;
-}
-
 .cmt-rules-config input[type="text"],
 .cmt-rules-config input[type="number"],
-.cmt-rules-config select {
+.cmt-rules-config select,
+.cmt-rules-config textarea {
   background: #fffaf0;
   border: 1px solid #766153;
   color: var(--cmt-ink);
 }
 
 .cmt-rules-config input:focus,
-.cmt-rules-config select:focus {
+.cmt-rules-config select:focus,
+.cmt-rules-config textarea:focus {
   border-color: var(--cmt-crimson-bright);
   box-shadow: 0 0 0 1px var(--cmt-gold);
   outline: none;
@@ -302,6 +338,93 @@
   gap: 0.6rem;
   grid-template-columns: minmax(0, 1fr) auto;
   padding: 0.5rem 0.6rem;
+}
+
+.cmt-profession-settings-list {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cmt-profession-settings-card {
+  align-items: center;
+  background: var(--cmt-charcoal);
+  border: 1px solid var(--cmt-gold);
+  border-left: 5px solid var(--cmt-crimson);
+  color: #fff8e9;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  min-width: 0;
+  padding: 0.4rem;
+}
+
+.cmt-profession-settings-card img {
+  border: 1px solid var(--cmt-gold);
+  height: 38px;
+  object-fit: cover;
+  width: 38px;
+}
+
+.cmt-profession-settings-card > div {
+  display: grid;
+  min-width: 0;
+}
+
+.cmt-profession-settings-card small {
+  color: #f0e4ce;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmt-profession-settings-card button {
+  min-width: 70px;
+}
+
+.cmt-specialty-editor {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cmt-specialty-editor fieldset {
+  background: var(--cmt-soft);
+  border: 1px solid #9a8366;
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem 0.65rem;
+}
+
+.cmt-specialty-editor legend {
+  color: var(--cmt-crimson);
+  font-weight: 700;
+}
+
+.cmt-specialty-editor label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.cmt-specialty-editor label > span {
+  font-weight: 700;
+}
+
+.cmt-specialty-editor textarea {
+  min-height: 58px;
+  resize: vertical;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .cmt-switch-grid,
+  .cmt-profession-settings-list {
+    grid-template-columns: 1fr;
+  }
+
+  .cmt-dashboard-select {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cmt-material-card.is-disabled {

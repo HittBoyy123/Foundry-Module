@@ -5,16 +5,18 @@ import test from "node:test";
 const readSource = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 test("control panel exposes only friendly settings actions", async () => {
-  const [application, template, materialTemplate, itemSheet] = await Promise.all([
+  const [application, template, materialTemplate, professionTemplate, itemSheet] = await Promise.all([
     readSource("../scripts/config-app.js"),
     readSource("../templates/rules-config.hbs"),
     readSource("../templates/material-config.hbs"),
+    readSource("../templates/profession-config.hbs"),
     readSource("../scripts/item-sheet.js"),
   ]);
 
   assert.doesNotMatch(application, /AdvancedRulesConfig|openAdvanced|data-action=["']advanced/);
   assert.doesNotMatch(template, /Advanced JSON|data-action=["']advanced/);
   assert.match(template, /data-action="editMaterial"/);
+  assert.match(template, /data-action="editProfession"/);
   assert.match(template, /data-action="reset"/);
   assert.match(template, /name="hexploration\.enabled"/);
   assert.match(template, /name="gathering\.enabled"/);
@@ -22,9 +24,12 @@ test("control panel exposes only friendly settings actions", async () => {
   assert.match(template, /name="gathering\.maxTier"/);
   assert.match(template, /name="gathering\.useSceneRegion"/);
   assert.match(template, /name="gathering\.rewardDestination"/);
+  assert.doesNotMatch(template, /name="flanking\.|FlankingOptions|flankingEnabled/);
   assert.match(materialTemplate, /name="material\.modifierType"/);
   assert.match(materialTemplate, /name="itemTypes\.spellFocus"/);
   assert.match(materialTemplate, /name="dragonColors\.\{\{id\}\}\.damageType"/);
+  assert.match(professionTemplate, /name="specialties\.\{\{id\}\}\.label"/);
+  assert.match(professionTemplate, /name="specialties\.\{\{id\}\}\.description"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-color"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-tier"/);
 });
@@ -36,7 +41,9 @@ test("control panel uses opaque PF2e-inspired surfaces", async () => {
   assert.match(css, /--cmt-crimson:\s*#[0-9a-f]{6}/i);
   assert.match(css, /--cmt-charcoal:\s*#[0-9a-f]{6}/i);
   assert.match(css, /\.cmt-material-card\s*\{[^}]*background:\s*var\(--cmt-charcoal\)/s);
-  assert.match(css, /\.cmt-setting-card\s*\{[^}]*background:\s*var\(--cmt-crimson\)/s);
+  assert.match(css, /--cmt-green:\s*#0d4b2a/i);
+  assert.match(css, /\.cmt-dashboard-masthead\s*\{[^}]*background:\s*repeating-linear-gradient/s);
+  assert.match(css, /\.cmt-setting-card\s*\{[^}]*background:\s*var\(--cmt-charcoal\)/s);
   assert.doesNotMatch(css, /color-mix\(|rgba\(/);
 });
 

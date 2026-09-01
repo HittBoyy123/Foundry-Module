@@ -197,7 +197,12 @@ test("PF2e handles two-sided Off-guard while Wrathmaker supplies the final -3 an
   }
   globalThis.game = {
     pf2e: { Modifier: MockModifier },
-    i18n: { format: (_key, { participants }) => `Wrathmaker Flanking (${participants} combatants)` },
+    i18n: {
+      localize: (key) => ({
+        "CMT.Flanking.Outnumbered": "Outnumbered (Flanked)",
+        "CMT.Flanking.Surrounded": "Surrounded (Flanked)",
+      })[key] ?? key,
+    },
   };
 
   const target = token({ x: 100, y: 100, alliance: "opposition", target: true });
@@ -231,6 +236,7 @@ test("PF2e handles two-sided Off-guard while Wrathmaker supplies the final -3 an
   assert.equal(modifier.type, "circumstance");
   assert.deepEqual(modifier.domains, ["ac"]);
   assert.deepEqual(modifier.predicate, ["item:melee", "origin:flanking"]);
+  assert.equal(modifier.label, "Outnumbered (Flanked)");
 
   target.actor.synthetics = { modifiers: {} };
   const fourApplied = injectFlankingModifier(target.actor, config, {
@@ -238,7 +244,9 @@ test("PF2e handles two-sided Off-guard while Wrathmaker supplies the final -3 an
     grid: { size: 100, distance: 5 },
   });
   assert.equal(fourApplied, true);
-  assert.equal(target.actor.synthetics.modifiers.ac[0]().modifier, -4);
+  const fourCombatantModifier = target.actor.synthetics.modifiers.ac[0]();
+  assert.equal(fourCombatantModifier.modifier, -4);
+  assert.equal(fourCombatantModifier.label, "Surrounded (Flanked)");
 });
 
 test("the AC synthetic retains PF2e's level gate for limited Off-guard targets", () => {
@@ -249,7 +257,12 @@ test("the AC synthetic retains PF2e's level gate for limited Off-guard targets",
   }
   globalThis.game = {
     pf2e: { Modifier: MockModifier },
-    i18n: { format: (_key, { participants }) => `Wrathmaker Flanking (${participants} combatants)` },
+    i18n: {
+      localize: (key) => ({
+        "CMT.Flanking.Outnumbered": "Outnumbered (Flanked)",
+        "CMT.Flanking.Surrounded": "Surrounded (Flanked)",
+      })[key] ?? key,
+    },
   };
 
   const target = token({

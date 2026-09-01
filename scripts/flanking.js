@@ -376,8 +376,15 @@ export function injectFlankingModifier(actor, config, environment = {}) {
   }
 
   const modifiers = (actor.synthetics.modifiers.ac ??= []);
-  const label = globalThis.game?.i18n?.format?.("CMT.Flanking.Modifier", { participants: state.participants })
-    ?? `Wrathmaker Flanking (${state.participants} combatants)`;
+  const labelKey = state.sides >= 4
+    ? "CMT.Flanking.Surrounded"
+    : "CMT.Flanking.Outnumbered";
+  const localizedLabel = globalThis.game?.i18n?.localize?.(labelKey);
+  const label = localizedLabel && localizedLabel !== labelKey
+    ? localizedLabel
+    : state.sides >= 4
+      ? "Surrounded (Flanked)"
+      : "Outnumbered (Flanked)";
   modifiers.push(() => {
     const offGuardable = actor.attributes?.flanking?.offGuardable
       ?? actor.system?.attributes?.flanking?.offGuardable;

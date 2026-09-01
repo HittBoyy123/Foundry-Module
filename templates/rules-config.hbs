@@ -1,126 +1,87 @@
 <div class="cmt-config-body cmt-dashboard">
-  <header class="cmt-config-header">
-    <h2>{{localize "CMT.Settings.Dashboard.Heading"}}</h2>
-    <p class="hint">{{localize "CMT.Settings.Dashboard.Intro"}}</p>
+  <header class="cmt-config-header cmt-dashboard-masthead">
+    <i class="fa-solid fa-hammer" aria-hidden="true"></i>
+    <div>
+      <h2>{{localize "CMT.Settings.Dashboard.Heading"}}</h2>
+      <p>{{localize "CMT.Settings.Dashboard.Intro"}}</p>
+    </div>
   </header>
 
-  <section class="cmt-switch-grid">
+  <section class="cmt-switch-grid" aria-label="{{localize 'CMT.Settings.Dashboard.Features'}}">
     <label class="cmt-setting-card">
       <span class="cmt-setting-icon"><i class="fa-solid fa-hammer" aria-hidden="true"></i></span>
-      <span class="cmt-setting-copy">
-        <strong>{{localize "CMT.Settings.Dashboard.Crafting"}}</strong>
-        <small>{{localize "CMT.Settings.Dashboard.CraftingHint"}}</small>
-      </span>
+      <strong>{{localize "CMT.Settings.Dashboard.Crafting"}}</strong>
       <input type="checkbox" name="crafting.enabled" {{#if craftingEnabled}}checked{{/if}}>
     </label>
-
     <label class="cmt-setting-card">
       <span class="cmt-setting-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></span>
-      <span class="cmt-setting-copy">
-        <strong>{{localize "CMT.Settings.Dashboard.Gathering"}}</strong>
-        <small>{{localize "CMT.Settings.Dashboard.GatheringHint"}}</small>
-      </span>
+      <strong>{{localize "CMT.Settings.Dashboard.Gathering"}}</strong>
       <input type="checkbox" name="gathering.enabled" {{#if gatheringEnabled}}checked{{/if}}>
     </label>
-
-    <label class="cmt-setting-card">
-      <span class="cmt-setting-icon"><i class="fa-solid fa-people-arrows-left-right" aria-hidden="true"></i></span>
-      <span class="cmt-setting-copy">
-        <strong>{{localize "CMT.Settings.Dashboard.Flanking"}}</strong>
-        <small>{{localize "CMT.Settings.Dashboard.FlankingHint"}}</small>
-      </span>
-      <input type="checkbox" name="flanking.enabled" {{#if flankingEnabled}}checked{{/if}}>
-    </label>
-
     <label class="cmt-setting-card">
       <span class="cmt-setting-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
-      <span class="cmt-setting-copy">
-        <strong>{{localize "CMT.Settings.Dashboard.Hexploration"}}</strong>
-        <small>{{localize "CMT.Settings.Dashboard.HexplorationHint"}}</small>
-      </span>
+      <strong>{{localize "CMT.Settings.Dashboard.Hexploration"}}</strong>
       <input type="checkbox" name="hexploration.enabled" {{#if hexplorationEnabled}}checked{{/if}}>
     </label>
   </section>
 
   <section class="cmt-panel">
     <h3><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.GatheringOptions"}}</h3>
-    <p class="hint">{{localize "CMT.Settings.Dashboard.GatheringOptionsHint"}}</p>
     <div class="cmt-gathering-settings-grid">
       <label class="cmt-dashboard-check">
-        <span>
-          <strong>{{localize "CMT.Settings.Dashboard.SceneRegionIntegration"}}</strong>
-          <small>{{localize "CMT.Settings.Dashboard.SceneRegionIntegrationHint"}}</small>
-        </span>
+        <strong>{{localize "CMT.Settings.Dashboard.SceneRegionIntegration"}}</strong>
         <input type="checkbox" name="gathering.useSceneRegion" {{#if gatheringUsesSceneRegion}}checked{{/if}}>
       </label>
       <label class="cmt-dashboard-select">
         <span>{{localize "CMT.Settings.Dashboard.ActiveEnvironment"}}</span>
         <select name="gathering.environmentId">
-          {{#each gatheringEnvironments}}
-            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
-          {{/each}}
+          {{#each gatheringEnvironments}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
         </select>
       </label>
       <label class="cmt-dashboard-select">
         <span>{{localize "CMT.Settings.Dashboard.MaximumGatheringTier"}}</span>
         <select name="gathering.maxTier">
-          {{#each gatheringTiers}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>Tier {{value}}</option>
-          {{/each}}
+          {{#each gatheringTiers}}<option value="{{value}}" {{#if selected}}selected{{/if}}>Tier {{value}}</option>{{/each}}
         </select>
       </label>
       <label class="cmt-dashboard-select">
         <span>{{localize "CMT.Settings.Dashboard.GatheringRewardDestination"}}</span>
         <select name="gathering.rewardDestination">
-          {{#each gatheringRewardDestinations}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
+          {{#each gatheringRewardDestinations}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
         </select>
       </label>
     </div>
   </section>
 
-  <section class="cmt-panel">
-    <h3><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.FlankingOptions"}}</h3>
-    <p class="hint">{{localize "CMT.Settings.Dashboard.FlankingOptionsHint"}}</p>
-    <div class="cmt-flanking-grid">
-      <label>
-        <span>{{localize "CMT.Settings.Dashboard.ThreeSides"}}</span>
-        <input type="number" name="flanking.penalties.3" value="{{penaltyThree}}" max="-2" step="1">
-      </label>
-      <label>
-        <span>{{localize "CMT.Settings.Dashboard.FourSides"}}</span>
-        <input type="number" name="flanking.penalties.4" value="{{penaltyFour}}" max="-2" step="1">
-      </label>
-      <label>
-        <span>{{localize "CMT.Settings.Dashboard.SizeDifference"}}</span>
-        <input type="number" name="flanking.maxNormalSizeDifference" value="{{maxNormalSizeDifference}}" min="0" max="5" step="1">
-      </label>
-      <label>
-        <span>{{localize "CMT.Settings.Dashboard.OversizedCount"}}</span>
-        <input type="number" name="flanking.oversizedParticipantsPerSide" value="{{oversizedParticipantsPerSide}}" min="2" max="8" step="1">
-      </label>
+  <section class="cmt-professions-section">
+    <div class="cmt-section-heading">
+      <h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Professions"}}</h3>
+    </div>
+    <div class="cmt-profession-settings-list">
+      {{#each professions}}
+        <article class="cmt-profession-settings-card">
+          <img src="{{img}}" alt="">
+          <div><strong>{{name}}</strong><small>{{specialties}}</small></div>
+          <button type="button" data-action="editProfession" data-profession-id="{{id}}">
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Edit"}}
+          </button>
+        </article>
+      {{/each}}
     </div>
   </section>
 
   <section class="cmt-materials-section">
     <div class="cmt-section-heading">
-      <div>
-        <h3><i class="fa-solid fa-gem" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Materials"}}</h3>
-        <p class="hint">{{localize "CMT.Settings.Dashboard.MaterialsHint"}}</p>
-      </div>
+      <h3><i class="fa-solid fa-gem" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Materials"}}</h3>
     </div>
     <div class="cmt-material-list">
       {{#each materials}}
         <article class="cmt-material-card {{#unless enabled}}is-disabled{{/unless}}">
           <div class="cmt-material-summary">
-            <strong>{{label}}</strong>
-            <span>{{itemTypes}}</span>
-            <small>{{tiers}}</small>
+            <strong>{{label}}</strong><span>{{itemTypes}}</span><small>{{tiers}}</small>
           </div>
           <button type="button" data-action="editMaterial" data-material-id="{{id}}">
-            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
-            {{localize "CMT.Settings.Dashboard.Edit"}}
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Edit"}}
           </button>
         </article>
       {{/each}}
@@ -128,13 +89,7 @@
   </section>
 
   <footer class="cmt-config-actions cmt-two-actions">
-    <button type="button" data-action="reset" class="cmt-danger">
-      <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
-      {{localize "CMT.Settings.Editor.Reset"}}
-    </button>
-    <button type="submit">
-      <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-      {{localize "CMT.Settings.Editor.Save"}}
-    </button>
+    <button type="button" data-action="reset" class="cmt-danger"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> {{localize "CMT.Settings.Editor.Reset"}}</button>
+    <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{localize "CMT.Settings.Editor.Save"}}</button>
   </footer>
 </div>

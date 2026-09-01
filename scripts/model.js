@@ -11,6 +11,7 @@ import {
   RULES_SCHEMA_VERSION,
   cloneDefaultRulesConfig,
 } from "./constants.js";
+import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 const MODIFIER_TYPES = new Set([
   "ability",
@@ -201,49 +202,38 @@ function tierMapMatches(source, expected) {
   return isPlainObject(source) && [1, 2, 3, 4, 5, 6].every((tier) => source[tier] === expected[tier]);
 }
 
-function normalizeFlankingConfig(source) {
-  if (!isPlainObject(source)) {
-    throw new ConfigValidationError("flanking must be an object.");
+function normalizeFlankingConfig(_source) {
+  // Wrathmaker flanking is now a permanent campaign rule rather than a world
+  // option. Canonical values also prevent a hidden legacy setting from
+  // changing the rule after its controls have been removed.
+  return copyJson(DEFAULT_FLANKING_CONFIG);
+}
+
+function normalizeProfessionsConfig(source) {
+  if (source !== undefined && !isPlainObject(source)) {
+    throw new ConfigValidationError("professions must be an object.");
   }
-  if (!isPlainObject(source.penalties)) {
-    throw new ConfigValidationError("flanking.penalties must contain entries for 2, 3, and 4 sides.");
-  }
-  const penalties = {};
-  for (let sides = 2; sides <= 4; sides += 1) {
-    const penalty = finiteNumber(source.penalties[sides], `flanking.penalties.${sides}`, { integer: true });
-    if (penalty > 0) {
-      throw new ConfigValidationError(`flanking.penalties.${sides} must be zero or negative.`);
+  const professions = {};
+  for (const definition of PROFESSION_DEFINITIONS) {
+    const configured = source?.[definition.id];
+    if (configured !== undefined && !isPlainObject(configured)) {
+      throw new ConfigValidationError(`professions.${definition.id} must be an object.`);
     }
-    penalties[sides] = penalty;
+    const configuredSpecialties = Array.isArray(configured?.specialties) ? configured.specialties : [];
+    professions[definition.id] = {
+      specialties: definition.specialties.map((fallback) => {
+        const specialty = configuredSpecialties.find((entry) => entry?.id === fallback.id) ?? fallback;
+        return {
+          id: fallback.id,
+          label: nonBlankString(specialty.label, `professions.${definition.id}.${fallback.id}.label`),
+          description: typeof specialty.description === "string"
+            ? specialty.description.trim()
+            : fallback.description,
+        };
+      }),
+    };
   }
-  if (penalties[3] > penalties[2] || penalties[4] > penalties[3]) {
-    throw new ConfigValidationError("flanking.penalties must stay the same or become more severe as sides increase.");
-  }
-  const maxNormalSizeDifference = finiteNumber(
-    source.maxNormalSizeDifference ?? 1,
-    "flanking.maxNormalSizeDifference",
-    { integer: true },
-  );
-  if (maxNormalSizeDifference < 0 || maxNormalSizeDifference > 5) {
-    throw new ConfigValidationError("flanking.maxNormalSizeDifference must be between 0 and 5.");
-  }
-  const oversizedParticipantsPerSide = finiteNumber(
-    source.oversizedParticipantsPerSide ?? 2,
-    "flanking.oversizedParticipantsPerSide",
-    { integer: true },
-  );
-  if (oversizedParticipantsPerSide < 2 || oversizedParticipantsPerSide > 8) {
-    throw new ConfigValidationError("flanking.oversizedParticipantsPerSide must be between 2 and 8.");
-  }
-  return {
-    enabled: source.enabled !== false,
-    penalties,
-    maxNormalSizeDifference,
-    oversizedParticipantsPerSide,
-    requireOppositeSidesForTwo: source.requireOppositeSidesForTwo !== false,
-    pf2eHandlesTwoSidedFlanking: source.pf2eHandlesTwoSidedFlanking !== false,
-    stackWithOffGuard: source.stackWithOffGuard !== false,
-  };
+  return professions;
 }
 
 function normalizeHexplorationConfig(source) {
@@ -439,6 +429,7 @@ export function normalizeRulesConfig(input) {
   );
   const flanking = normalizeFlankingConfig(parsed.flanking ?? DEFAULT_FLANKING_CONFIG);
   const hexploration = normalizeHexplorationConfig(parsed.hexploration ?? DEFAULT_HEXPLORATION_CONFIG);
+  const professions = normalizeProfessionsConfig(parsed.professions);
 
   if (!isPlainObject(parsed.materials) || Object.keys(parsed.materials).length === 0) {
     throw new ConfigValidationError("materials must contain at least one material definition.");
@@ -594,6 +585,7 @@ export function normalizeRulesConfig(input) {
     tierRarities,
     flanking,
     hexploration,
+    professions,
     materials,
   };
 }

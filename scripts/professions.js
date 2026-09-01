@@ -5,6 +5,7 @@ import {
   PROFESSION_SCHEMA_VERSION,
 } from "../content/professions.js";
 import { MODULE_ID } from "./constants.js";
+import { getRulesConfig } from "./config-store.js";
 
 export const PROFESSION_GRANT_SCHEMA_VERSION = 2;
 export const PROFESSION_SELECTION_SCHEMA_VERSION = 1;
@@ -43,6 +44,12 @@ let ProfessionPickerApplication = null;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function configuredProfessionDefinition(definition) {
+  if (!definition || !globalThis.game?.settings) return definition;
+  const specialties = getRulesConfig().professions?.[definition.id]?.specialties;
+  return Array.isArray(specialties) ? { ...definition, specialties: clone(specialties) } : definition;
 }
 
 function localize(key, fallback = key) {
@@ -124,7 +131,7 @@ export function professionRankLabel(rank) {
 
 export function normalizeProfessionData(value) {
   const id = String(value?.id ?? "").trim().toLowerCase();
-  const definition = PROFESSION_BY_ID.get(id);
+  const definition = configuredProfessionDefinition(PROFESSION_BY_ID.get(id));
   if (!definition) return null;
   const schemaVersion = Math.max(1, Math.trunc(Number(value?.schemaVersion) || 1));
   const suppliedLoreName = String(value?.loreName ?? "").trim();
@@ -145,7 +152,7 @@ export function normalizeProfessionData(value) {
     checkBonusType: String(value?.checkBonusType ?? definition.checkBonusType).trim() || "circumstance",
     bonusFeatUuid: String(value?.bonusFeatUuid ?? definition.bonusFeatUuid).trim(),
     bonusFeatName: String(value?.bonusFeatName ?? definition.bonusFeatName).trim() || "To be determined",
-    specialties: clone(Array.isArray(value?.specialties) ? value.specialties : definition.specialties),
+    specialties: clone(definition.specialties),
   };
 }
 
@@ -201,7 +208,7 @@ export function getProfessionSpecialty(item) {
   const professionId = String(specialty?.professionId ?? "").trim().toLowerCase();
   const specialtyId = String(specialty?.specialtyId ?? "").trim().toLowerCase();
   const milestoneLevel = Math.trunc(Number(specialty?.milestoneLevel) || 0);
-  const definition = PROFESSION_BY_ID.get(professionId);
+  const definition = configuredProfessionDefinition(PROFESSION_BY_ID.get(professionId));
   const specialtyDefinition = definition?.specialties.find((entry) => entry.id === specialtyId);
   if (!definition || !specialtyDefinition || !PROFESSION_MILESTONE_LEVELS.includes(milestoneLevel)) return null;
   return {
@@ -652,6 +659,20 @@ export async function synchronizeActorProfession(actor, _options = {}) {
         "system.rules": clone(currentSource.system.rules),
       });
     }
+    for (const specialty of plan.activeSpecialties) {
+      const profession = plan.activeProfessions.find((entry) => entry.id === specialty.professionId);
+      const definition = profession?.specialties.find((entry) => entry.id === specialty.specialtyId);
+      const id = itemId(specialty.item);
+      if (!profession || !definition || !id) continue;
+      const expectedName = `${profession.name}: ${definition.label}`;
+      const expectedDescription = `<p><strong>${definition.label}</strong> is a level ${specialty.milestoneLevel} specialty of the ${profession.name} profession.</p><p>${definition.description}</p><p>Its Lore proficiency follows the profession progression: expert at level 3, master at level 7, and legendary at level 15.</p>`;
+      const changes = itemUpdates.get(id) ?? { _id: id };
+      if (specialty.item.name !== expectedName) changes.name = expectedName;
+      if (specialty.item.system?.description?.value !== expectedDescription) {
+        changes["system.description.value"] = expectedDescription;
+      }
+      if (Object.keys(changes).length > 1) itemUpdates.set(id, changes);
+    }
     if (itemUpdates.size > 0) {
       await actor.updateEmbeddedDocuments("Item", [...itemUpdates.values()], { render: false });
       changed = true;
@@ -714,8 +735,12 @@ export async function synchronizeActorProfession(actor, _options = {}) {
       }));
       if (profession && lore) {
         const expectedName = `${profession.name}: ${specialty.name}`;
+        const expectedDescription = `<p>Specialized knowledge gained through <strong>${profession.name}: ${specialty.name}</strong>.</p><p>Wrathmaker advances this Lore to expert at level 3, master at level 7, and legendary at level 15.</p>`;
         const changes = { _id: itemId(lore) };
         if (lore.name !== expectedName) changes.name = expectedName;
+        if (lore.system?.description?.value !== expectedDescription) {
+          changes["system.description.value"] = expectedDescription;
+        }
         if (Number(lore.system?.proficient?.value) !== rank) changes["system.proficient.value"] = rank;
         if (Object.keys(changes).length > 1) loreUpdates.push(changes);
       }
@@ -1158,14 +1183,17 @@ function createProfessionPickerApplication() {
           noneSelected: !choice.kind,
           specialtySelected: choice.kind === PROFESSION_MILESTONE_KINDS.specialty,
           professionSelected: choice.kind === PROFESSION_MILESTONE_KINDS.profession,
-          specialtyOptions: PROFESSION_DEFINITIONS.flatMap((definition) => definition.specialties.map((specialty) => ({
+          specialtyOptions: PROFESSION_DEFINITIONS.flatMap((baseDefinition) => {
+            const definition = configuredProfessionDefinition(baseDefinition);
+            return definition.specialties.map((specialty) => ({
             id: specialty.id,
             professionId: definition.id,
             label: `${definition.name}: ${specialty.label}`,
             selected: choice.kind === PROFESSION_MILESTONE_KINDS.specialty
               && choice.professionId === definition.id
               && choice.specialtyId === specialty.id,
-          }))),
+            }));
+          }),
           professionOptions: professionOptions.map((profession) => ({
             ...profession,
             selected: choice.kind === PROFESSION_MILESTONE_KINDS.profession
@@ -1243,6 +1271,11 @@ export function registerProfessionHooks() {
     if (actor?.type !== "character") return;
     const serialized = JSON.stringify(changes ?? {});
     if (serialized.includes("level")) scheduleProfessionSync(actor);
+  });
+  Hooks.on("wrathmakerRulesConfigChanged", () => {
+    for (const actor of game.actors?.contents ?? []) {
+      if (actor.type === "character" && getActorProfession(actor)) scheduleProfessionSync(actor);
+    }
   });
   Hooks.once("ready", () => {
     for (const actor of game.actors ?? []) {

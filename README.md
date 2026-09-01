@@ -90,15 +90,14 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 
 - **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
 - **Resource gathering** enables the player gathering screen, defaults rewards to the native PF2e party Stash, and can read the current Stolen Lands Scene Region's terrain and level. The GM's active environment and maximum tier remain the fallback.
-- **Enhanced flanking** turns Wrathmaker's detector and three-/four-combatant final penalties on or off. When off, PF2e's ordinary flanking detector remains unchanged.
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
-- The flanking section also edits the final three- and four-combatant AC penalties, the normal size difference, and the enhanced-threshold multiplier against an oversized target.
+- **Professions & Specialties** lists all eleven professions. Each **Edit** pop-out changes its three specialty names and player-facing descriptions; the picker and managed character entries update from the world configuration.
 - Every crafting material has an **Edit** button that opens its own pop-out.
 - The material pop-out edits the material name, enabled state, weapon/armor/spell-focus availability, PF2e bonus type, and all six tier names, bonuses, added prices, and PF2e rarities.
 - Dragon Scales use a specialized editor for dragon-color names, resistance damage types, and six editable resistance values.
 - The complete configuration is presented through named fields and material pop-outs; no raw-code or JSON editor is exposed in-game.
 
-Only a GM can open this world-settings menu. Turning a system off is reversible and does not remove saved item flags or custom definitions.
+Wrathmaker's flanking rule is permanently enabled and no longer appears as a configurable control. Only a GM can open this world-settings menu. Turning an optional system off is reversible and does not remove saved item flags or custom definitions.
 
 ## Publishing a new version
 
@@ -235,7 +234,7 @@ Wrathmaker calculates flanking from creature tokens on the active scene and upda
 - A target that PF2e marks as unflankable or immune to Off-guard receives no Wrathmaker flanking penalty.
 - The three-/four-combatant result is evaluated for each attack. It applies only to a melee attack that can currently reach the target, including a qualifying reach weapon; ranged attacks never inherit the penalty, even when the target is surrounded.
 
-Wrathmaker replaces token flanking detection while the rule is enabled, then hands the result back through PF2e's normal attack context so Off-guard, Sneak Attack, and similar downstream rules still work. At the enhanced thresholds, Wrathmaker supplies the **full -3 or -4 attack-contextual circumstance penalty**. PF2e's modifier stacking keeps the more severe circumstance penalty instead of adding both values, so the result cannot become -5 or -6 and is not stored as a blanket reduction on the enemy. The AC breakdown labels it `Wrathmaker Flanking (3 combatants)` or `Wrathmaker Flanking (4 combatants)`.
+Wrathmaker replaces token flanking detection while the rule is enabled, then hands the result back through PF2e's normal attack context so Off-guard, Sneak Attack, and similar downstream rules still work. At the enhanced thresholds, Wrathmaker supplies the **full -3 or -4 attack-contextual circumstance penalty**. PF2e's modifier stacking keeps the more severe circumstance penalty instead of adding both values, so the result cannot become -5 or -6 and is not stored as a blanket reduction on the enemy. The AC breakdown labels the three-combatant state `Outnumbered (Flanked)` and the four-or-more-combatant state `Surrounded (Flanked)`.
 
 The default configuration is:
 

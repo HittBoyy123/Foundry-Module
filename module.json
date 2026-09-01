@@ -2,7 +2,7 @@
   "id": "pf2e-crafting-material-tiers",
   "title": "Wrathmaker",
   "description": "A configurable Pathfinder 2e house-rules module with character professions, crafting-material tiers, resource gathering, spell focuses, Apex items, campaign point tracking, enhanced flanking, and party Hexploration.",
-  "version": "0.15.1",
+  "version": "0.16.0",
   "authors": [
     {
       "name": "Custom PF2e Game",
@@ -11,7 +11,7 @@
   ],
   "url": "https://github.com/HittBoyy123/Foundry-Module",
   "manifest": "https://github.com/HittBoyy123/Foundry-Module/releases/latest/download/module.json",
-  "download": "https://github.com/HittBoyy123/Foundry-Module/releases/download/v0.15.1/wrathmaker-v0.15.1.zip",
+  "download": "https://github.com/HittBoyy123/Foundry-Module/releases/download/v0.16.0/wrathmaker-v0.16.0.zip",
   "readme": "https://github.com/HittBoyy123/Foundry-Module/blob/main/README.md",
   "changelog": "https://github.com/HittBoyy123/Foundry-Module/releases",
   "bugs": "https://github.com/HittBoyy123/Foundry-Module/issues",

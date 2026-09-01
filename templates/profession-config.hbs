@@ -1,0 +1,18 @@
+<div class="cmt-config-body cmt-profession-editor">
+  <header class="cmt-config-header cmt-dashboard-masthead">
+    <img src="{{img}}" alt="">
+    <div><h2>{{name}}</h2><p>{{localize "CMT.Settings.Profession.Intro"}}</p></div>
+  </header>
+  <section class="cmt-specialty-editor" aria-label="{{localize 'CMT.Settings.Profession.Specialties'}}">
+    {{#each specialties}}
+      <fieldset>
+        <legend>{{localize "CMT.Settings.Profession.Specialty"}} {{number}}</legend>
+        <label><span>{{localize "CMT.Settings.Profession.Name"}}</span><input type="text" name="specialties.{{id}}.label" value="{{label}}" required></label>
+        <label><span>{{localize "CMT.Settings.Profession.Description"}}</span><textarea name="specialties.{{id}}.description" rows="3">{{description}}</textarea></label>
+      </fieldset>
+    {{/each}}
+  </section>
+  <footer class="cmt-config-actions cmt-one-action">
+    <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{localize "CMT.Settings.Profession.Save"}}</button>
+  </footer>
+</div>

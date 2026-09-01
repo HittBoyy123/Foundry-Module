@@ -1,6 +1,8 @@
+import { PROFESSION_DEFINITIONS } from "../content/professions.js";
+
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 13;
+export const RULES_SCHEMA_VERSION = 14;
 export const ITEM_SCHEMA_VERSION = 3;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -236,6 +238,12 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
   tierRarities: DEFAULT_TIER_RARITIES,
   flanking: DEFAULT_FLANKING_CONFIG,
   hexploration: DEFAULT_HEXPLORATION_CONFIG,
+  professions: Object.freeze(Object.fromEntries(PROFESSION_DEFINITIONS.map((profession) => [
+    profession.id,
+    Object.freeze({
+      specialties: Object.freeze(profession.specialties.map((specialty) => Object.freeze({ ...specialty }))),
+    }),
+  ]))),
   materials: Object.freeze({
     metal: Object.freeze({
       label: "Metal",

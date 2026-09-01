@@ -58,46 +58,50 @@
       "Unavailable": "Unavailable material"
     },
     "Flanking": {
-      "Modifier": "Wrathmaker Flanking ({participants} combatants)"
+      "Outnumbered": "Outnumbered (Flanked)",
+      "Surrounded": "Surrounded (Flanked)"
     },
     "Settings": {
       "Rules": {
         "Name": "Wrathmaker world rules",
-        "Hint": "World-level Wrathmaker settings for crafting materials, gathering, tiers, enhanced flanking, and Hexploration."
+        "Hint": "World-level Wrathmaker settings for crafting, gathering, professions, and Hexploration."
       },
       "Menu": {
         "Title": "Wrathmaker Rules",
         "Name": "Wrathmaker rules",
         "Label": "Open Control Panel",
-        "Hint": "Open the in-game control panel for crafting materials, gathering, tier progression, enhanced flanking, and Hexploration."
+        "Hint": "Open the Wrathmaker world control panel."
       },
       "Dashboard": {
         "Heading": "Wrathmaker Game Settings",
-        "Intro": "These settings apply to the whole world and can be changed by a GM while the game is running.",
+        "Intro": "World rules for crafting, gathering, travel, and professions.",
+        "Features": "Enabled features",
         "Crafting": "Crafting material rules",
         "CraftingHint": "Show Material and Tier on supported item sheets and apply their names, prices, rarities, and bonuses.",
         "Gathering": "Resource gathering",
         "GatheringHint": "Allow owned characters to gather Wrathmaker crafting resources with PF2e skill checks.",
         "GatheringOptions": "Gathering Options",
-        "GatheringOptionsHint": "Wrathmaker can use the selected character's current Foundry region and PF2e terrain. The manual environment and tier are used when the map has no compatible region data.",
+        "GatheringOptionsHint": "Region-based gathering and fallback options.",
         "SceneRegionIntegration": "Use current Stolen Lands / Scene region",
         "SceneRegionIntegrationHint": "Read a containing Foundry Region or the active Scene for its PF2e terrain and level. Region names such as 'Greenbelt — Level 4' are recognised automatically.",
         "ActiveEnvironment": "Active gathering environment",
         "MaximumGatheringTier": "Maximum available resource tier",
         "GatheringRewardDestination": "Gathered resource destination",
-        "Flanking": "Enhanced flanking",
-        "FlankingHint": "Use Wrathmaker's melee-only flanking detector for ordinary two-person Off-guard and final -3/-4 penalties at the enhanced thresholds.",
         "Hexploration": "Hexploration travel",
-        "HexplorationHint": "Add travel setup, vehicles, Express Rider, and daily planning to the party's existing Exploration tab.",
-        "FlankingOptions": "Enhanced Flanking Options",
-        "FlankingOptionsHint": "The three- and four-combatant values are final circumstance penalties. Against an oversized target, only these enhanced thresholds are multiplied; ordinary two-person Off-guard remains unchanged.",
-        "ThreeSides": "Total AC penalty at 3 combatants",
-        "FourSides": "Total AC penalty at 4 combatants",
-        "SizeDifference": "Normal size difference",
-        "OversizedCount": "Enhanced threshold multiplier when oversized",
+        "HexplorationHint": "Party travel and daily Hexploration planning.",
+        "Professions": "Professions & Specialties",
         "Materials": "Crafting Materials",
-        "MaterialsHint": "Open a material to rename it, enable or disable it, and edit all six tiers.",
+        "MaterialsHint": "Edit material tiers and effects.",
         "Edit": "Edit"
+      },
+      "Profession": {
+        "Title": "Edit Profession Specialties",
+        "Intro": "Set the three specialty names and their player-facing information.",
+        "Specialties": "Profession specialties",
+        "Specialty": "Specialty",
+        "Name": "Name",
+        "Description": "Information",
+        "Save": "Save Profession"
       },
       "Material": {
         "Title": "Edit Crafting Material",
@@ -133,12 +137,13 @@
       },
       "Reset": {
         "Title": "Restore Default Wrathmaker Rules",
-        "Confirm": "Replace the current material, tier, and flanking rules with the module defaults? Item flags will not be removed."
+        "Confirm": "Restore the default crafting, gathering, travel, and profession settings? Existing item flags will not be removed."
       }
     },
     "Notifications": {
       "RulesSaved": "Wrathmaker game settings saved.",
       "MaterialSaved": "{material} settings saved.",
+      "ProfessionSaved": "{profession} specialties saved.",
       "RulesReset": "Default crafting material rules restored.",
       "UpdateFailed": "The crafting material could not be saved."
     },
