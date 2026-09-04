@@ -1,0 +1,242 @@
+<div class="cmt-workbench-body">
+  <header class="cmt-workbench-header">
+    <div>
+      <h2><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{localize "CMT.Workbench.Heading"}}</h2>
+      <p>{{localize "CMT.Workbench.Intro"}}</p>
+    </div>
+    <div class="cmt-workbench-party">
+      <label>
+        <span>{{localize "CMT.Workbench.Party"}}</span>
+        <select data-cmt-workbench-field="party">
+          {{#each parties}}
+            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+          {{else}}
+            <option value="">{{localize "CMT.Workbench.NoParty"}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <button type="button" data-cmt-workbench-action="open-stash" {{#unless party}}disabled{{/unless}}>
+        <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
+        {{localize "CMT.Workbench.OpenStash"}}
+      </button>
+    </div>
+  </header>
+
+  <nav class="cmt-workbench-tabs" aria-label="{{localize "CMT.Workbench.Heading"}}">
+    <button type="button" data-cmt-workbench-tab="craft" class="{{#if tabs.craft}}active{{/if}}">
+      <i class="fa-solid fa-hammer" aria-hidden="true"></i> {{localize "CMT.Workbench.Craft"}}
+    </button>
+    <button type="button" data-cmt-workbench-tab="gather" class="{{#if tabs.gather}}active{{/if}}">
+      <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i> {{localize "CMT.Workbench.Gather"}}
+    </button>
+    <button type="button" data-cmt-workbench-tab="projects" class="{{#if tabs.projects}}active{{/if}}">
+      <i class="fa-solid fa-list-check" aria-hidden="true"></i> {{localize "CMT.Workbench.Projects"}}
+      <span>{{activeProjectCount}}</span>
+    </button>
+  </nav>
+
+  {{#unless canEdit}}
+    <div class="cmt-workbench-notice is-warning">
+      <i class="fa-solid fa-lock" aria-hidden="true"></i> {{localize "CMT.Workbench.NotEditable"}}
+    </div>
+  {{/unless}}
+  {{#unless craftingEnabled}}
+    <div class="cmt-workbench-notice is-warning">
+      <i class="fa-solid fa-ban" aria-hidden="true"></i> {{localize "CMT.Workbench.Disabled"}}
+    </div>
+  {{/unless}}
+
+  {{#if tabs.craft}}
+    <section class="cmt-workbench-panel cmt-workbench-craft">
+      <div class="cmt-workbench-section-title">
+        <h3>{{localize "CMT.Workbench.NewProject"}}</h3>
+        <span>{{localize "CMT.Workbench.Planning"}}</span>
+      </div>
+
+      <div class="cmt-workbench-drop {{#if baseItem}}is-filled{{/if}}" data-cmt-workbench-drop="base-item">
+        {{#if baseItem}}
+          <img src="{{baseItem.img}}" alt="">
+          <div>
+            <strong>{{baseItem.name}}</strong>
+            <span>{{baseItem.categoryLabel}}</span>
+          </div>
+          <button type="button" data-cmt-workbench-action="clear-base" title="{{localize "CMT.Workbench.ClearBase"}}">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        {{else}}
+          <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+          <div>
+            <strong>{{localize "CMT.Workbench.DropBase"}}</strong>
+            <span>{{localize "CMT.Workbench.DropBaseHint"}}</span>
+          </div>
+        {{/if}}
+      </div>
+
+      <div class="cmt-workbench-form-grid">
+        <label>
+          <span>{{localize "CMT.Workbench.ProjectName"}}</span>
+          <input type="text" data-cmt-workbench-field="project-name" value="{{draft.name}}" placeholder="{{localize "CMT.Workbench.ProjectNamePlaceholder"}}">
+        </label>
+        <label>
+          <span>{{localize "CMT.Workbench.Recipe"}}</span>
+          <select data-cmt-workbench-field="recipe" {{#unless baseItem}}disabled{{/unless}}>
+            {{#each recipeBands}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{else}}
+              <option value="">{{localize "CMT.Workbench.NoRecipes"}}</option>
+            {{/each}}
+          </select>
+        </label>
+        <label>
+          <span>{{localize "CMT.Workbench.CoreMaterial"}}</span>
+          <select data-cmt-workbench-field="material" {{#unless selectedBand}}disabled{{/unless}}>
+            {{#each coreMaterials}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </label>
+        <label>
+          <span>{{localize "CMT.Workbench.CoreTier"}}</span>
+          <select data-cmt-workbench-field="tier">
+            {{#each tiers}}
+              <option value="{{value}}" {{#if selected}}selected{{/if}}>Tier {{value}} — {{label}}</option>
+            {{/each}}
+          </select>
+        </label>
+        <label>
+          <span>{{localize "CMT.Workbench.LeadArtisan"}}</span>
+          <select data-cmt-workbench-field="artisan">
+            {{#each artisans}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+            {{else}}
+              <option value="">{{localize "CMT.Workbench.NoArtisan"}}</option>
+            {{/each}}
+          </select>
+        </label>
+        <label>
+          <span>{{localize "CMT.Workbench.RequiredProgress"}}</span>
+          <input type="number" min="1" step="1" data-cmt-workbench-field="required-progress" value="{{draft.requiredProgress}}">
+        </label>
+      </div>
+
+      {{#if preview}}
+        <section class="cmt-workbench-requirements">
+          <div class="cmt-workbench-section-title">
+            <h3>{{localize "CMT.Workbench.Requirements"}}</h3>
+            <span>DC {{preview.check.dc}} · {{preview.requiredProgress}} {{localize "CMT.Workbench.Progress"}}</span>
+          </div>
+          <div class="cmt-workbench-requirement-list">
+            {{#each preview.groups}}
+              <article class="{{#if available}}is-valid{{else}}is-invalid{{/if}}">
+                <i class="fa-solid {{#if available}}fa-circle-check{{else}}fa-circle-xmark{{/if}}" aria-hidden="true"></i>
+                <div>
+                  <strong>{{label}}</strong>
+                  <span>{{summary}}</span>
+                </div>
+              </article>
+            {{/each}}
+          </div>
+          <div class="cmt-workbench-summary {{#if preview.craftable}}is-valid{{else}}is-invalid{{/if}}">
+            <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
+            <span>{{localize "CMT.Workbench.ReservationHint"}}</span>
+          </div>
+        </section>
+      {{/if}}
+
+      <footer class="cmt-workbench-actions">
+        <button type="button" data-cmt-workbench-action="create-project" {{#unless canCreate}}disabled{{/unless}}>
+          <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+          {{localize "CMT.Workbench.CreateAndReserve"}}
+        </button>
+      </footer>
+    </section>
+  {{/if}}
+
+  {{#if tabs.gather}}
+    <section class="cmt-workbench-panel cmt-workbench-gather-link">
+      <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
+      <h3>{{localize "CMT.Workbench.GatherHeading"}}</h3>
+      <p>{{localize "CMT.Workbench.GatherHint"}}</p>
+      <button type="button" data-cmt-workbench-action="open-gathering">
+        <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+        {{localize "CMT.Gathering.Open"}}
+      </button>
+    </section>
+  {{/if}}
+
+  {{#if tabs.projects}}
+    <section class="cmt-workbench-panel cmt-workbench-projects">
+      <div class="cmt-workbench-section-title">
+        <h3>{{localize "CMT.Workbench.ProjectLedger"}}</h3>
+        <span>{{projectCount}} {{localize "CMT.Workbench.Projects"}}</span>
+      </div>
+      {{#each projects}}
+        <article class="cmt-workbench-project {{statusClass}}" data-cmt-project-id="{{id}}">
+          <header>
+            <img src="{{baseItemImg}}" alt="">
+            <div>
+              <h4>{{name}}</h4>
+              <span>{{recipeName}} · {{coreLabel}}</span>
+            </div>
+            <span class="cmt-workbench-status">{{statusLabel}}</span>
+          </header>
+          <div class="cmt-workbench-progress" title="{{currentProgress}} / {{requiredProgress}}">
+            <span style="width: {{progressPercent}}%"></span>
+          </div>
+          <div class="cmt-workbench-project-stats">
+            <span><strong>{{currentProgress}} / {{requiredProgress}}</strong> {{localize "CMT.Workbench.Progress"}}</span>
+            <span><strong>{{downtimeSpent}}</strong> {{localize "CMT.Workbench.ArtisanDays"}}</span>
+            <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>
+          </div>
+          {{#if reservations.length}}
+            <details>
+              <summary>{{localize "CMT.Workbench.ReservedMaterials"}}</summary>
+              <ul>
+                {{#each reservations}}
+                  <li><span>{{itemName}}</span><strong>{{quantity}} × ({{units}} units)</strong></li>
+                {{/each}}
+              </ul>
+            </details>
+          {{/if}}
+          {{#if canWork}}
+            <div class="cmt-workbench-work-block">
+              <label>
+                <span>{{localize "CMT.Workbench.WorkBlock"}}</span>
+                <select data-cmt-project-field="days">
+                  <option value="1">1 day</option>
+                  <option value="2">2 days</option>
+                  <option value="3">3 days</option>
+                  <option value="4">4 days</option>
+                  <option value="5" selected>5 days</option>
+                </select>
+              </label>
+              <button type="button" data-cmt-project-action="roll-work">
+                <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
+                {{localize "CMT.Workbench.RollWork"}}
+              </button>
+            </div>
+          {{/if}}
+          <footer>
+            {{#if canComplete}}
+              <button type="button" data-cmt-project-action="complete" class="primary">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                {{localize "CMT.Workbench.CompleteProject"}}
+              </button>
+            {{/if}}
+            {{#if canCancel}}
+              <button type="button" data-cmt-project-action="cancel">
+                <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                {{localize "CMT.Workbench.CancelProject"}}
+              </button>
+            {{/if}}
+          </footer>
+        </article>
+      {{else}}
+        <div class="cmt-workbench-empty">
+          <i class="fa-solid fa-scroll" aria-hidden="true"></i>
+          <p>{{localize "CMT.Workbench.NoProjects"}}</p>
+        </div>
+      {{/each}}
+    </section>
+  {{/if}}
+</div>

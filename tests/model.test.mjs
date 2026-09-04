@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { cloneDefaultRulesConfig } from "../scripts/constants.js";
+import { RULES_SCHEMA_VERSION, cloneDefaultRulesConfig } from "../scripts/constants.js";
 import {
   ConfigValidationError,
   calculateItemEffects,
@@ -35,13 +35,14 @@ test("default tiers resolve from +0 through +5", () => {
       const attack = result.rules.find((rule) => rule.selector.includes("{item|_id}-attack"));
       const damage = result.rules.find((rule) => rule.selector.includes("{item|_id}-damage"));
       assert.equal(attack.value, tier - 1);
-      assert.equal(damage.value, (tier - 1) * 2);
+      assert.equal(damage.diceNumber, [0, 1, 2, 2, 3, 4][tier - 1]);
     }
   }
 });
 
 test("supplied tier names and prices resolve for every material", () => {
-  const priceSchedule = [0, 10, 25, 100, 1000, 5000];
+  const priceSchedule = [3, 15, 85, 350, 1600, 11000];
+  const dragonPriceSchedule = [0, 10, 25, 100, 1000, 5000];
   const raritySchedule = ["common", "uncommon", "rare", "unique", "unique", "unique"];
   const expectedLabels = {
     metal: ["Iron", "Steel", "Cold Iron", "Mithril", "Adamantium", "Dark Iron"],
@@ -56,7 +57,7 @@ test("supplied tier names and prices resolve for every material", () => {
     for (let tier = 1; tier <= 6; tier += 1) {
       assert.deepEqual(getTierPresentation(config, material, tier), {
         label: labels[tier - 1],
-        priceGp: priceSchedule[tier - 1],
+        priceGp: (material === "dragon-scale" ? dragonPriceSchedule : priceSchedule)[tier - 1],
         rarity: raritySchedule[tier - 1],
       });
     }
@@ -75,7 +76,7 @@ test("material-specific names and prices can override shared tier placeholders",
   });
   assert.deepEqual(getTierPresentation(customConfig, "wood", 2), {
     label: "Hardwood",
-    priceGp: 10,
+    priceGp: 15,
     rarity: "uncommon",
   });
 });
@@ -101,8 +102,8 @@ test("weapon rule is item-specific, untyped, and leaves input config unchanged",
   assert.equal(attack.value, 3);
   assert.match(attack.label, /Wood/);
   assert.deepEqual(damage.selector, ["{item|_id}-damage"]);
-  assert.equal(damage.type, "untyped");
-  assert.equal(damage.value, 6);
+  assert.equal(damage.key, "DamageDice");
+  assert.equal(damage.diceNumber, 2);
   assert.equal(JSON.stringify(config), before);
 });
 
@@ -156,11 +157,18 @@ test("legacy enable and override fields are ignored", () => {
   const result = calculate({ enabled: false, material: "stone", tier: 2, bonusOverride: 7 });
   assert.equal(result.tierBonus, 1);
   assert.equal(result.rules[0].value, 1);
-  assert.deepEqual(result.flags, {
-    schemaVersion: 3,
-    material: "stone",
+  assert.equal(result.flags.schemaVersion, 4);
+  assert.equal(result.flags.material, "stone");
+  assert.equal(result.flags.tier, 2);
+  assert.deepEqual(result.flags.dragonScale, { color: "", tier: 1, unitsCommitted: 0 });
+  assert.deepEqual(result.flags.crafting.core, {
+    materialId: "stone",
     tier: 2,
-    dragonScale: { color: "", tier: 1 },
+    resourceName: "",
+    quantityRequired: 0,
+    quantityCommitted: 0,
+    tags: [],
+    contributor: null,
   });
 });
 
@@ -173,7 +181,7 @@ test("unconfigured and unsupported items receive no effects", () => {
   assert.equal(itemTypeIsSupported(config, "consumable"), false);
 });
 
-test("base crafting materials support armor and apply only the AC effect", () => {
+test("base crafting materials support armor and apply Core AC and save effects", () => {
   for (const material of Object.keys(config.materials).filter((id) => id !== "dragon-scale")) {
     const result = calculateItemEffects({
       itemType: "armor",
@@ -183,19 +191,35 @@ test("base crafting materials support armor and apply only the AC effect", () =>
       config,
     });
     assert.equal(itemTypeIsSupported(config, "armor"), true);
-    assert.equal(result.rules.length, 1);
+    assert.equal(result.rules.length, 2);
     assert.equal(result.rules[0].value, 2);
     assert.deepEqual(result.rules[0].selector, ["ac"]);
+    assert.equal(result.rules[1].value, 2);
+    assert.deepEqual(result.rules[1].selector, ["fortitude", "reflex", "will"]);
   }
 });
 
 test("item flags are clamped and normalized", () => {
-  assert.deepEqual(normalizeItemFlags({ material: "missing", tier: 99 }, config), {
-    schemaVersion: 3,
-    material: "missing",
-    tier: 6,
-    dragonScale: { color: "", tier: 1 },
-  });
+  const flags = normalizeItemFlags({ material: "missing", tier: 99 }, config);
+  assert.equal(flags.schemaVersion, 4);
+  assert.equal(flags.material, "missing");
+  assert.equal(flags.tier, 6);
+  assert.deepEqual(flags.dragonScale, { color: "", tier: 1, unitsCommitted: 0 });
+  assert.equal(flags.crafting.core.materialId, "missing");
+  assert.equal(flags.crafting.core.tier, 6);
+});
+
+test("explicit Material and Tier controls update their nested Core record", () => {
+  const flags = normalizeItemFlags({
+    material: "wood",
+    tier: 4,
+    crafting: { core: { materialId: "metal", tier: 2, quantityCommitted: 5 } },
+  }, config);
+  assert.equal(flags.material, "wood");
+  assert.equal(flags.tier, 4);
+  assert.equal(flags.crafting.core.materialId, "wood");
+  assert.equal(flags.crafting.core.tier, 4);
+  assert.equal(flags.crafting.core.quantityCommitted, 5);
 });
 
 test("dragon scales add editable armor resistance without replacing the base material", () => {
@@ -224,7 +248,7 @@ test("dragon scales add editable armor resistance without replacing the base mat
     value: 7,
   });
   assert.equal(result.rules.find((rule) => rule.key === "FlatModifier").value, 1);
-  assert.equal(result.priceGp, 35);
+  assert.equal(result.priceGp, 25);
   assert.equal(result.effectiveRarity, "rare");
 });
 
@@ -254,6 +278,18 @@ test("dragon-scale resistance is armor-only and limited to metal or leather base
   assert.equal(metalWeapon.rules.some((rule) => rule.key === "Resistance"), false);
 });
 
+test("committed Resource Units contribute their current playtest value", () => {
+  const result = calculate({
+    material: "metal",
+    tier: 3,
+    crafting: {
+      core: { materialId: "metal", tier: 3, quantityRequired: 5, quantityCommitted: 5 },
+    },
+  });
+  assert.equal(result.coreMaterialValueGp, 425);
+  assert.equal(result.priceGp, 425);
+});
+
 test("invalid configuration is rejected before saving", () => {
   const invalid = cloneDefaultRulesConfig();
   invalid.materials.metal.effects[0].modifierType = "crafting";
@@ -268,12 +304,12 @@ test("version 1 rules migrate without discarding customized materials", () => {
   delete legacy.tierPricesGp;
   legacy.materials.metal.label = "Custom Metal";
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.materials.metal.label, "Custom Metal");
   assert.equal(migrated.tierLabels[3], "Rare");
-  assert.equal(migrated.tierPricesGp[3], 25);
+  assert.equal(migrated.tierPricesGp[3], 85);
   assert.equal(migrated.materials.metal.tierLabels[3], "Cold Iron");
-  assert.equal(migrated.materials.metal.tierPricesGp[3], 25);
+  assert.equal(migrated.materials.metal.tierPricesGp[3], 85);
 });
 
 test("version 2 defaults migrate while existing material-specific overrides are preserved", () => {
@@ -289,9 +325,9 @@ test("version 2 defaults migrate while existing material-specific overrides are 
   legacy.materials.metal.tierPricesGp = { 4: 777 };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.tierLabels[4], "Epic");
-  assert.equal(migrated.tierPricesGp[4], 100);
+  assert.equal(migrated.tierPricesGp[4], 350);
   assert.equal(migrated.materials.metal.tierLabels[4], "Moonsteel");
   assert.equal(migrated.materials.metal.tierPricesGp[4], 777);
   assert.equal(migrated.materials.wood.tierLabels[4], "Darkmoon");
@@ -319,7 +355,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   const metal = migrated.materials.metal;
   const weaponEffect = metal.effects.find((effect) => effect.id === "weapon-attack");
   const armorEffect = metal.effects.find((effect) => effect.id === "armor-ac");
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.deepEqual(migrated.tierRarities, {
     1: "common",
     2: "uncommon",
@@ -328,7 +364,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
     5: "unique",
     6: "unique",
   });
-  assert.deepEqual(metal.itemTypes, ["weapon", "armor", "spellFocus"]);
+  assert.deepEqual(metal.itemTypes, ["weapon", "armor", "spellFocus", "shield"]);
   assert.deepEqual(weaponEffect.itemTypes, ["weapon"]);
   assert.deepEqual(armorEffect.itemTypes, ["armor"]);
   assert.equal(metal.effects.some((effect) => effect.id === "weapon-damage"), true);
@@ -344,7 +380,7 @@ test("version 4 flanking rules migrate to PF2e-managed two-sided flanking", () =
   delete legacy.flanking.pf2eHandlesTwoSidedFlanking;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
 });
@@ -355,7 +391,7 @@ test("version 5 rules migrate with both in-game systems enabled", () => {
   delete legacy.crafting;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.hexploration.enabled, true);
   assert.equal(migrated.crafting.enabled, true);
   assert.equal(migrated.flanking.enabled, true);
@@ -367,7 +403,7 @@ test("version 6 control-panel rules migrate with Hexploration enabled", () => {
   delete legacy.hexploration;
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.hexploration.enabled, true);
   assert.deepEqual(migrated.hexploration.activityThresholds, [
     { maxSpeed: 10, activities: 0.5 },
@@ -390,13 +426,13 @@ test("version 7 dragon scale material migrates to an armor augmentation", () => 
   dragonScale.effects = structuredClone(legacy.materials.metal.effects);
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.materials["dragon-scale"].augmentation, true);
   assert.deepEqual(migrated.materials["dragon-scale"].itemTypes, ["armor"]);
   assert.deepEqual(migrated.materials["dragon-scale"].allowedBaseMaterials, ["metal", "leather"]);
   assert.equal(migrated.materials["dragon-scale"].colors.red.damageType, "fire");
   assert.equal(migrated.materials["dragon-scale"].effects.length, 0);
-  assert.equal(migrated.materials["dragon-scale"].tierBonuses[6], 0);
+  assert.equal(migrated.materials["dragon-scale"].tierBonuses[6], 20);
 });
 
 test("version 8 default dragon-scale labels migrate to age tiers without replacing custom names", () => {
@@ -412,7 +448,7 @@ test("version 8 default dragon-scale labels migrate to age tiers without replaci
   };
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.deepEqual(migrated.materials["dragon-scale"].tierLabels, {
     1: "Hatchling",
     2: "Juvenile",
@@ -437,7 +473,7 @@ test("version 9 materials migrate to weapon damage and metal or wood spell focus
   }
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   for (const [materialId, material] of Object.entries(migrated.materials)) {
     if (material.augmentation) continue;
     assert.equal(material.effects.some((effect) => effect.id === "weapon-damage"), true, materialId);
@@ -461,7 +497,7 @@ test("version 10 generic material labels migrate individually without replacing 
   legacy.materials.leather.tierLabels[4] = "GM's Custom Hide";
 
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.deepEqual(migrated.materials.stone.tierLabels, {
     1: "Fieldstone",
     2: "Granite",
@@ -481,7 +517,7 @@ test("version 11 rules migrate with gathering enabled", () => {
   legacy.schemaVersion = 11;
   delete legacy.gathering;
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.gathering.enabled, true);
   assert.equal(migrated.gathering.environmentId, "forest");
   assert.equal(migrated.gathering.maxTier, 1);
@@ -495,7 +531,7 @@ test("version 12 gathering rules migrate to region-aware party-stash rewards", (
   delete legacy.gathering.useSceneRegion;
   delete legacy.gathering.rewardDestination;
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(migrated.gathering.useSceneRegion, true);
   assert.equal(migrated.gathering.rewardDestination, "party-stash");
 });
@@ -507,7 +543,7 @@ test("version 13 rules gain profession settings and canonical permanent flanking
   legacy.flanking.enabled = false;
   legacy.flanking.penalties[3] = -5;
   const migrated = normalizeRulesConfig(legacy);
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   assert.equal(Object.keys(migrated.professions).length, 11);
   assert.equal(migrated.professions.blacksmithing.specialties.length, 3);
   assert.equal(migrated.flanking.enabled, true);

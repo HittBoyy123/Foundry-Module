@@ -3,6 +3,305 @@
   min-width: 0;
 }
 
+/* Player Workbench ------------------------------------------------------- */
+.pf2e-crafting-material-tiers.cmt-workbench-app {
+  --cmt-workbench-green: #0c4f2e;
+  --cmt-workbench-gray: #605856;
+  --cmt-workbench-red: #5e0000;
+  --cmt-workbench-paper: #e7d9cf;
+  --cmt-workbench-gold: #e9d7a1;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-body {
+  min-height: 100%;
+  padding: 0.75rem;
+  color: #2c2522;
+  background: linear-gradient(rgb(248 243 235 / 94%), rgb(248 243 235 / 94%)),
+    url("../../../systems/pf2e/assets/sheet/parchment.webp");
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  color: white;
+  border: 1px solid #d0b878;
+  background:
+    linear-gradient(110deg, rgb(5 49 28 / 96%), rgb(13 87 51 / 94%)),
+    repeating-linear-gradient(35deg, transparent 0 7px, rgb(255 255 255 / 4%) 8px 9px);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 12%);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-header h2 {
+  margin: 0;
+  color: white;
+  font-family: var(--serif-condensed, Georgia, serif);
+  font-size: 2rem;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-header p {
+  margin: 0.2rem 0 0;
+  color: rgb(255 255 255 / 82%);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-party {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-party label,
+.pf2e-crafting-material-tiers .cmt-workbench-form-grid label,
+.pf2e-crafting-material-tiers .cmt-workbench-work-block label {
+  display: grid;
+  gap: 0.2rem;
+  font-weight: 700;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-party select,
+.pf2e-crafting-material-tiers .cmt-workbench-party button {
+  color: #2c2522;
+  background: var(--cmt-workbench-gold);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  border-inline: 1px solid #a58a76;
+  background: #f5eee9;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-tabs button {
+  min-height: 2.6rem;
+  margin: 0;
+  border: 0;
+  border-right: 1px solid #c9b8ad;
+  border-radius: 0;
+  color: #6c594d;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-tabs button:last-child { border-right: 0; }
+.pf2e-crafting-material-tiers .cmt-workbench-tabs button.active {
+  color: var(--cmt-workbench-red);
+  border-bottom: 3px solid var(--cmt-workbench-red);
+  font-weight: 700;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-tabs button span {
+  display: inline-grid;
+  min-width: 1.4rem;
+  min-height: 1.4rem;
+  margin-left: 0.25rem;
+  place-items: center;
+  color: white;
+  border-radius: 50%;
+  background: var(--cmt-workbench-red);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-panel {
+  margin-top: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #a88973;
+  background: rgb(247 241 235 / 92%);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -0.8rem -0.8rem 0.8rem;
+  padding: 0.55rem 0.75rem;
+  color: white;
+  background: var(--cmt-workbench-gray);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-section-title h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-section-title span {
+  color: var(--cmt-workbench-gold);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-drop {
+  display: flex;
+  min-height: 6rem;
+  padding: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  text-align: center;
+  border: 2px dashed #9b8272;
+  background: var(--cmt-workbench-paper);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-drop.is-filled {
+  justify-content: flex-start;
+  text-align: left;
+  border-style: solid;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-drop.is-dragover {
+  border-color: #277347;
+  background: #dce8d9;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-drop > i { font-size: 2.3rem; color: var(--cmt-workbench-red); }
+.pf2e-crafting-material-tiers .cmt-workbench-drop img {
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid #8c725e;
+  object-fit: cover;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-drop div { display: grid; flex: 1; }
+.pf2e-crafting-material-tiers .cmt-workbench-drop strong { color: var(--cmt-workbench-red); font-size: 1.1rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-drop button { flex: 0 0 2.2rem; }
+
+.pf2e-crafting-material-tiers .cmt-workbench-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  margin-top: 0.8rem;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-form-grid input,
+.pf2e-crafting-material-tiers .cmt-workbench-form-grid select,
+.pf2e-crafting-material-tiers .cmt-workbench-work-block select {
+  width: 100%;
+  min-height: 2rem;
+  color: #2c2522;
+  border: 1px solid #9a8273;
+  background: #fffdf9;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-requirements { margin-top: 1rem; border: 1px solid #a88973; }
+.pf2e-crafting-material-tiers .cmt-workbench-requirements .cmt-workbench-section-title { margin: 0; }
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list { display: grid; gap: 0.4rem; padding: 0.6rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border-left: 4px solid;
+  background: #eee4dc;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list article.is-valid { border-color: #307447; }
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list article.is-invalid { border-color: var(--cmt-workbench-red); }
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list article > i { color: inherit; }
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list article div { display: grid; }
+.pf2e-crafting-material-tiers .cmt-workbench-requirement-list article span { color: #655c58; font-size: 0.82rem; }
+
+.pf2e-crafting-material-tiers .cmt-workbench-summary,
+.pf2e-crafting-material-tiers .cmt-workbench-notice {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 4px solid;
+  background: var(--cmt-workbench-gold);
+}
+.pf2e-crafting-material-tiers .cmt-workbench-summary.is-valid { border-color: #307447; }
+.pf2e-crafting-material-tiers .cmt-workbench-summary.is-invalid,
+.pf2e-crafting-material-tiers .cmt-workbench-notice.is-warning { border-color: var(--cmt-workbench-red); }
+
+.pf2e-crafting-material-tiers .cmt-workbench-actions { display: flex; justify-content: flex-end; margin-top: 0.8rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-actions button,
+.pf2e-crafting-material-tiers .cmt-workbench-project button.primary,
+.pf2e-crafting-material-tiers .cmt-workbench-gather-link button {
+  color: #2c2522;
+  border-color: #9f8036;
+  background: var(--cmt-workbench-gold);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-projects { display: grid; gap: 0.65rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-projects > .cmt-workbench-section-title { margin-bottom: 0; }
+.pf2e-crafting-material-tiers .cmt-workbench-project {
+  padding: 0.65rem;
+  border: 1px solid #aa9587;
+  border-left: 5px solid var(--cmt-workbench-red);
+  background: #f8f3ee;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-project.is-completed { border-left-color: #307447; }
+.pf2e-crafting-material-tiers .cmt-workbench-project.is-cancelled { opacity: 0.66; border-left-color: #777; }
+.pf2e-crafting-material-tiers .cmt-workbench-project > header {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-project > header img { width: 3rem; height: 3rem; object-fit: cover; }
+.pf2e-crafting-material-tiers .cmt-workbench-project > header div { display: grid; }
+.pf2e-crafting-material-tiers .cmt-workbench-project h4 { margin: 0; color: var(--cmt-workbench-red); }
+.pf2e-crafting-material-tiers .cmt-workbench-status {
+  padding: 0.25rem 0.45rem;
+  color: white;
+  background: var(--cmt-workbench-gray);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-progress { height: 0.65rem; margin-top: 0.55rem; background: #d5c8bf; }
+.pf2e-crafting-material-tiers .cmt-workbench-progress span { display: block; height: 100%; background: linear-gradient(90deg, #7b0000, #b33b22); }
+.pf2e-crafting-material-tiers .cmt-workbench-project-stats { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; padding: 0.45rem 0; }
+.pf2e-crafting-material-tiers .cmt-workbench-project details { padding: 0.35rem 0.5rem; background: var(--cmt-workbench-paper); }
+.pf2e-crafting-material-tiers .cmt-workbench-project details ul { margin-bottom: 0; padding-left: 1rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-project details li { display: flex; justify-content: space-between; gap: 1rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-work-block { display: grid; grid-template-columns: minmax(8rem, 1fr) auto; gap: 0.5rem; align-items: end; margin-top: 0.55rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-project footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.55rem; }
+
+.pf2e-crafting-material-tiers .cmt-workbench-gather-link,
+.pf2e-crafting-material-tiers .cmt-workbench-empty {
+  display: grid;
+  min-height: 14rem;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-gather-link > i,
+.pf2e-crafting-material-tiers .cmt-workbench-empty > i { color: var(--cmt-workbench-red); font-size: 3rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-gather-link h3 { margin: 0.5rem 0 0; color: var(--cmt-workbench-red); }
+
+.pf2e-crafting-material-tiers .cmt-crafting-chat header {
+  padding: 0.4rem 0.55rem;
+  color: white;
+  background: #5e0000;
+  font-weight: 700;
+}
+.pf2e-crafting-material-tiers .cmt-crafting-chat dl { display: grid; gap: 0.2rem; }
+.pf2e-crafting-material-tiers .cmt-crafting-chat dl div { display: flex; justify-content: space-between; }
+.pf2e-crafting-material-tiers .cmt-chat-success { color: #23623b; font-weight: 700; }
+
+.cmt-party-workbench-button {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  margin: 0 0 0 0.4rem;
+  padding: 0;
+  place-items: center;
+  color: #2c2522;
+  border: 1px solid #b89c55;
+  border-radius: 0;
+  background: #e9d7a1;
+}
+
+@media (max-width: 720px) {
+  .pf2e-crafting-material-tiers .cmt-workbench-header,
+  .pf2e-crafting-material-tiers .cmt-workbench-form-grid { grid-template-columns: 1fr; }
+}
+
 .sheet.party form > header .details.cmt-has-nephilim-points {
   grid:
     "name type" 1fr
@@ -416,6 +715,25 @@
   width: 100%;
 }
 
+.cmt-specialty-lore,
+.cmt-specialty-stage {
+  background: var(--cmt-parchment-light);
+  border: 1px solid #b49b73;
+  padding: 0.5rem;
+}
+
+.cmt-specialty-lore h4,
+.cmt-specialty-stage h4 {
+  color: var(--cmt-crimson);
+  margin: 0 0 0.4rem;
+}
+
+.cmt-specialty-stage-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 720px) {
   .cmt-switch-grid,
   .cmt-profession-settings-list {
@@ -423,6 +741,10 @@
   }
 
   .cmt-dashboard-select {
+    grid-template-columns: 1fr;
+  }
+
+  .cmt-specialty-stage-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -584,6 +906,66 @@
 .cmt-material-editor .cmt-two-actions {
   grid-template-columns: minmax(180px, 320px);
   justify-content: end;
+}
+
+.cmt-make-marks-strip {
+  background: #e7d9cf;
+  border: 1px solid #605856;
+  border-left: 4px solid #5e0000;
+  color: #332d29;
+  margin: 0.4rem 0;
+  padding: 0.4rem 0.5rem;
+}
+
+.cmt-make-marks-strip h3 {
+  color: #5e0000;
+  font-size: var(--font-size-14, 0.875rem);
+  margin: 0 0 0.3rem;
+}
+
+.cmt-make-marks-chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.cmt-make-mark-chip,
+.cmt-make-mark-capacity {
+  align-items: center;
+  background: #605856;
+  border: 1px solid #e9d7a1;
+  border-radius: 3px;
+  color: #fff8e9;
+  display: inline-flex;
+  gap: 0.4rem;
+  min-height: 26px;
+  padding: 0.2rem 0.45rem;
+}
+
+.cmt-make-mark-chip.is-core {
+  background: #5e0000;
+}
+
+.cmt-make-mark-capacity.is-invalid {
+  background: #8b1a1a;
+}
+
+.cmt-capacity-segments {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.cmt-capacity-segments i {
+  background: #f6efe4;
+  border: 1px solid #332d29;
+  display: block;
+  height: 10px;
+  width: 8px;
+}
+
+.cmt-capacity-segments i.is-used {
+  background: #e9d7a1;
 }
 
 .cmt-hexploration-tab {

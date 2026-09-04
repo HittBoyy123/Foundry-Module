@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.17.0 — player Workbench (2026-09-04)
+
+- Added a separate PF2e-styled Craft/Gather/Projects Workbench available from the party sheet, Items Directory, and Module Settings.
+- Added broad Recipe Material Matrix bands for weapons, shields, armor, and spell focuses, with base-item category validation and mixed-tier structural components.
+- Added persistent crafting projects on the PF2e party actor with exact Party Stash stack reservations that cannot be double-booked by another active project.
+- Added 1–5 artisan-day Crafting Work Blocks using Wrathmaker's critical-success, success, failure, and critical-failure Progress rules.
+- Added GM-authoritative final completion with a live reservation recheck, a Party Stash transaction lock, exact before/after resource quantities, real PF2e item creation, Core and maker provenance, and inventory rollback on failure.
+- Added cancellation that releases all unconsumed reservations and completed-project history for the party.
+
 ## 0.16.0 — unified settings and configurable profession specialties
 
 - Renamed the enhanced flanking AC breakdowns to `Outnumbered (Flanked)` at three combatants and `Surrounded (Flanked)` at four or more combatants so they read naturally beside PF2e's `Off-Guard (Flanked)` label.

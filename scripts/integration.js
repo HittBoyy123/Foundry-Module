@@ -3,6 +3,7 @@ import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./mo
 
 const PATCH_MARKER = Symbol.for(`${MODULE_ID}.prepareRuleElements`);
 const adjustedPrices = new WeakSet();
+const adjustedShieldStats = new WeakSet();
 let warnedAboutBridge = false;
 
 function getFlags(item) {
@@ -53,6 +54,38 @@ export function buildItemRuleElements(item, config) {
   return calculateItem(item, config).rules;
 }
 
+function suppressPf2eRuneProgression(item) {
+  const runes = item.system?.runes;
+  if (!runes || typeof runes !== "object") return;
+  if (Object.hasOwn(runes, "potency")) runes.potency = 0;
+  if (Object.hasOwn(runes, "striking")) runes.striking = 0;
+  if (Array.isArray(runes.property)) runes.property = [];
+  if (Array.isArray(runes.propertyRunes)) runes.propertyRunes = [];
+  if (Object.hasOwn(runes, "resilient")) runes.resilient = 0;
+  if (Object.hasOwn(runes, "reinforcing")) runes.reinforcing = 0;
+  if (Object.hasOwn(runes, "reinforcingRune")) runes.reinforcingRune = 0;
+}
+
+function applyShieldCoreProgression(item, result) {
+  if (getCraftingItemType(item) !== "shield") return;
+  const progression = result.coreProgression.attack;
+  if (progression <= 0) return;
+  if (adjustedShieldStats.has(item.system)) return;
+  if (Number.isFinite(Number(item.system.hardness))) {
+    item.system.hardness = Number(item.system.hardness) + (progression * 3);
+  }
+  const hp = item.system.hp;
+  if (hp && typeof hp === "object") {
+    const bonus = progression * 30;
+    if (Number.isFinite(Number(hp.max))) hp.max = Number(hp.max) + bonus;
+    if (Number.isFinite(Number(hp.value))) hp.value = Number(hp.value) + bonus;
+    if (Number.isFinite(Number(hp.max)) && Object.hasOwn(hp, "brokenThreshold")) {
+      hp.brokenThreshold = Math.floor(Number(hp.max) / 2);
+    }
+  }
+  adjustedShieldStats.add(item.system);
+}
+
 /**
  * Layer the crafted display name and price on PF2e's prepared values. Source
  * fields remain unchanged, so rune naming and ordinary item pricing stay intact.
@@ -62,9 +95,12 @@ export function applyPreparedItemPresentation(item, config) {
   const result = calculateItem(item, config);
   if (!result.active) return false;
 
+  suppressPf2eRuneProgression(item);
+  applyShieldCoreProgression(item, result);
+
   if (item.isIdentified !== false) {
     const baseName = item._source?.name ?? item.name;
-    item.name = insertTierLabel(item.name, baseName, result.presentation.label);
+    item.name = insertTierLabel(baseName, baseName, result.presentation.label);
     if (result.dragonScale) {
       item.name = insertTierLabel(item.name, baseName, result.dragonScale.name);
     }

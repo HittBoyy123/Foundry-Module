@@ -34,8 +34,8 @@ test("PF2e bridge injects rules ephemerally and restores system.rules", () => {
   assert.equal(prepared[0].key, "ExistingRule");
   assert.equal(prepared[1].key, "FlatModifier");
   assert.equal(prepared[1].value, 2);
-  assert.equal(prepared[2].key, "FlatModifier");
-  assert.equal(prepared[2].value, 4);
+  assert.equal(prepared[2].key, "DamageDice");
+  assert.equal(prepared[2].diceNumber, 2);
   assert.deepEqual(item.system.rules, [{ key: "ExistingRule" }]);
 });
 
@@ -72,16 +72,16 @@ test("prepared presentation layers tier name and price without changing source d
   };
 
   assert.equal(applyPreparedItemPresentation(item, config), true);
-  assert.equal(item.name, "+1 Striking Steel Bastard Sword");
-  assert.equal(item.system.price.value.gp, 110);
+  assert.equal(item.name, "Steel Bastard Sword");
+  assert.equal(item.system.price.value.gp, 100);
   assert.equal(item.system.traits.rarity, "uncommon");
   assert.equal(item._source.name, "Bastard Sword");
   assert.deepEqual(item._source.system.price.value, { gp: 4 });
   assert.equal(item._source.system.traits.rarity, "common");
 
   applyPreparedItemPresentation(item, config);
-  assert.equal(item.name, "+1 Striking Steel Bastard Sword");
-  assert.equal(item.system.price.value.gp, 110);
+  assert.equal(item.name, "Steel Bastard Sword");
+  assert.equal(item.system.price.value.gp, 100);
 });
 
 test("armor AC rules are generated only while the armor is equipped", () => {
@@ -98,9 +98,10 @@ test("armor AC rules are generated only while the armor is equipped", () => {
   assert.deepEqual(buildItemRuleElements(armor, config), []);
   armor.isEquipped = true;
   const rules = buildItemRuleElements(armor, config);
-  assert.equal(rules.length, 1);
+  assert.equal(rules.length, 2);
   assert.deepEqual(rules[0].selector, ["ac"]);
   assert.equal(rules[0].value, 1);
+  assert.deepEqual(rules[1].selector, ["fortitude", "reflex", "will"]);
 });
 
 test("spell-focus rules affect spell attacks and DCs only while the focus is held", () => {
@@ -152,7 +153,7 @@ test("equipped metal or leather armor can add dragon-scale resistance", () => {
   };
 
   const rules = buildItemRuleElements(armor, config);
-  assert.equal(rules.length, 2);
+  assert.equal(rules.length, 3);
   assert.deepEqual(rules.find((rule) => rule.key === "Resistance"), {
     key: "Resistance",
     type: "fire",
@@ -199,7 +200,33 @@ test("dragon-scale armor presentation layers its name, rarity, and price", () =>
   };
 
   assert.equal(applyPreparedItemPresentation(armor, config), true);
-  assert.equal(armor.name, "+1 Resilient Steel Youth Red Dragon Scale Breastplate");
-  assert.equal(armor.system.price.value.gp, 135);
+  assert.equal(armor.name, "Steel Youth Red Dragon Scale Breastplate");
+  assert.equal(armor.system.price.value.gp, 125);
   assert.equal(armor.system.traits.rarity, "rare");
+});
+
+test("shield Core progression replaces rune progression and is applied only once", () => {
+  const config = normalizeRulesConfig(cloneDefaultRulesConfig());
+  const item = {
+    type: "armor",
+    id: "shield-core",
+    name: "Steel Shield",
+    _source: { name: "Steel Shield" },
+    system: {
+      category: "shield",
+      hardness: 5,
+      hp: { max: 20, value: 20, brokenThreshold: 10 },
+      price: { value: {} },
+      runes: { reinforcing: 2 },
+      traits: { rarity: "common" },
+    },
+    getFlag: () => ({ material: "metal", tier: 3 }),
+  };
+  assert.equal(applyPreparedItemPresentation(item, config), true);
+  assert.equal(item.system.hardness, 11);
+  assert.deepEqual(item.system.hp, { max: 80, value: 80, brokenThreshold: 40 });
+  assert.equal(item.system.runes.reinforcing, 0);
+  applyPreparedItemPresentation(item, config);
+  assert.equal(item.system.hardness, 11);
+  assert.deepEqual(item.system.hp, { max: 80, value: 80, brokenThreshold: 40 });
 });

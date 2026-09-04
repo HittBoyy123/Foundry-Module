@@ -1,8 +1,10 @@
-import { DEFAULT_RULES_CONFIG } from "../scripts/constants.js";
+import { DEFAULT_RULES_CONFIG, DEFAULT_TIER_PRICES_GP } from "../scripts/constants.js";
 import { calculateCraftingDC } from "../scripts/crafting-dc.js";
 
 const MODULE_ID = "pf2e-crafting-material-tiers";
-const RESOURCE_SCHEMA_VERSION = 1;
+const RESOURCE_SCHEMA_VERSION = 2;
+
+export const RESOURCE_UNIT_PRICES_GP = DEFAULT_TIER_PRICES_GP;
 
 const RESOURCE_FAMILIES = Object.freeze({
   metal: Object.freeze({
@@ -71,8 +73,8 @@ const RESOURCE_FAMILIES = Object.freeze({
     ]),
   }),
   "mana-crystals": Object.freeze({
-    unit: "crystal",
-    unitsPerItem: 10,
+    unit: "mana-lot",
+    unitsPerItem: 1,
     name: (label) => `${pluralizeLastWord(label)} (10)`,
     icons: Object.freeze([
       "icons/commodities/gems/gem-faceted-rough-blue.webp",
@@ -104,7 +106,7 @@ function resourceId(index) {
   return `WmCraftRes${String(index).padStart(6, "0")}`;
 }
 
-function resourceDescription({ familyLabel, tier, tierLabel, unit, unitsPerItem, variantLabel = "" }) {
+function resourceDescription({ familyLabel, tier, tierLabel, unit, unitsPerItem, priceGp, variantLabel = "" }) {
   const craftingDC = calculateCraftingDC(tier);
   const quantityText = unitsPerItem === 1
     ? `one ${unit.replaceAll("-", " ")}`
@@ -113,8 +115,8 @@ function resourceDescription({ familyLabel, tier, tierLabel, unit, unitsPerItem,
   return [
     `<p>A <strong>Tier ${tier}</strong>, <strong>Level ${craftingDC.level}</strong> ${familyLabel.toLowerCase()} crafting resource: <strong>${tierLabel}</strong>.</p>`,
     `<p>Its standard level-based crafting DC is <strong>${craftingDC.baseDC}</strong>. The GM can apply PF2e's Easy, Hard, Very Easy/Hard, or Incredibly Easy/Hard adjustment when the crafting check is made.</p>`,
-    `<p>Each point of this item's inventory quantity represents ${quantityText}.${variantText} Wrathmaker records the material, tier, and bundle size under module flags so future recipes can consume it reliably even if its displayed name is changed.</p>`,
-    "<p>This resource currently has no automatic sale price or recipe cost. The GM can award and store it now; category-based crafting requirements will be assigned separately.</p>",
+    `<p>Each point of this item's inventory quantity represents ${quantityText} (0.2 Bulk).${variantText} Wrathmaker records the family, Tier, tags, and unit under module flags so recipes can consume it reliably even if its displayed name is changed.</p>`,
+    `<p>The current playtest value is <strong>${priceGp.toLocaleString("en-GB")} gp per Resource Unit</strong>. Five units form one Bulk and are worth ${(priceGp * 5).toLocaleString("en-GB")} gp.</p>`,
   ].join("\n");
 }
 
@@ -124,6 +126,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
   const rarity = material.tierRarities?.[tier] ?? DEFAULT_RULES_CONFIG.tierRarities[tier];
   const otherTags = ["wrathmaker-resource", `material-${materialId}`, `material-tier-${tier}`];
   const craftingDC = calculateCraftingDC(tier);
+  const priceGp = RESOURCE_UNIT_PRICES_GP[tier];
   if (variantId) otherTags.push(`material-variant-${variantId}`);
 
   return Object.freeze({
@@ -133,7 +136,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
     sort: index * 100_000,
     system: {
       baseItem: null,
-      bulk: { value: 0.1 },
+      bulk: { value: 0.2 },
       containerId: null,
       description: {
         value: resourceDescription({
@@ -142,6 +145,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
           tierLabel,
           unit,
           unitsPerItem,
+          priceGp,
           variantLabel,
         }),
       },
@@ -150,7 +154,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
       hp: { max: 0, value: 0 },
       level: { value: craftingDC.level },
       material: { grade: null, type: null },
-      price: { value: {} },
+      price: { value: { gp: priceGp } },
       publication: { license: "ORC", remaster: true, title: "Wrathmaker" },
       quantity: 1,
       rules: [],
@@ -168,10 +172,17 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
         resource: {
           schemaVersion: RESOURCE_SCHEMA_VERSION,
           materialId,
+          family: materialId,
           tier,
           unit,
           unitsPerItem,
           variantId,
+          bundleSize: 1,
+          pricePerUnitGp: priceGp,
+          tags: otherTags,
+          nativeEffects: [],
+          eligibleItemTags: [],
+          specialisationHooks: [],
         },
       },
     },
@@ -210,7 +221,7 @@ function buildResourceSources() {
         name: `${tierLabel} ${color.label} Dragon Scales (5)`,
         img: DRAGON_SCALE_ICONS[colorId],
         unit: "dragon-scale",
-        unitsPerItem: 5,
+        unitsPerItem: 1,
         variantId: colorId,
         variantLabel: color.label,
       }));

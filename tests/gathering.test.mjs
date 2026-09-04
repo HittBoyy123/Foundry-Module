@@ -91,20 +91,27 @@ test("PF2e degrees of success produce configurable bundle and unit quantities", 
   assert.equal(normalizeDegreeOfSuccess("critical-success"), "criticalSuccess");
   assert.deepEqual(resolveGatheringOutcome(manaTask, "success", manaResource), {
     outcome: "success",
-    quantity: 1,
-    units: 10,
+    quantity: 5,
+    units: 5,
     resource: {
-      schemaVersion: 1,
+      schemaVersion: 2,
       materialId: "mana-crystals",
       tier: 3,
-      unit: "crystal",
-      unitsPerItem: 10,
+      unit: "mana-lot",
+      unitsPerItem: 1,
       variantId: "",
+      family: "mana-crystals",
+      bundleSize: 1,
+      tags: ["wrathmaker-resource", "material-mana-crystals", "material-tier-3"],
+      nativeEffects: [],
+      eligibleItemTags: [],
+      specialisationHooks: [],
+      pricePerUnitGp: 85,
       level: 8,
       baseDC: 24,
     },
   });
-  assert.equal(resolveGatheringOutcome(manaTask, 3, manaResource).units, 20);
+  assert.equal(resolveGatheringOutcome(manaTask, 3, manaResource).units, 10);
   assert.equal(resolveGatheringOutcome(manaTask, "failure", manaResource).quantity, 0);
 });
 

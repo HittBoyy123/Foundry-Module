@@ -13,6 +13,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const MODULE_ID = "pf2e-crafting-material-tiers";
 const TIER_LEVELS = [1, 4, 8, 12, 16, 20];
 const TIER_DCS = [15, 19, 24, 30, 35, 40];
+const TIER_PRICES_GP = [3, 15, 85, 350, 1600, 11000];
 
 function resourceData(item) {
   return item.flags[MODULE_ID].resource;
@@ -31,7 +32,10 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.equal(resource.schemaVersion, CRAFTING_RESOURCE_SCHEMA_VERSION);
     assert.equal(resource.tier >= 1 && resource.tier <= 6, true);
     assert.equal(resource.unitsPerItem >= 1, true);
-    assert.equal(item.system.price.value && Object.keys(item.system.price.value).length, 0);
+    assert.deepEqual(item.system.price.value, { gp: TIER_PRICES_GP[resource.tier - 1] });
+    assert.equal(item.system.bulk.value, 0.2);
+    assert.equal(resource.pricePerUnitGp, TIER_PRICES_GP[resource.tier - 1]);
+    assert.equal(resource.bundleSize, 1);
     assert.equal(item.system.level.value, TIER_LEVELS[resource.tier - 1]);
     assert.match(item.system.description.value, new RegExp(`crafting DC is <strong>${TIER_DCS[resource.tier - 1]}</strong>`, "iu"));
   }
@@ -46,7 +50,7 @@ test("the resource catalogue includes every base material tier and dragon color 
   for (const color of ["black", "blue", "green", "red", "white"]) {
     const colorScales = dragonScales.filter((item) => resourceData(item).variantId === color);
     assert.deepEqual(colorScales.map((item) => resourceData(item).tier), [1, 2, 3, 4, 5, 6]);
-    assert.equal(colorScales.every((item) => resourceData(item).unitsPerItem === 5), true);
+    assert.equal(colorScales.every((item) => resourceData(item).unitsPerItem === 1), true);
   }
 });
 
@@ -58,9 +62,9 @@ test("resource names and bundle quantities remain useful in a PF2e inventory", (
 
   assert.equal(resourceData(iron).unit, "ingot");
   assert.equal(resourceData(godwood).tier, 6);
-  assert.equal(resourceData(mana).unitsPerItem, 10);
+  assert.equal(resourceData(mana).unitsPerItem, 1);
   assert.equal(resourceData(scales).variantId, "red");
-  assert.equal(resourceData(scales).unitsPerItem, 5);
+  assert.equal(resourceData(scales).unitsPerItem, 1);
   assert.equal(scales.system.level.value, 20);
 });
 

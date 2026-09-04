@@ -30,8 +30,13 @@ test("control panel exposes only friendly settings actions", async () => {
   assert.match(materialTemplate, /name="dragonColors\.\{\{id\}\}\.damageType"/);
   assert.match(professionTemplate, /name="specialties\.\{\{id\}\}\.label"/);
   assert.match(professionTemplate, /name="specialties\.\{\{id\}\}\.description"/);
+  assert.match(professionTemplate, /name="specialties\.\{\{id\}\}\.proficiency\.label"/);
+  assert.match(professionTemplate, /name="specialties\.\{\{\.\.\/id\}\}\.stages\.\{\{key\}\}\.label"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-color"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-tier"/);
+  assert.match(itemSheet, /MakeMarks/);
+  assert.match(itemSheet, /ItemSheet\.Capacity/);
+  assert.match(itemSheet, /system\.runes\./);
 });
 
 test("control panel uses opaque PF2e-inspired surfaces", async () => {
@@ -116,4 +121,44 @@ test("gathering exposes a PF2e-styled player workflow and safe inventory awards"
   assert.match(css, /--cmt-gather-soft:\s*#e7d9cf/i);
   assert.match(css, /--cmt-gather-yellow:\s*#e9d7a1/i);
   assert.match(css, /\.cmt-gathering-stat-grid dd\s*\{[^}]*color:\s*var\(--cmt-gather-ink\)/is);
+});
+
+test("Workbench exposes recipe planning, reservations, downtime, and confirmed consumption", async () => {
+  const [application, template, chatTemplate, css, main, manifestSource] = await Promise.all([
+    readSource("../scripts/workbench.js"),
+    readSource("../templates/workbench.hbs"),
+    readSource("../templates/crafting-work-chat.hbs"),
+    readSource("../styles/module.css"),
+    readSource("../scripts/main.js"),
+    readSource("../module.json"),
+  ]);
+  const manifest = JSON.parse(manifestSource);
+
+  assert.match(main, /registerWorkbench/);
+  assert.match(main, /restricted:\s*false/);
+  assert.equal(manifest.socket, true);
+  assert.match(application, /party\.setFlag\(MODULE_ID, "workbench"/);
+  assert.match(application, /reserveCraftingProject/);
+  assert.match(application, /buildConsumptionPlan/);
+  assert.match(application, /DialogV2\.confirm/);
+  assert.match(application, /updateEmbeddedDocuments\("Item"/);
+  assert.match(application, /createEmbeddedDocuments\("Item"/);
+  assert.match(application, /rollbackUpdates/);
+  assert.match(application, /WORKBENCH_SOCKET\s*=\s*`module\.\$\{MODULE_ID\}`/);
+  assert.match(application, /type:\s*"complete-request"/);
+  assert.match(application, /type:\s*"complete-response"/);
+  assert.match(application, /activePrimaryGM/);
+  assert.match(application, /party\.canUserModify\?\.\(requestingUser, "update"\)/);
+  assert.match(application, /completionLocks/);
+  assert.match(template, /data-cmt-workbench-tab="craft"/);
+  assert.match(template, /data-cmt-workbench-tab="gather"/);
+  assert.match(template, /data-cmt-workbench-tab="projects"/);
+  assert.match(template, /data-cmt-workbench-drop="base-item"/);
+  assert.match(template, /data-cmt-project-action="roll-work"/);
+  assert.match(template, /data-cmt-project-action="complete"/);
+  assert.match(chatTemplate, /cmt-crafting-chat/);
+  assert.match(css, /--cmt-workbench-gray:\s*#605856/i);
+  assert.match(css, /--cmt-workbench-red:\s*#5e0000/i);
+  assert.match(css, /--cmt-workbench-paper:\s*#e7d9cf/i);
+  assert.match(css, /--cmt-workbench-gold:\s*#e9d7a1/i);
 });

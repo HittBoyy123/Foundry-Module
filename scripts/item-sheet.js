@@ -1,5 +1,6 @@
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import {
+  calculateItemEffects,
   getTierPresentation,
   getCraftingItemType,
   itemTypeIsSupported,
@@ -117,9 +118,14 @@ async function saveSelection(item, root, config) {
   const flags = normalizeItemFlags({
     material,
     tier,
+    crafting: current.crafting,
     dragonScale: dragonColor === undefined
       ? current.dragonScale
-      : { color: dragonColor, tier: Number(dragonTier ?? current.dragonScale.tier) },
+      : {
+        ...current.dragonScale,
+        color: dragonColor,
+        tier: Number(dragonTier ?? current.dragonScale.tier),
+      },
   }, config);
   const controls = root.querySelectorAll("[data-cmt-field]");
   controls.forEach((control) => { control.disabled = true; });
@@ -131,6 +137,66 @@ async function saveSelection(item, root, config) {
   } finally {
     controls.forEach((control) => { control.disabled = false; });
   }
+}
+
+function hideRuneControls(root) {
+  for (const control of root.querySelectorAll('[name^="system.runes."]')) {
+    const row = control.closest(".form-group, .form-field, .field, li");
+    if (row) {
+      row.hidden = true;
+      row.dataset.cmtReplacedRuneControl = "true";
+    }
+  }
+}
+
+function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
+  const result = calculateItemEffects({
+    itemType: craftingItemType,
+    itemId: item.id ?? item._id ?? "item",
+    itemName: item.name ?? "Item",
+    flags,
+    config,
+  });
+  if (!result.active) return null;
+
+  const strip = document.createElement("section");
+  strip.className = "cmt-make-marks-strip";
+  strip.dataset.cmtMakeMarks = "true";
+
+  const heading = document.createElement("h3");
+  heading.textContent = localize("CMT.ItemSheet.MakeAndMarks", "Make & Marks");
+
+  const chips = document.createElement("div");
+  chips.className = "cmt-make-marks-chips";
+  const core = document.createElement("span");
+  core.className = "cmt-make-mark-chip is-core";
+  core.title = localize("CMT.ItemSheet.CoreMaterialHint", "The Core Material sets the item's fundamental progression.");
+  core.textContent = `${result.presentation.label} · T${result.flags.tier}`;
+
+  const marks = document.createElement("span");
+  marks.className = "cmt-make-mark-chip";
+  const markCount = result.flags.crafting.artisanMarks.filter((mark) => mark.status !== "suppressed").length;
+  marks.textContent = game.i18n.format("CMT.ItemSheet.ArtisanMarksCount", { count: markCount });
+
+  const capacity = document.createElement("span");
+  capacity.className = `cmt-make-mark-capacity${result.capacity.overCapacity ? " is-invalid" : ""}`;
+  capacity.title = localize("CMT.ItemSheet.CapacityHint", "Core Tier determines available Artisan Capacity.");
+  const capacityLabel = document.createElement("strong");
+  capacityLabel.textContent = game.i18n.format("CMT.ItemSheet.Capacity", {
+    used: result.capacity.used,
+    maximum: result.capacity.maximum,
+  });
+  const segments = document.createElement("span");
+  segments.className = "cmt-capacity-segments";
+  for (let index = 0; index < result.capacity.maximum; index += 1) {
+    const segment = document.createElement("i");
+    if (index < result.capacity.used) segment.className = "is-used";
+    segments.append(segment);
+  }
+  capacity.append(capacityLabel, segments);
+  chips.append(core, marks, capacity);
+  strip.append(heading, chips);
+  return strip;
 }
 
 function insertControls(application, item, root, config, craftingItemType) {
@@ -204,6 +270,11 @@ function insertControls(application, item, root, config, craftingItemType) {
   }
 
   anchor.after(...rows);
+  const makeAndMarks = createMakeAndMarksStrip(item, rawFlags, config, craftingItemType);
+  if (makeAndMarks) {
+    rows.at(-1).after(makeAndMarks);
+    hideRuneControls(root);
+  }
   const updateDragonScaleControls = () => {
     if (!dragonColor || !dragonTier) return;
     const available = dragonScaleIsAvailable(config, item.type, material.value);

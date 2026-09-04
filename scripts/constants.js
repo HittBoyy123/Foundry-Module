@@ -2,8 +2,8 @@ import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 14;
-export const ITEM_SCHEMA_VERSION = 3;
+export const RULES_SCHEMA_VERSION = 16;
+export const ITEM_SCHEMA_VERSION = 4;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
 export const DEFAULT_ITEM_FLAGS = Object.freeze({
@@ -13,6 +13,15 @@ export const DEFAULT_ITEM_FLAGS = Object.freeze({
   dragonScale: Object.freeze({
     color: "",
     tier: 1,
+    unitsCommitted: 0,
+  }),
+  crafting: Object.freeze({
+    schemaVersion: 1,
+    core: Object.freeze({ materialId: "metal", tier: 1 }),
+    components: Object.freeze([]),
+    artisanMarks: Object.freeze([]),
+    synergies: Object.freeze([]),
+    provenance: Object.freeze([]),
   }),
 });
 
@@ -32,15 +41,12 @@ const defaultWeaponEffect = () => ({
 
 const defaultWeaponDamageEffect = () => ({
   id: "weapon-damage",
-  kind: "flatModifier",
-  label: "Crafted {material} Damage ({tierLabel})",
+  kind: "damageDice",
+  label: "{tierLabel} Core Material",
   itemTypes: ["weapon"],
   selectors: ["{item|_id}-damage"],
-  modifierType: "untyped",
   value: {
-    mode: "tierBonus",
-    multiplier: 2,
-    offset: 0,
+    mode: "coreWeaponDice",
   },
 });
 
@@ -50,6 +56,20 @@ const defaultArmorEffect = () => ({
   label: "Crafted {material} Armor ({tierLabel})",
   itemTypes: ["armor"],
   selectors: ["ac"],
+  modifierType: "untyped",
+  value: {
+    mode: "tierBonus",
+    multiplier: 1,
+    offset: 0,
+  },
+});
+
+const defaultArmorSaveEffect = () => ({
+  id: "armor-saves",
+  kind: "flatModifier",
+  label: "Crafted {material} Defences ({tierLabel})",
+  itemTypes: ["armor"],
+  selectors: ["fortitude", "reflex", "will"],
   modifierType: "untyped",
   value: {
     mode: "tierBonus",
@@ -76,6 +96,7 @@ const defaultEffects = () => Object.freeze([
   Object.freeze(defaultWeaponEffect()),
   Object.freeze(defaultWeaponDamageEffect()),
   Object.freeze(defaultArmorEffect()),
+  Object.freeze(defaultArmorSaveEffect()),
   Object.freeze(defaultSpellFocusEffect()),
 ]);
 
@@ -98,6 +119,15 @@ export const DRAGON_SCALE_TIER_LABELS = Object.freeze({
 });
 
 export const DEFAULT_TIER_PRICES_GP = Object.freeze({
+  1: 3,
+  2: 15,
+  3: 85,
+  4: 350,
+  5: 1600,
+  6: 11000,
+});
+
+export const DRAGON_SCALE_ADDED_PRICES_GP = Object.freeze({
   1: 0,
   2: 10,
   3: 25,
@@ -197,12 +227,12 @@ const MANA_CRYSTAL_TIER_LABELS = Object.freeze({
 });
 
 const DRAGON_SCALE_RESISTANCE_VALUES = Object.freeze({
-  1: 0,
-  2: 0,
-  3: 0,
-  4: 0,
-  5: 0,
-  6: 0,
+  1: 1,
+  2: 4,
+  3: 8,
+  4: 12,
+  5: 16,
+  6: 20,
 });
 
 const DRAGON_SCALE_COLORS = Object.freeze({
@@ -248,7 +278,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     metal: Object.freeze({
       label: "Metal",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor", "spellFocus"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: METAL_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
@@ -256,7 +286,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     wood: Object.freeze({
       label: "Wood",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor", "spellFocus"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: WOOD_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
@@ -264,7 +294,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     stone: Object.freeze({
       label: "Stone",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield"]),
       effects: defaultEffects(),
       tierLabels: STONE_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
@@ -272,7 +302,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     leather: Object.freeze({
       label: "Leather / Hide",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield"]),
       effects: defaultEffects(),
       tierLabels: LEATHER_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
@@ -287,12 +317,12 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       colors: DRAGON_SCALE_COLORS,
       tierBonuses: DRAGON_SCALE_RESISTANCE_VALUES,
       tierLabels: DRAGON_SCALE_TIER_LABELS,
-      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+      tierPricesGp: DRAGON_SCALE_ADDED_PRICES_GP,
     }),
     herbs: Object.freeze({
       label: "Herbs / Mushrooms",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield"]),
       effects: defaultEffects(),
       tierLabels: HERB_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
@@ -300,7 +330,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
     "mana-crystals": Object.freeze({
       label: "Mana Crystals",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield"]),
       effects: defaultEffects(),
       tierLabels: MANA_CRYSTAL_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,

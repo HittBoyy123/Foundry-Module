@@ -10,6 +10,7 @@ import { installHexploration } from "./hexploration.js";
 import { installRuleElementBridge, registerPreparedItemHooks } from "./integration.js";
 import { registerItemSheetHooks } from "./item-sheet.js";
 import { registerProfessionHooks } from "./professions.js";
+import { registerWorkbench } from "./workbench.js";
 
 let bridgeInstalled = false;
 let abilityBoostsInstalled = false;
@@ -18,6 +19,7 @@ let flankingInstalled = false;
 let hexplorationInstalled = false;
 let gatheringInstalled = false;
 let professionsInstalled = false;
+let workbenchInstalled = false;
 
 Hooks.once("init", () => {
   if (game.system.id !== "pf2e") {
@@ -46,6 +48,17 @@ Hooks.once("init", () => {
     restricted: false,
   });
   gatheringInstalled = true;
+
+  const WorkbenchApplication = registerWorkbench();
+  game.settings.registerMenu(MODULE_ID, "workbenchMenu", {
+    name: "CMT.Workbench.MenuName",
+    label: "CMT.Workbench.Open",
+    hint: "CMT.Workbench.MenuHint",
+    icon: "fa-solid fa-hammer",
+    type: WorkbenchApplication,
+    restricted: false,
+  });
+  workbenchInstalled = true;
 
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
   abilityBoostsInstalled = installAbilityBoostBridge();
@@ -76,6 +89,7 @@ Hooks.once("ready", () => {
     !hexplorationInstalled ? "Hexploration automation" : null,
     !gatheringInstalled ? "gathering" : null,
     !professionsInstalled ? "professions" : null,
+    !workbenchInstalled ? "Workbench" : null,
   ].filter(Boolean);
   console.info(`${MODULE_ID} | Ready${unavailable.length ? ` (${unavailable.join(" and ")} unavailable)` : ""}.`);
 });

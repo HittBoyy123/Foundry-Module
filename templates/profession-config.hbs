@@ -6,9 +6,23 @@
   <section class="cmt-specialty-editor" aria-label="{{localize 'CMT.Settings.Profession.Specialties'}}">
     {{#each specialties}}
       <fieldset>
-        <legend>{{localize "CMT.Settings.Profession.Specialty"}} {{number}}</legend>
+        <legend>{{localize "CMT.Settings.Profession.Specialisation"}} {{number}}</legend>
         <label><span>{{localize "CMT.Settings.Profession.Name"}}</span><input type="text" name="specialties.{{id}}.label" value="{{label}}" required></label>
-        <label><span>{{localize "CMT.Settings.Profession.Description"}}</span><textarea name="specialties.{{id}}.description" rows="3">{{description}}</textarea></label>
+        <label><span>{{localize "CMT.Settings.Profession.Overview"}}</span><textarea name="specialties.{{id}}.description" rows="3">{{description}}</textarea></label>
+        <section class="cmt-specialty-lore">
+          <h4>{{localize "CMT.Settings.Profession.AssociatedLore"}}</h4>
+          <label><span>{{localize "CMT.Settings.Profession.Name"}}</span><input type="text" name="specialties.{{id}}.proficiency.label" value="{{proficiency.label}}" required></label>
+          <label><span>{{localize "CMT.Settings.Profession.Description"}}</span><textarea name="specialties.{{id}}.proficiency.description" rows="2">{{proficiency.description}}</textarea></label>
+        </section>
+        <div class="cmt-specialty-stage-grid">
+          {{#each stages}}
+            <section class="cmt-specialty-stage">
+              <h4>{{heading}}</h4>
+              <label><span>{{localize "CMT.Settings.Profession.StageName"}}</span><input type="text" name="specialties.{{../id}}.stages.{{key}}.label" value="{{label}}" required></label>
+              <label><span>{{localize "CMT.Settings.Profession.Description"}}</span><textarea name="specialties.{{../id}}.stages.{{key}}.description" rows="3">{{description}}</textarea></label>
+            </section>
+          {{/each}}
+        </div>
       </fieldset>
     {{/each}}
   </section>

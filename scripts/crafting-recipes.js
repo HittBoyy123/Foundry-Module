@@ -51,14 +51,20 @@ function normalizeResourceOption(source, path, recipeTier) {
   }
   const tier = positiveInteger(source.tier ?? recipeTier, `${path}.tier`);
   if (tier < 1 || tier > 6) throw new CraftingRecipeValidationError(`${path}.tier must be from 1 to 6.`);
-  if (tier !== recipeTier) {
+  const tierMode = source.tierMode === "minimum" ? "minimum" : "exact";
+  if (tierMode === "exact" && tier !== recipeTier) {
     throw new CraftingRecipeValidationError(`${path}.tier must match the recipe tier.`);
   }
+  const maximumTier = tierMode === "minimum"
+    ? Math.min(6, Math.max(tier, Math.trunc(Number(source.maximumTier ?? recipeTier) || recipeTier)))
+    : tier;
 
   return {
     kind: "resource",
     materialId: slug(source.materialId, `${path}.materialId`),
     tier,
+    tierMode,
+    maximumTier,
     variantId: typeof source.variantId === "string" ? source.variantId.trim().toLowerCase() : "",
     units: positiveInteger(source.units, `${path}.units`),
   };
@@ -168,22 +174,47 @@ export function summarizeCraftingResources(items) {
   return [...summary.values()].map((entry) => clone(entry));
 }
 
-function inventoryMap(items) {
-  return new Map(summarizeCraftingResources(items).map((entry) => [resourceKey(entry), entry.units]));
+function inventoryEntries(items) {
+  return summarizeCraftingResources(items).map((entry) => ({ ...entry, key: resourceKey(entry) }));
 }
 
-function allocateGroups(groups, groupIndex, remaining, choices) {
+function optionMatchesResource(option, resource) {
+  if (option.materialId !== resource.materialId) return false;
+  if (option.variantId && option.variantId !== resource.variantId) return false;
+  if (option.tierMode === "minimum") {
+    return resource.tier >= option.tier && resource.tier <= option.maximumTier;
+  }
+  return resource.tier === option.tier;
+}
+
+function allocateOption(option, remaining, inventory) {
+  const candidates = inventory
+    .filter((resource) => optionMatchesResource(option, resource))
+    .sort((left, right) => left.tier - right.tier || left.key.localeCompare(right.key));
+  for (const resource of candidates) {
+    const owned = remaining.get(resource.key) ?? 0;
+    if (owned < option.units) continue;
+    const next = new Map(remaining);
+    next.set(resource.key, owned - option.units);
+    return { remaining: next, allocations: [{
+      materialId: resource.materialId,
+      tier: resource.tier,
+      variantId: resource.variantId,
+      units: option.units,
+    }] };
+  }
+  return null;
+}
+
+function allocateGroups(groups, groupIndex, remaining, inventory, choices) {
   if (groupIndex >= groups.length) return { remaining, choices };
   const group = groups[groupIndex];
   for (const option of group.options) {
-    const key = resourceKey(option);
-    const owned = remaining.get(key) ?? 0;
-    if (owned < option.units) continue;
-    const next = new Map(remaining);
-    next.set(key, owned - option.units);
-    const result = allocateGroups(groups, groupIndex + 1, next, [
+    const possible = allocateOption(option, remaining, inventory);
+    if (!possible) continue;
+    const result = allocateGroups(groups, groupIndex + 1, possible.remaining, inventory, [
       ...choices,
-      { groupId: group.id, ...clone(option) },
+      { groupId: group.id, ...clone(option), allocations: possible.allocations },
     ]);
     if (result) return result;
   }
@@ -198,7 +229,9 @@ function describeSet(set, inventory) {
       id: group.id,
       label: group.label,
       options: group.options.map((option) => {
-        const owned = inventory.get(resourceKey(option)) ?? 0;
+        const owned = inventory
+          .filter((resource) => optionMatchesResource(option, resource))
+          .reduce((total, resource) => total + resource.units, 0);
         return {
           ...clone(option),
           owned,
@@ -220,11 +253,12 @@ export function evaluateCraftingRecipe(source, { targetItem, inventoryItems = []
   const recipe = normalizeCraftingRecipe(source);
   const targetCategory = categorizeCraftableItem(targetItem);
   const targetMatches = targetCategory?.id === recipe.categoryId;
-  const inventory = inventoryMap(inventoryItems);
+  const inventory = inventoryEntries(inventoryItems);
+  const remaining = new Map(inventory.map((entry) => [entry.key, entry.units]));
   let allocation = null;
   let selectedSet = null;
   for (const set of recipe.ingredientSets) {
-    const possible = allocateGroups(set.groups, 0, new Map(inventory), []);
+    const possible = allocateGroups(set.groups, 0, new Map(remaining), inventory, []);
     if (possible) {
       allocation = possible.choices;
       selectedSet = { id: set.id, label: set.label };

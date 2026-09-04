@@ -31,6 +31,34 @@ import {
   normalizeCraftingRecipe,
   summarizeCraftingResources,
 } from "./crafting-recipes.js";
+import {
+  CRAFTING_STATE_SCHEMA_VERSION,
+  calculateArtisanCapacity,
+  getCoreTierProgression,
+  normalizeCraftingState,
+  validateCraftingState,
+} from "./crafting-model.js";
+import {
+  CRAFTING_PROJECT_SCHEMA_VERSION,
+  CRAFTING_WORKBENCH_SCHEMA_VERSION,
+  advanceCraftingProject,
+  buildConsumptionPlan,
+  completeCraftingProject,
+  createCraftingProject,
+  normalizeCraftingProject,
+  normalizeCraftingWorkbench,
+  progressForWorkBlock,
+  releaseCraftingProject,
+  reservationLedger,
+  reserveCraftingProject,
+  validateProjectReservations,
+} from "./crafting-projects.js";
+import {
+  buildCraftingRecipeFromBand,
+  compatibleRecipeBands,
+  listCraftingRecipeBands,
+} from "./recipe-catalog.js";
+import { openWorkbenchApplication } from "./workbench.js";
 import { calculateItemEffects, getCraftingItemType, normalizeItemFlags, normalizeRulesConfig } from "./model.js";
 import { buildPartyTravelState } from "./hexploration.js";
 import { normalizeHexplorationPlan } from "./hexploration-model.js";
@@ -93,6 +121,9 @@ export function createPublicApi() {
     craftingCategorySchemaVersion: CRAFTING_CATEGORY_SCHEMA_VERSION,
     craftingResourceSchemaVersion: CRAFTING_RESOURCE_SCHEMA_VERSION,
     craftingRecipeSchemaVersion: CRAFTING_RECIPE_SCHEMA_VERSION,
+    craftingStateSchemaVersion: CRAFTING_STATE_SCHEMA_VERSION,
+    craftingProjectSchemaVersion: CRAFTING_PROJECT_SCHEMA_VERSION,
+    craftingWorkbenchSchemaVersion: CRAFTING_WORKBENCH_SCHEMA_VERSION,
     gatheringSchemaVersion: GATHERING_SCHEMA_VERSION,
     professionSchemaVersion: PROFESSION_SCHEMA_VERSION,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
@@ -100,6 +131,7 @@ export function createPublicApi() {
     hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
     flagsPath: `flags.${MODULE_ID}`,
     craftingResourceFlagsPath: `flags.${MODULE_ID}.resource`,
+    craftingWorkbenchFlagsPath: `flags.${MODULE_ID}.workbench`,
     hexplorationFlagsPath: `flags.${MODULE_ID}.hexploration`,
 
     getRulesConfig() {
@@ -148,7 +180,19 @@ export function createPublicApi() {
     async updateItem(item, changes) {
       requireItem(item);
       const current = normalizeItemFlags(item.getFlag(MODULE_ID), getRulesConfig());
-      const next = normalizeItemFlags({ ...current, ...changes }, getRulesConfig());
+      const incoming = clone(changes ?? {});
+      const next = normalizeItemFlags({
+        ...current,
+        ...incoming,
+        material: incoming.material ?? incoming.crafting?.core?.materialId ?? current.material,
+        tier: incoming.tier ?? incoming.crafting?.core?.tier ?? current.tier,
+        dragonScale: { ...current.dragonScale, ...incoming.dragonScale },
+        crafting: {
+          ...current.crafting,
+          ...incoming.crafting,
+          core: { ...current.crafting.core, ...incoming.crafting?.core },
+        },
+      }, getRulesConfig());
       await item.update({ [`flags.${MODULE_ID}`]: next });
       return next;
     },
@@ -196,6 +240,89 @@ export function createPublicApi() {
 
     evaluateCraftingRecipe(recipe, options) {
       return evaluateCraftingRecipe(recipe, options);
+    },
+
+    normalizeCraftingState(state, defaults = {}) {
+      return normalizeCraftingState(state, defaults);
+    },
+
+    validateCraftingState(state) {
+      return validateCraftingState(state);
+    },
+
+    calculateArtisanCapacity(state) {
+      return calculateArtisanCapacity(state);
+    },
+
+    getCoreTierProgression(tier) {
+      return getCoreTierProgression(tier);
+    },
+
+    listCraftingRecipeBands(group = "") {
+      return listCraftingRecipeBands(group);
+    },
+
+    compatibleCraftingRecipeBands(item) {
+      requireItem(item);
+      return compatibleRecipeBands(item);
+    },
+
+    buildCraftingRecipe(recipeBandId, options) {
+      requireItem(options?.targetItem);
+      return buildCraftingRecipeFromBand(recipeBandId, options);
+    },
+
+    normalizeCraftingProject(project) {
+      return normalizeCraftingProject(project);
+    },
+
+    normalizeCraftingWorkbench(workbench) {
+      return normalizeCraftingWorkbench(workbench);
+    },
+
+    createCraftingProject(project, user = {}) {
+      return createCraftingProject(project, user);
+    },
+
+    reserveCraftingProject(project, options) {
+      return reserveCraftingProject(project, options);
+    },
+
+    releaseCraftingProject(project, user = {}) {
+      return releaseCraftingProject(project, user);
+    },
+
+    advanceCraftingProject(project, options) {
+      return advanceCraftingProject(project, options);
+    },
+
+    completeCraftingProject(project, options) {
+      return completeCraftingProject(project, options);
+    },
+
+    validateProjectReservations(project, inventoryItems = []) {
+      return validateProjectReservations(project, inventoryItems);
+    },
+
+    buildCraftingConsumptionPlan(project, inventoryItems = []) {
+      return buildConsumptionPlan(project, inventoryItems);
+    },
+
+    getCraftingReservationLedger(projects, options = {}) {
+      return Object.fromEntries(reservationLedger(projects, options));
+    },
+
+    progressForWorkBlock(days, degree) {
+      return progressForWorkBlock(days, degree);
+    },
+
+    getCraftingWorkbench(party) {
+      requireParty(party);
+      return normalizeCraftingWorkbench(party.getFlag(MODULE_ID, "workbench"));
+    },
+
+    openWorkbench(options = {}) {
+      return openWorkbenchApplication(options);
     },
 
     listGatheringEnvironments() {

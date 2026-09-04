@@ -9,6 +9,7 @@ A Foundry VTT module for custom Pathfinder 2e house rules. It adds character pro
 - Material-tier item support: weapons, armor, and held spell focuses
 - Stackable tiered resources for every material, including color-specific Dragon Scales
 - PF2e skill-based gathering with GM-controlled environments and tier availability
+- A three-tab player Workbench with recipe selection, Party Stash reservations, downtime Work Blocks, and confirmed completion
 - Eleven compendium-backed character professions with automatic Lore progression and feat grants
 - Thirty worn Apex ability items with exact +1 through +5 modifier increases
 - Persistent Hero Points up to 10 and party-level Nephilim Points up to 10
@@ -37,7 +38,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.15.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.17.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -57,7 +58,7 @@ Every PF2e character sheet gains a native-style **Profession** field beside **De
 
 The picker uses the PF2e party sheet's green textured masthead, brown framing, parchment surfaces, crimson headings, and gold controls. On the character's Feats tab, Wrathmaker adds a dedicated **Profession Feats** section. Each selected profession is the parent entry, with its profession-created specialty choices, Additional Lore, Specialty Crafting, and determined bonus feat nested underneath using PF2e's native item-grant hierarchy. The actual Lore skill remains in the Lore list, and feats the character owned independently are left in their normal section.
 
-The available professions are **Blacksmithing, Alchemy, Enchanting, Leatherwork, Carpentry, Stonemasonry, Glassmaking, Pottery, Weaving, Bookmaking,** and **Tailoring**. Each profession currently contains three placeholder specialties so their later subcategories can be added without replacing the profession data model.
+The available professions are **Blacksmithing, Alchemy, Enchanting, Leatherwork, Carpentry, Stonemasonry, Glassmaking, Pottery, Weaving, Bookmaking,** and **Tailoring**. Their 33 specialisations now carry their Notion-guide names, summaries, associated Lore, and descriptive **Signature**, **Mastery**, and **Legacy** stages. These stages deliberately contain no unresolved numerical benefits yet.
 
 Selecting a profession creates normal PF2e items on the character:
 
@@ -91,7 +92,7 @@ The Wrathmaker control panel stores world-level settings and applies changes imm
 - **Crafting material rules** turns all material and tier controls, names, prices, rarities, and bonuses on or off without deleting item selections.
 - **Resource gathering** enables the player gathering screen, defaults rewards to the native PF2e party Stash, and can read the current Stolen Lands Scene Region's terrain and level. The GM's active environment and maximum tier remain the fallback.
 - **Hexploration travel** turns Wrathmaker's additions to the native party **Exploration** tab and shared prepared travel Speed on or off.
-- **Professions & Specialties** lists all eleven professions. Each **Edit** pop-out changes its three specialty names and player-facing descriptions; the picker and managed character entries update from the world configuration.
+- **Professions & Specialties** lists all eleven professions. Each **Edit** pop-out changes its three specialisation names, overview, associated Lore, and Signature/Mastery/Legacy descriptions; the picker and managed character entries update from the world configuration.
 - Every crafting material has an **Edit** button that opens its own pop-out.
 - The material pop-out edits the material name, enabled state, weapon/armor/spell-focus availability, PF2e bonus type, and all six tier names, bonuses, added prices, and PF2e rarities.
 - Dragon Scales use a specialized editor for dragon-color names, resistance damage types, and six editable resistance values.
@@ -109,14 +110,18 @@ The included GitHub Actions workflow validates the module, builds a Foundry-read
 
 ## Default rules
 
-| Tier | Attack / focus | Weapon damage | Added price | PF2e rarity |
-| ---: | ---: | ---: | ---: | --- |
-| 1 | +0 | +0 | 0 gp | Common |
-| 2 | +1 | +2 | 10 gp | Uncommon |
-| 3 | +2 | +4 | 25 gp | Rare |
-| 4 | +3 | +6 | 100 gp | Unique |
-| 5 | +4 | +8 | 1,000 gp | Unique |
-| 6 | +5 | +10 | 5,000 gp | Unique |
+Wrathmaker items have three independent layers: the ordinary **PF2e base item**, one **Core Material**, and zero or more **Artisan Marks**. The Core replaces fundamental, property, resilient, striking, and reinforcing-style rune progression on that prepared item; the original PF2e source fields remain untouched.
+
+| Core Tier | Weapon attack | Extra weapon dice | Spell attack / DC | Armor AC / saves | Artisan Capacity | Resource Unit value |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | +0 | 0 | +0 | +0 | 1 | 3 gp |
+| 2 | +1 | 1 | +1 | +1 | 2 | 15 gp |
+| 3 | +2 | 2 | +2 | +2 | 3 | 85 gp |
+| 4 | +3 | 2 | +3 | +3 | 4 | 350 gp |
+| 5 | +4 | 3 | +4 | +4 | 6 | 1,600 gp |
+| 6 | +5 | 4 | +5 | +5 | 8 | 11,000 gp |
+
+Shields use the same Core progression as a durability multiplier: each progression step adds **3 Hardness** and **30 HP**, after which Broken Threshold is recalculated.
 
 | Tier | Metal | Wood | Stone | Leather / Hide | Herbs / Mushrooms | Mana Crystals |
 | ---: | --- | --- | --- | --- | --- | --- |
@@ -127,17 +132,19 @@ The included GitHub Actions workflow validates the module, builds a Foundry-read
 | 5 | Adamantium | Starwood | Celestite | Titanhide | Starspore | Astral Crystal |
 | 6 | Dark Iron | Godwood | Worldstone | Primordial Hide | Worldroot | Aetherheart Crystal |
 
-Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as base materials for weapons and armor. A crafted weapon adds the tier bonus to its own attack rolls and twice the tier bonus to its own damage rolls. Armor adds the tier bonus only to AC and only while equipped. The default bonus type is **untyped**, and the GM can change it to item, status, or circumstance in the material editor without changing the module code.
+Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as configurable Core Materials for weapons, armor, and shields; Metal and Wood are also available for spell focuses. A weapon receives its Core attack modifier and extra damage dice. Equipped armor receives the Core modifier to AC and all three saves. The default modifier type is **untyped**, and the GM can change flat Core modifiers to item, status, or circumstance in the material editor without changing the module code.
+
+Artisan Marks are generic versioned records rather than hard-coded effects. Minor, Standard, Major, and Superior Marks cost **0, 1, 2, and 3 Capacity**, and require an Anchor of at least **Tier 1, 2, 3, and 4** respectively. Required structural secondary components must be no lower than **Core Tier − 2**. The model reports missing or under-tier Anchors and over-capacity designs before a future Workbench commits them.
 
 ## Crafting resources and recipe categories
 
 The **Wrathmaker Crafting Resources** compendium contains stackable PF2e Treasure items that the GM can award immediately:
 
 - Six Metal Ingots, Wood Lumber resources, Stone Blocks, Leather/Hide Sheets, Herb/Mushroom Bundles, and Mana Crystal bundles—one for every configured tier.
-- Thirty Dragon Scale bundles covering all six age tiers in Black, Blue, Green, Red, and White. One inventory quantity represents five scales.
-- Mana Crystal bundles represent ten crystals per inventory quantity. Every other resource currently represents one crafting unit.
+- Thirty Dragon Scale lots covering all six age tiers in Black, Blue, Green, Red, and White.
+- Mana Crystals and Dragon Scales retain their physical lot names, while each inventory quantity consistently represents one Wrathmaker **Resource Unit**.
 
-That is **66 resource items** in total. They deliberately have no automatic sale price or consumption rule yet. Their material id, tier, unit size, and optional Dragon color are stored under Wrathmaker flags, so future recipes remain reliable if the displayed names are customized.
+That is **66 resource items** in total. Each Resource Unit has **0.2 Bulk**, so five units make 1 Bulk, and each carries the current playtest per-unit value shown in the Core table. Material family, Tier, tags, optional Dragon color, effects, eligibility, and future specialisation hooks are stored under Wrathmaker flags, so recipes remain reliable if displayed names are customized.
 
 Every raw resource also has a PF2e item level and a standard level-based crafting DC:
 
@@ -181,7 +188,21 @@ For example, Heavy Armor might require `6 Steel Ingots` **and** either `2 Leathe
 
 Resource matching uses the material, tier, Dragon color, and bundle-size data stored under Wrathmaker flags. Renaming `Steel Ingot` on its PF2e item sheet therefore does not break a recipe. Recipe validation rejects missing groups, unknown categories, invalid tiers, and incomplete quantities before the recipe is made available to players.
 
-The current API is deliberately a non-destructive foundation: it validates recipes, summarizes resource inventories, verifies the selected PF2e result category, calculates the tier DC and difficulty adjustment, and returns the exact allocation that would be required. It does **not** consume resources or create the finished item yet. That later transaction will require explicit confirmation and a GM-authoritative update, allowing the eventual player crafting screen, shopping list, and persistent projects to share the same safe model.
+The public API exposes both the non-destructive recipe preview and the persistent project model. It can validate recipes and Make & Marks state, summarize resource inventories, calculate tier DCs, reserve exact Party Stash stacks without removing them, advance 1–5 day Work Blocks, revalidate live stock, and build an auditable final consumption plan.
+
+### Player Workbench
+
+Open **Wrathmaker Workbench** from the Items Directory header or its Module Settings entry. Its three tabs follow the campaign guide:
+
+- **Craft** accepts a dragged PF2e weapon, armor, shield, or Wrathmaker Spell Focus. Choose its broad recipe, Core Material, Core Tier, Lead Artisan, and Required Progress. The live preview shows each Party Stash requirement and subtracts stock already reserved by another active project.
+- **Gather** opens the existing region-aware gathering screen; there is no second Wrathmaker inventory.
+- **Projects** tracks status, progress, artisan-days, exact reserved stacks, and the project history for the selected PF2e party.
+
+Creating a project reserves the exact source stacks but leaves their quantities visibly present in the native Party Stash. Those reserved quantities cannot satisfy another project. Cancelling releases unconsumed reservations. A Lead Artisan advances the project by rolling Crafting after committing a **1–5 day Work Block**: Critical Success produces 150% Progress rounded up, Success 100%, Failure 50% rounded down (minimum 1 when at least 2 days were worked), and Critical Failure 0.
+
+When the required Progress is complete, **Complete Project** opens a final confirmation listing every Party Stash quantity before and after consumption. Wrathmaker sends a player's confirmation to one active GM, locks that Party Stash against overlapping completions, and checks the live stacks again; changed, missing, or renamed resource data blocks completion. Once confirmed, the materials are updated, a real PF2e item is created in the party's existing Stash with its Core and maker provenance, and the project becomes read-only history. If item creation or project saving fails, the inventory update is rolled back. An active GM must therefore be connected when a player completes a project.
+
+Broad recipes currently cover the campaign guide's weapon groups, shield chassis, light/medium/heavy armor constructions, and spell-focus forms. Required structural secondaries accept material from **Core Tier − 2** through the Core Tier, while the Core itself must match the selected Tier exactly.
 
 ### Gathering resources
 
@@ -204,7 +225,7 @@ Default PF2e checks are:
 | Leather/Hide and Dragon Scales | Survival |
 | Mana Crystals | Arcana |
 
-The check uses the resource's existing tier level and DC. A **Success** awards one inventory bundle and a **Critical Success** awards two; Failure and Critical Failure award nothing. Mana Crystal inventory bundles still represent ten crystals and Dragon Scale bundles represent five scales, so the result screen reports both inventory quantity and crafting units. Awarded resources merge into an identical stack in the configured destination or create the correct PF2e Treasure item when no stack exists.
+The check uses the resource's existing tier level and DC. A **Success** awards five Resource Units and a **Critical Success** awards ten; Failure and Critical Failure award nothing. The party makes one shared gathering result rather than multiplying the yield per participant. Awarded resources merge into an identical stack in the configured destination or create the correct PF2e Treasure item when no stack exists.
 
 Each task currently displays a default attempt time of 60 minutes, but Wrathmaker does not advance world time automatically. Task records already keep their skill, DC adjustment, time, outcome quantities, environments, and future tool references separate so a later GM editor can change these without rewriting the gathering code. Stamina, finite resource nodes, weather gates, random events, and blind gathering are not enforced in this first gathering pass.
 
@@ -214,11 +235,11 @@ The **Wrathmaker Crafting Items** compendium contains one reusable **Spell Focus
 
 While held, the focus adds the tier bonus to every spell attack and spell DC on the character: +0 at Tier 1, then +1 through +5 at Tiers 2–6. It does not change spell damage, spell slots, traditions, or proficiency ranks. Putting it away removes the modifiers during normal PF2e actor preparation, and if more than one focus is held only the strongest applies. Only Metal and Wood support focuses by default, but the GM can enable or disable the Spell Focus category independently in each material editor.
 
-Dragon Scales are an armor-only enhancement rather than a replacement base material. Metal and Leather/Hide armor sheets gain Dragon Scale and Scale Tier controls. Their default age tiers are **Hatchling, Juvenile, Youth, Adult, Ancient, and Arch Dragon**, replacing the generic Common–Mythical names; the GM can still rename every tier in the Dragon Scales editor. Black, Blue, Green, Red, and White scales default to acid, electricity, poison, fire, and cold resistance respectively; the GM can rename every color and change its damage type. The six resistance values default to 0 because the campaign progression is still undecided, and can be edited in the Dragon Scales material pop-out. A configured resistance is generated only while the armor is equipped, without changing the armor's PF2e source rules.
+Dragon Scales are an armor-only enhancement rather than a replacement Core. Metal and Leather/Hide armor sheets gain Dragon Scale and Scale Tier controls. Their default age tiers are **Hatchling, Juvenile, Youth, Adult, Ancient, and Arch Dragon**; the GM can still rename every tier. Black, Blue, Green, Red, and White scales default to acid, electricity, poison, fire, and cold resistance respectively. Their default resistance progression is **1, 4, 8, 12, 16, and 20**, and every value and damage type remains editable. A configured resistance is generated only while the armor is equipped, without changing the armor's PF2e source rules.
 
 Tier 1 creates no zero-value rule element, keeping roll breakdowns uncluttered. Selecting either field saves both choices and activates the configured tier rule for that item.
 
-PF2e first generates the ordinary rune-aware item name and price. Wrathmaker then inserts the selected material's tier name immediately before the source item name, adds the configured tier price, and applies the tier rarity. For example, a Tier 2 metal weapon is prepared as `+1 Striking Steel Bastard Sword`, valued at 110 gp when PF2e calculates 100 gp, and categorized as Uncommon. Armor uses the same naming, price, and rarity process.
+On configured items, Wrathmaker suppresses PF2e rune progression in prepared data and builds the display name from the source base item plus its Core, such as `Steel Bastard Sword`. The item sheet adds a compact **Make & Marks** strip showing Core, Mark count, and used/maximum Capacity. Committed Resource Units contribute their current playtest value, and the Core Tier supplies PF2e rarity. The original rune, name, price, rarity, and rules source data remains unchanged if Wrathmaker is disabled.
 
 ## Custom flanking
 
@@ -296,15 +317,23 @@ Item choices are stored only here:
 {
   "flags": {
     "pf2e-crafting-material-tiers": {
-      "schemaVersion": 2,
+      "schemaVersion": 4,
       "material": "metal",
-      "tier": 2
+      "tier": 2,
+      "crafting": {
+        "schemaVersion": 1,
+        "core": { "materialId": "metal", "tier": 2 },
+        "components": [],
+        "artisanMarks": [],
+        "synergies": [],
+        "provenance": []
+      }
     }
   }
 }
 ```
 
-The module never persists changes to the item's source `name`, `system.price`, `system.traits.rarity`, `system.runes`, `system.material`, `system.rules`, or any other PF2e source field. During data preparation it layers the display name, price, and rarity onto PF2e's prepared values. During actor preparation it temporarily presents generated `FlatModifier` rule sources to PF2e, then removes those sources immediately. The prepared presentation and modifiers remain available to sheets and rolls while the original item data stays intact.
+The module never persists changes to the item's source `name`, `system.price`, `system.traits.rarity`, `system.runes`, `system.material`, `system.rules`, or any other PF2e source field. During data preparation it layers the display name, price, rarity, rune replacement, and shield durability onto prepared values. During actor preparation it temporarily presents generated `FlatModifier`, `DamageDice`, and `Resistance` rule sources to PF2e, then removes those sources immediately. The prepared presentation and modifiers remain available to sheets and rolls while the original item data stays intact.
 
 Disabling or uninstalling the module leaves inert flags on previously configured items. All PF2e item and rune data remains intact.
 
@@ -312,7 +341,7 @@ Party travel plans are likewise stored only under `flags.pf2e-crafting-material-
 
 Nephilim Points are stored under `flags.pf2e-crafting-material-tiers.nephilimPoints` on the party actor. Hero Point values remain in PF2e's native `system.resources.heroPoints.value`; Wrathmaker changes only the prepared maximum to 10 and does not reset the stored value.
 
-Version 1 item flags are read automatically. The former per-item enable and override values are ignored, leaving Material and Tier as the only item-level choices.
+Older item flags are read automatically and migrated in memory to the current Make & Marks structure. The former per-item enable and override values are ignored.
 
 ## Configuring material effects
 
@@ -324,9 +353,9 @@ Every material has:
 
 - `label`: the name shown on item sheets.
 - `enabled`: whether the material is available.
-- `itemTypes`: Wrathmaker crafting categories on which it appears (`weapon`, `armor`, or `spellFocus`).
-- `effects`: one or more generated PF2e flat modifiers.
-- Optional effect `itemTypes`: limits an effect to weapons, armor, spell focuses, or future crafting categories.
+- `itemTypes`: Wrathmaker crafting categories on which it appears (`weapon`, `armor`, `shield`, or `spellFocus`).
+- `effects`: one or more generated PF2e flat modifiers or damage-dice effects.
+- Optional effect `itemTypes`: limits an effect to weapons, armor, shields, spell focuses, or future crafting categories.
 - Optional `tierLabels`: per-tier names that override the shared labels for this material.
 - Optional `tierBonuses`: per-tier custom bonuses that override the shared bonus schedule for this material.
 - Optional `tierPricesGp`: per-tier prices that override the shared prices for this material.
@@ -361,20 +390,17 @@ The default weapon effect is:
 }
 ```
 
-Weapon damage uses a second item-specific effect with twice the same tier bonus:
+Weapon damage uses a second item-specific DamageDice effect tied to the Core progression table:
 
 ```json
 {
   "id": "weapon-damage",
-  "kind": "flatModifier",
-  "label": "Crafted {material} Damage ({tierLabel})",
+  "kind": "damageDice",
+  "label": "{tierLabel} Core Material",
   "itemTypes": ["weapon"],
   "selectors": ["{item|_id}-damage"],
-  "modifierType": "untyped",
   "value": {
-    "mode": "tierBonus",
-    "multiplier": 2,
-    "offset": 0
+    "mode": "coreWeaponDice"
   }
 }
 ```
@@ -384,10 +410,11 @@ Supported value modes are:
 - `tierBonus`: the configured bonus for the item's tier.
 - `tier`: the item's tier number itself.
 - `fixed`: a fixed number in `value.value`.
+- `coreWeaponDice`: the Core table's extra weapon-dice entry for the item's Tier.
 
 `multiplier` and `offset` may modify `tierBonus` or `tier`. Effect labels can use `{material}`, `{materialId}`, `{tier}`, `{tierLabel}`, `{bonus}`, and `{item}` placeholders. Optional PF2e `predicate`, `force`, and `hideIfDisabled` fields are also accepted.
 
-The default armor effect is scoped separately from weapon attacks:
+The default armor effects are scoped separately from weapon attacks. One targets AC and the other targets Fortitude, Reflex, and Will:
 
 ```json
 {
@@ -400,6 +427,8 @@ The default armor effect is scoped separately from weapon attacks:
   "value": "tierBonus"
 }
 ```
+
+The save effect uses the same structure with `"selectors": ["fortitude", "reflex", "will"]`.
 
 Metal and Wood also include a held spell-focus effect:
 
@@ -437,7 +466,9 @@ Available methods:
 - `listCraftingDifficultyAdjustments()`
 - `validateCraftingRecipe(recipe)` / `summarizeCraftingResources(items)`
 - `evaluateCraftingRecipe(recipe, { targetItem, inventoryItems })`
-- `craftingRecipeSchemaVersion` reports the current independent recipe schema.
+- `normalizeCraftingState(state, defaults)` / `validateCraftingState(state)`
+- `calculateArtisanCapacity(state)` / `getCoreTierProgression(tier)`
+- `craftingRecipeSchemaVersion` and `craftingStateSchemaVersion` report the independent crafting schema versions.
 - `listGatheringEnvironments()` / `listGatheringTasks(environmentId)`
 - `validateGatheringEnvironment(environment)` / `validateGatheringTask(task)`
 - `evaluateGatheringTask(task, options)` / `resolveGatheringOutcome(task, degree, resource)`
@@ -452,4 +483,4 @@ The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry i
 
 ## Current scope
 
-Wrathmaker currently automates crafting-material modifiers for weapons, armor, and spell focuses, tier-based names/prices/rarity, tiered inventory resources and recipe classification, custom Apex ability items, campaign point tracking, the custom multi-side flanking rule, and party Hexploration travel. Its configuration deliberately separates materials, tiers, item types, selectors, value formulas, flanking thresholds, and travel thresholds so further house rules can be added without rewriting PF2e core data.
+Wrathmaker currently automates Core Material progression for weapons, armor, shields, and spell focuses; exposes Make & Marks summaries; validates generic components, Artisan Marks, Capacity, Anchors, synergies, and maker provenance; provides priced Resource Units, gathering, broad recipe selection, persistent Party Stash reservations, downtime project advancement, explicit final consumption, and real PF2e result creation. Crafting Edge, Masterstroke, Complication, facility, parallel-contribution, and full Mark-selection automation remain later Workbench layers.

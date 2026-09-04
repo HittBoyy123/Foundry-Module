@@ -1,3 +1,5 @@
+import { DEFAULT_ITEM_FLAGS } from "../scripts/constants.js";
+
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
 export const CRAFTING_ITEM_SOURCES = Object.freeze([
@@ -13,8 +15,8 @@ export const CRAFTING_ITEM_SOURCES = Object.freeze([
       description: {
         value: [
           "<p>This adaptable magical implement might be a wand, rod, orb, engraved tablet, or another object shaped to direct a spellcaster's power. It can be crafted from metal or wood.</p>",
-          "<p>Choose its <strong>Material</strong> and <strong>Tier</strong> on the item sheet. While the focus is held in one hand, Wrathmaker applies the material's tier bonus to all of your spell attack rolls and spell DCs. Tier 1 grants no bonus; Tiers 2–6 grant +1 through +5 respectively. If you hold more than one spell focus, only the strongest applies.</p>",
-          "<p>The crafted material name, added price, and rarity are prepared automatically without changing the item's PF2e source data.</p>",
+          "<p>Choose its <strong>Core Material</strong> and <strong>Tier</strong> on the item sheet. While the focus is held in one hand, the Core supplies Wrathmaker spell attack and spell DC progression. If you hold more than one spell focus, only the strongest applies.</p>",
+          "<p>The <strong>Make &amp; Marks</strong> strip records its Core, Artisan Capacity, Marks, and maker provenance without replacing the PF2e item chassis.</p>",
         ].join("\n"),
       },
       hardness: 0,
@@ -35,12 +37,7 @@ export const CRAFTING_ITEM_SOURCES = Object.freeze([
     },
     type: "equipment",
     flags: {
-      [MODULE_ID]: {
-        schemaVersion: 3,
-        material: "metal",
-        tier: 1,
-        dragonScale: { color: "", tier: 1 },
-      },
+      [MODULE_ID]: JSON.parse(JSON.stringify(DEFAULT_ITEM_FLAGS)),
     },
   }),
 ]);

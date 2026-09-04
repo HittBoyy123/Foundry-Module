@@ -3,6 +3,7 @@ import {
   PROFESSION_DEFINITIONS,
   PROFESSION_ITEM_SOURCES,
   PROFESSION_SCHEMA_VERSION,
+  SPECIALIZATION_STAGE_KEYS,
 } from "../content/professions.js";
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig } from "./config-store.js";
@@ -44,6 +45,39 @@ let ProfessionPickerApplication = null;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function specialtyDescriptionHtml(profession, specialty, milestoneLevel) {
+  const stages = SPECIALIZATION_STAGE_KEYS.map((key) => {
+    const stage = specialty.stages[key];
+    const heading = key[0].toUpperCase() + key.slice(1);
+    return `<h3>${heading}: ${escapeHtml(stage.label)}</h3><p>${escapeHtml(stage.description)}</p>`;
+  }).join("");
+  return [
+    `<p><strong>${escapeHtml(specialty.label)}</strong> is a level ${milestoneLevel} specialisation of the ${escapeHtml(profession.name)} profession.</p>`,
+    `<p>${escapeHtml(specialty.description)}</p>`,
+    `<h3>Associated Lore: ${escapeHtml(specialty.proficiency.label)}</h3>`,
+    `<p>${escapeHtml(specialty.proficiency.description)}</p>`,
+    stages,
+    "<p><em>Signature, Mastery, and Legacy are player-facing development directions. They do not add automatic numerical modifiers until their final rules are approved.</em></p>",
+  ].join("");
+}
+
+function specialtyLoreDescriptionHtml(profession, specialty) {
+  return [
+    `<p>${escapeHtml(specialty.proficiency.description)}</p>`,
+    `<p>This Lore is associated with <strong>${escapeHtml(profession.name)}: ${escapeHtml(specialty.label)}</strong>.</p>`,
+    "<p>Wrathmaker advances it to expert at level 3, master at level 7, and legendary at level 15.</p>",
+  ].join("");
 }
 
 function configuredProfessionDefinition(definition) {
@@ -218,6 +252,8 @@ export function getProfessionSpecialty(item) {
     milestoneLevel,
     name: specialtyDefinition.label,
     description: specialtyDefinition.description,
+    proficiency: clone(specialtyDefinition.proficiency),
+    stages: clone(specialtyDefinition.stages),
   };
 }
 
@@ -370,7 +406,7 @@ export function createProfessionSpecialtySource(professionValue, specialtyId, mi
       actions: { value: null },
       category: "bonus",
       description: {
-        value: `<p><strong>${specialty.label}</strong> is a level ${level} specialty of the ${profession.name} profession.</p><p>${specialty.description}</p><p>Its Lore proficiency follows the profession progression: expert at level 3, master at level 7, and legendary at level 15.</p>`,
+        value: specialtyDescriptionHtml(profession, specialty, level),
       },
       level: { value: level },
       maxTakable: 1,
@@ -407,10 +443,10 @@ export function createProfessionSpecialtyLoreSource(professionValue, specialtyId
   }
   return attachGrantFlags({
     img: "systems/pf2e/icons/default-icons/lore.svg",
-    name: `${profession.name}: ${specialty.label}`,
+    name: specialty.proficiency.label,
     system: {
       description: {
-        value: `<p>Specialized knowledge gained through <strong>${profession.name}: ${specialty.label}</strong>.</p><p>Wrathmaker advances this Lore to expert at level 3, master at level 7, and legendary at level 15.</p>`,
+        value: specialtyLoreDescriptionHtml(profession, specialty),
       },
       mod: { value: 0 },
       proficient: { value: professionRankForLevel(level) },
@@ -665,7 +701,7 @@ export async function synchronizeActorProfession(actor, _options = {}) {
       const id = itemId(specialty.item);
       if (!profession || !definition || !id) continue;
       const expectedName = `${profession.name}: ${definition.label}`;
-      const expectedDescription = `<p><strong>${definition.label}</strong> is a level ${specialty.milestoneLevel} specialty of the ${profession.name} profession.</p><p>${definition.description}</p><p>Its Lore proficiency follows the profession progression: expert at level 3, master at level 7, and legendary at level 15.</p>`;
+      const expectedDescription = specialtyDescriptionHtml(profession, definition, specialty.milestoneLevel);
       const changes = itemUpdates.get(id) ?? { _id: id };
       if (specialty.item.name !== expectedName) changes.name = expectedName;
       if (specialty.item.system?.description?.value !== expectedDescription) {
@@ -734,8 +770,10 @@ export async function synchronizeActorProfession(actor, _options = {}) {
         milestoneLevel: specialty.milestoneLevel,
       }));
       if (profession && lore) {
-        const expectedName = `${profession.name}: ${specialty.name}`;
-        const expectedDescription = `<p>Specialized knowledge gained through <strong>${profession.name}: ${specialty.name}</strong>.</p><p>Wrathmaker advances this Lore to expert at level 3, master at level 7, and legendary at level 15.</p>`;
+        const definition = profession.specialties.find((entry) => entry.id === specialty.specialtyId);
+        if (!definition) continue;
+        const expectedName = definition.proficiency.label;
+        const expectedDescription = specialtyLoreDescriptionHtml(profession, definition);
         const changes = { _id: itemId(lore) };
         if (lore.name !== expectedName) changes.name = expectedName;
         if (lore.system?.description?.value !== expectedDescription) {
@@ -1171,6 +1209,7 @@ function createProfessionPickerApplication() {
             img: document?.img ?? definition.img,
             selected: profession.id === current?.id,
             bonusFeatLabel: profession.bonusFeatName,
+            specialisationSummary: profession.specialties.map((specialty) => specialty.label).join(" · "),
             materialLabel: profession.materialIds.length > 0
               ? profession.materialIds.map((id) => id.replaceAll("-", " ")).join(", ")
             : localize("CMT.Profession.FutureMaterials", "Future crafting categories"),

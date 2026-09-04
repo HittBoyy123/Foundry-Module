@@ -2,7 +2,7 @@ import { MODULE_ID } from "./constants.js";
 import { calculateCraftingDC } from "./crafting-dc.js";
 
 export const CRAFTING_CATEGORY_SCHEMA_VERSION = 1;
-export const CRAFTING_RESOURCE_SCHEMA_VERSION = 1;
+export const CRAFTING_RESOURCE_SCHEMA_VERSION = 2;
 
 const CATEGORY_LIST = Object.freeze([
   Object.freeze({ id: "armor.light", group: "armor", itemType: "armor", pf2eCategory: "light", label: "Light Armor" }),
@@ -37,6 +37,7 @@ export function categorizeCraftableItem(item) {
   if (!item || typeof item !== "object") return null;
 
   if (item.type === "armor") {
+    if (item.system?.category === "shield") return clone(CRAFTING_CATEGORIES.shield);
     return clone(CRAFTING_CATEGORIES[`armor.${item.system?.category ?? ""}`] ?? null);
   }
 
@@ -78,6 +79,13 @@ export function getCraftingResourceData(item) {
     unit: typeof source.unit === "string" ? source.unit : "resource",
     unitsPerItem,
     variantId: typeof source.variantId === "string" ? source.variantId : "",
+    family: typeof source.family === "string" ? source.family : materialId,
+    bundleSize: Math.max(1, Math.trunc(Number(source.bundleSize) || 1)),
+    tags: Array.isArray(source.tags) ? [...source.tags] : [],
+    nativeEffects: Array.isArray(source.nativeEffects) ? clone(source.nativeEffects) : [],
+    eligibleItemTags: Array.isArray(source.eligibleItemTags) ? [...source.eligibleItemTags] : [],
+    specialisationHooks: Array.isArray(source.specialisationHooks) ? [...source.specialisationHooks] : [],
+    pricePerUnitGp: Math.max(0, Number(source.pricePerUnitGp ?? source.resourceUnitPriceGp) || 0),
     level: craftingDC.level,
     baseDC: craftingDC.baseDC,
   };

@@ -1,7 +1,7 @@
 import { ConfigValidationError, getTierPresentation } from "./model.js";
 import { GATHERING_ENVIRONMENT_SOURCES } from "../content/gathering-presets.js";
 import { GATHERING_REWARD_DESTINATIONS } from "./gathering-destination.js";
-import { PROFESSION_DEFINITIONS } from "../content/professions.js";
+import { PROFESSION_DEFINITIONS, SPECIALIZATION_STAGE_KEYS } from "../content/professions.js";
 
 const RARITIES = Object.freeze([
   Object.freeze({ value: "common", label: "Common" }),
@@ -38,6 +38,7 @@ const DAMAGE_TYPES = Object.freeze([
 const ITEM_TYPE_LABELS = Object.freeze({
   weapon: "Weapons",
   armor: "Armor",
+  shield: "Shields",
   spellFocus: "Spell Focuses",
 });
 
@@ -168,6 +169,13 @@ export function buildProfessionEditorContext(config, professionId) {
       number: index + 1,
       label: specialty.label,
       description: specialty.description,
+      proficiency: clone(specialty.proficiency),
+      stages: SPECIALIZATION_STAGE_KEYS.map((key) => ({
+        key,
+        heading: key[0].toUpperCase() + key.slice(1),
+        label: specialty.stages[key].label,
+        description: specialty.stages[key].description,
+      })),
     })),
   };
 }
@@ -179,15 +187,31 @@ export function applyProfessionChanges(config, professionId, form) {
   if (!definition) throw new ConfigValidationError(`Profession "${professionId}" does not exist.`);
   updated.professions ??= {};
   const specialtyForm = form.specialties ?? {};
+  const currentSpecialties = config.professions?.[professionId]?.specialties ?? definition.specialties;
   updated.professions[professionId] = {
     specialties: definition.specialties.map((fallback) => {
       const values = specialtyForm[fallback.id] ?? {};
-      const label = String(values.label ?? "").trim();
-      if (!label) throw new ConfigValidationError("A specialty name cannot be blank.");
+      const current = currentSpecialties.find((specialty) => specialty.id === fallback.id) ?? fallback;
+      const label = String(values.label ?? current.label ?? "").trim();
+      if (!label) throw new ConfigValidationError("A specialisation name cannot be blank.");
+      const proficiencyLabel = String(values.proficiency?.label ?? current.proficiency?.label ?? "").trim();
+      if (!proficiencyLabel) throw new ConfigValidationError("An associated Lore name cannot be blank.");
       return {
         id: fallback.id,
         label,
-        description: String(values.description ?? "").trim(),
+        description: String(values.description ?? current.description ?? "").trim(),
+        proficiency: {
+          label: proficiencyLabel,
+          description: String(values.proficiency?.description ?? current.proficiency?.description ?? "").trim(),
+        },
+        stages: Object.fromEntries(SPECIALIZATION_STAGE_KEYS.map((key) => {
+          const stageLabel = String(values.stages?.[key]?.label ?? current.stages?.[key]?.label ?? "").trim();
+          if (!stageLabel) throw new ConfigValidationError(`${key[0].toUpperCase() + key.slice(1)} name cannot be blank.`);
+          return [key, {
+            label: stageLabel,
+            description: String(values.stages?.[key]?.description ?? current.stages?.[key]?.description ?? "").trim(),
+          }];
+        })),
       };
     }),
   };

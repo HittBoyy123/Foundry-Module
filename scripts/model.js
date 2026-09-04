@@ -11,7 +11,13 @@ import {
   RULES_SCHEMA_VERSION,
   cloneDefaultRulesConfig,
 } from "./constants.js";
-import { PROFESSION_DEFINITIONS } from "../content/professions.js";
+import { PROFESSION_DEFINITIONS, SPECIALIZATION_STAGE_KEYS } from "../content/professions.js";
+import {
+  calculateArtisanCapacity,
+  getCoreTierProgression,
+  normalizeCraftingState,
+  validateCraftingState,
+} from "./crafting-model.js";
 
 const MODIFIER_TYPES = new Set([
   "ability",
@@ -40,6 +46,7 @@ const LEGACY_TIER_LABELS = Object.freeze({
   6: "Tier 6",
 });
 const LEGACY_TIER_PRICES_GP = Object.freeze({ 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6 });
+const PRE_HANDBOOK_TIER_PRICES_GP = Object.freeze({ 1: 0, 2: 10, 3: 25, 4: 100, 5: 1000, 6: 5000 });
 const LEGACY_MATERIAL_LABELS = Object.freeze({
   metal: "Metal",
   wood: "Wood",
@@ -209,7 +216,17 @@ function normalizeFlankingConfig(_source) {
   return copyJson(DEFAULT_FLANKING_CONFIG);
 }
 
-function normalizeProfessionsConfig(source) {
+function specialtyText(value, fallback) {
+  return typeof value === "string" ? value.trim() : fallback;
+}
+
+function isLegacyPlaceholderSpecialty(specialty, fallback, sourceSchemaVersion) {
+  if (sourceSchemaVersion >= 15 || !specialty) return false;
+  return specialty.label === `Specialty ${fallback.id.slice(-1) === "1" ? "I" : fallback.id.slice(-1) === "2" ? "II" : "III"}`
+    && specialty.description === "To be determined by the GM.";
+}
+
+function normalizeProfessionsConfig(source, sourceSchemaVersion) {
   if (source !== undefined && !isPlainObject(source)) {
     throw new ConfigValidationError("professions must be an object.");
   }
@@ -222,13 +239,46 @@ function normalizeProfessionsConfig(source) {
     const configuredSpecialties = Array.isArray(configured?.specialties) ? configured.specialties : [];
     professions[definition.id] = {
       specialties: definition.specialties.map((fallback) => {
-        const specialty = configuredSpecialties.find((entry) => entry?.id === fallback.id) ?? fallback;
+        const configuredSpecialty = configuredSpecialties.find((entry) => entry?.id === fallback.id);
+        const specialty = isLegacyPlaceholderSpecialty(configuredSpecialty, fallback, sourceSchemaVersion)
+          ? fallback
+          : configuredSpecialty ?? fallback;
+        const label = nonBlankString(specialty.label, `professions.${definition.id}.${fallback.id}.label`);
+        const proficiency = isPlainObject(specialty.proficiency) ? specialty.proficiency : {
+          label: `${definition.name}: ${label}`,
+          description: `Dedicated Lore for ${label}. It follows the existing ${definition.name} proficiency progression; no separate numerical benefit is assigned yet.`,
+        };
+        if (specialty.proficiency !== undefined && !isPlainObject(specialty.proficiency)) {
+          throw new ConfigValidationError(`professions.${definition.id}.${fallback.id}.proficiency must be an object.`);
+        }
+        const stages = isPlainObject(specialty.stages) ? specialty.stages : {};
+        if (specialty.stages !== undefined && !isPlainObject(specialty.stages)) {
+          throw new ConfigValidationError(`professions.${definition.id}.${fallback.id}.stages must be an object.`);
+        }
         return {
           id: fallback.id,
-          label: nonBlankString(specialty.label, `professions.${definition.id}.${fallback.id}.label`),
-          description: typeof specialty.description === "string"
-            ? specialty.description.trim()
-            : fallback.description,
+          label,
+          description: specialtyText(specialty.description, fallback.description),
+          proficiency: {
+            label: nonBlankString(
+              proficiency.label,
+              `professions.${definition.id}.${fallback.id}.proficiency.label`,
+            ),
+            description: specialtyText(proficiency.description, fallback.proficiency.description),
+          },
+          stages: Object.fromEntries(SPECIALIZATION_STAGE_KEYS.map((key) => {
+            const configuredStage = isPlainObject(stages[key]) ? stages[key] : fallback.stages[key];
+            if (stages[key] !== undefined && !isPlainObject(stages[key])) {
+              throw new ConfigValidationError(`professions.${definition.id}.${fallback.id}.stages.${key} must be an object.`);
+            }
+            return [key, {
+              label: nonBlankString(
+                configuredStage.label,
+                `professions.${definition.id}.${fallback.id}.stages.${key}.label`,
+              ),
+              description: specialtyText(configuredStage.description, fallback.stages[key].description),
+            }];
+          })),
         };
       }),
     };
@@ -308,11 +358,12 @@ function normalizeValue(value, path) {
   }
 
   const mode = value.mode ?? "tierBonus";
+  if (mode === "coreWeaponDice") return { mode };
   if (mode === "fixed") {
     return { mode, value: finiteNumber(value.value, `${path}.value`) };
   }
   if (!new Set(["tierBonus", "tier"]).has(mode)) {
-    throw new ConfigValidationError(`${path}.mode must be "tierBonus", "tier", or "fixed".`);
+    throw new ConfigValidationError(`${path}.mode must be "tierBonus", "tier", "coreWeaponDice", or "fixed".`);
   }
   return {
     mode,
@@ -326,15 +377,15 @@ function normalizeEffect(effect, path) {
     throw new ConfigValidationError(`${path} must be an object.`);
   }
   const kind = effect.kind ?? "flatModifier";
-  if (kind !== "flatModifier") {
-    throw new ConfigValidationError(`${path}.kind currently supports only "flatModifier".`);
+  if (!new Set(["flatModifier", "damageDice"]).has(kind)) {
+    throw new ConfigValidationError(`${path}.kind must be "flatModifier" or "damageDice".`);
   }
   const id = nonBlankString(effect.id, `${path}.id`);
   if (!SLUG_PATTERN.test(id)) {
     throw new ConfigValidationError(`${path}.id must be a lowercase slug (for example, "weapon-attack").`);
   }
-  const modifierType = effect.modifierType ?? "untyped";
-  if (!MODIFIER_TYPES.has(modifierType)) {
+  const modifierType = kind === "flatModifier" ? effect.modifierType ?? "untyped" : null;
+  if (modifierType && !MODIFIER_TYPES.has(modifierType)) {
     throw new ConfigValidationError(`${path}.modifierType is not a PF2e modifier type.`);
   }
 
@@ -346,9 +397,9 @@ function normalizeEffect(effect, path) {
       ? effect.label.trim()
       : "Crafted {material} (Tier {tier})",
     selectors: normalizeSelectors(effect.selectors ?? effect.selector, `${path}.selectors`),
-    modifierType,
     value: normalizeValue(effect.value, `${path}.value`),
   };
+  if (modifierType) normalized.modifierType = modifierType;
 
   if (effect.itemTypes !== undefined) {
     normalized.itemTypes = normalizeItemTypes(effect.itemTypes, `${path}.itemTypes`);
@@ -429,7 +480,7 @@ export function normalizeRulesConfig(input) {
   );
   const flanking = normalizeFlankingConfig(parsed.flanking ?? DEFAULT_FLANKING_CONFIG);
   const hexploration = normalizeHexplorationConfig(parsed.hexploration ?? DEFAULT_HEXPLORATION_CONFIG);
-  const professions = normalizeProfessionsConfig(parsed.professions);
+  const professions = normalizeProfessionsConfig(parsed.professions, sourceSchemaVersion);
 
   if (!isPlainObject(parsed.materials) || Object.keys(parsed.materials).length === 0) {
     throw new ConfigValidationError("materials must contain at least one material definition.");
@@ -454,6 +505,9 @@ export function normalizeRulesConfig(input) {
     if (!augmentation && sourceSchemaVersion < 10 && defaultMaterial?.itemTypes.includes("spellFocus")) {
       itemTypes = [...new Set([...itemTypes, "spellFocus"])];
     }
+    if (!augmentation && sourceSchemaVersion < 16 && defaultMaterial?.itemTypes.includes("shield")) {
+      itemTypes = [...new Set([...itemTypes, "shield"])];
+    }
     if (!Array.isArray(material.effects)) {
       throw new ConfigValidationError(`materials.${materialId}.effects must be an array.`);
     }
@@ -462,6 +516,16 @@ export function normalizeRulesConfig(input) {
         ? { ...effect, itemTypes: originalItemTypes }
         : effect
     ));
+    if (!augmentation && sourceSchemaVersion < 16) {
+      const currentDamage = effectSources.findIndex((effect) => isPlainObject(effect) && effect.id === "weapon-damage");
+      const defaultDamage = defaultMaterial?.effects.find((effect) => effect.id === "weapon-damage");
+      if (currentDamage >= 0 && defaultDamage && effectSources[currentDamage].kind !== "damageDice") {
+        effectSources[currentDamage] = copyJson(defaultDamage);
+      }
+      const hasArmorSaves = effectSources.some((effect) => isPlainObject(effect) && effect.id === "armor-saves");
+      const defaultArmorSaves = defaultMaterial?.effects.find((effect) => effect.id === "armor-saves");
+      if (!hasArmorSaves && defaultArmorSaves) effectSources.push(copyJson(defaultArmorSaves));
+    }
     const hasArmorEffect = effectSources.some((effect) => (
       isPlainObject(effect) && (
         effect.id === "armor-ac" ||
@@ -523,10 +587,13 @@ export function normalizeRulesConfig(input) {
         `materials.${materialId}.tierLabels`,
         { partial: true },
       );
+    const usesPreHandbookPrices = sourceSchemaVersion < 16
+      && !augmentation
+      && tierMapMatches(material.tierPricesGp, PRE_HANDBOOK_TIER_PRICES_GP);
     const tierPriceOverrides = material.tierPricesGp === undefined && migratedTierPrices === undefined
       ? {}
       : normalizeTierPrices(
-        material.tierPricesGp ?? migratedTierPrices,
+        usesPreHandbookPrices ? defaultMaterial.tierPricesGp : material.tierPricesGp ?? migratedTierPrices,
         `materials.${materialId}.tierPricesGp`,
         { partial: true },
       );
@@ -537,8 +604,13 @@ export function normalizeRulesConfig(input) {
         `materials.${materialId}.tierRarities`,
         { partial: true },
       );
+    const usesLegacyEmptyDragonResistance = augmentation
+      && sourceSchemaVersion < 16
+      && (!material.tierBonuses || [1, 2, 3, 4, 5, 6].every((tier) => Number(material.tierBonuses[tier] ?? 0) === 0));
     const tierBonusSource = augmentation
-      ? material.tierBonuses ?? defaultMaterial?.tierBonuses
+      ? usesLegacyEmptyDragonResistance
+        ? defaultMaterial?.tierBonuses
+        : material.tierBonuses ?? defaultMaterial?.tierBonuses
       : material.tierBonuses;
     const tierBonusOverrides = tierBonusSource === undefined
       ? {}
@@ -592,10 +664,12 @@ export function normalizeRulesConfig(input) {
 
 export function normalizeItemFlags(input, config = null) {
   const source = isPlainObject(input) ? input : {};
-  const tierNumber = Number(source.tier ?? DEFAULT_ITEM_FLAGS.tier);
+  const legacyCore = isPlainObject(source.crafting?.core) ? source.crafting.core : {};
+  const tierNumber = Number(source.tier ?? legacyCore.tier ?? DEFAULT_ITEM_FLAGS.tier);
   const tier = Number.isInteger(tierNumber) ? Math.min(6, Math.max(1, tierNumber)) : DEFAULT_ITEM_FLAGS.tier;
-  const material = typeof source.material === "string" && source.material.trim()
-    ? source.material.trim()
+  const selectedMaterial = source.material ?? legacyCore.materialId;
+  const material = typeof selectedMaterial === "string" && selectedMaterial.trim()
+    ? selectedMaterial.trim()
     : DEFAULT_ITEM_FLAGS.material;
   const dragonScaleSource = isPlainObject(source.dragonScale) ? source.dragonScale : {};
   const dragonScaleTierNumber = Number(dragonScaleSource.tier ?? DEFAULT_ITEM_FLAGS.dragonScale.tier);
@@ -605,6 +679,10 @@ export function normalizeItemFlags(input, config = null) {
   const dragonScaleColor = typeof dragonScaleSource.color === "string"
     ? dragonScaleSource.color.trim().toLowerCase()
     : DEFAULT_ITEM_FLAGS.dragonScale.color;
+  const dragonScaleUnits = Math.max(0, Math.trunc(Number(dragonScaleSource.unitsCommitted) || 0));
+  const crafting = normalizeCraftingState(source.crafting, { materialId: material, tier });
+  crafting.core.materialId = material;
+  crafting.core.tier = tier;
   return {
     schemaVersion: ITEM_SCHEMA_VERSION,
     material,
@@ -612,7 +690,9 @@ export function normalizeItemFlags(input, config = null) {
     dragonScale: {
       color: dragonScaleColor,
       tier: dragonScaleTier,
+      unitsCommitted: dragonScaleUnits,
     },
+    crafting,
   };
 }
 
@@ -628,6 +708,7 @@ export function itemTypeIsSupported(config, itemType) {
 }
 
 export function getCraftingItemType(item) {
+  if (item?.type === "armor" && item.system?.category === "shield") return "shield";
   if (item?.type !== "equipment") return item?.type ?? null;
   const otherTags = item.system?.traits?.otherTags;
   const isSpellFocus = Array.isArray(otherTags)
@@ -663,6 +744,7 @@ export function insertTierLabel(generatedName, baseName, tierLabel) {
 
 function resolveValue(valueConfig, tier, tierBonus) {
   if (valueConfig.mode === "fixed") return valueConfig.value;
+  if (valueConfig.mode === "coreWeaponDice") return getCoreTierProgression(tier).weaponDice;
   const base = valueConfig.mode === "tier" ? tier : tierBonus;
   return (base * valueConfig.multiplier) + valueConfig.offset;
 }
@@ -687,13 +769,20 @@ function higherRarity(first, second) {
 }
 
 export function calculateItemEffects({ itemType, itemId, itemName, flags, config }) {
-  const configured = isPlainObject(flags) && (typeof flags.material === "string" || flags.tier !== undefined);
+  const configured = isPlainObject(flags) && (
+    typeof flags.material === "string"
+    || flags.tier !== undefined
+    || isPlainObject(flags.crafting?.core)
+  );
   const normalizedFlags = normalizeItemFlags(flags, config);
   const material = config.materials[normalizedFlags.material] ?? null;
   const tierBonus = material?.tierBonuses?.[normalizedFlags.tier]
     ?? config.tierBonuses[normalizedFlags.tier]
     ?? 0;
   const presentation = getTierPresentation(config, normalizedFlags.material, normalizedFlags.tier);
+  const coreProgression = getCoreTierProgression(normalizedFlags.tier);
+  const capacity = calculateArtisanCapacity(normalizedFlags.crafting);
+  const validation = validateCraftingState(normalizedFlags.crafting);
   const inactive = config.crafting?.enabled === false
     || !configured
     || !material?.enabled
@@ -707,8 +796,12 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
       tierBonus,
       presentation,
       dragonScale: null,
+      coreProgression,
+      capacity,
+      validation,
       effectiveRarity: presentation.rarity,
-      priceGp: presentation.priceGp,
+      priceGp: 0,
+      coreMaterialValueGp: 0,
       previews: [],
       rules: [],
     };
@@ -734,8 +827,19 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
     });
 
   const rules = previews
-    .filter((effect) => effect.kind === "flatModifier" && effect.value !== 0)
+    .filter((effect) => effect.value !== 0)
     .map((effect) => {
+      if (effect.kind === "damageDice") {
+        const rule = {
+          key: "DamageDice",
+          slug: slugify(`craft-material-${normalizedFlags.material}-${effect.id}-${itemId}`),
+          label: effect.resolvedLabel,
+          selector: [...effect.selectors],
+          diceNumber: effect.value,
+        };
+        if (effect.predicate !== undefined) rule.predicate = copyJson(effect.predicate);
+        return rule;
+      }
       const rule = {
         key: "FlatModifier",
         slug: slugify(`craft-material-${normalizedFlags.material}-${effect.id}-${itemId}`),
@@ -771,6 +875,8 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
       resistance,
       name,
       presentation: dragonPresentation,
+      unitsCommitted: dragonSelection.unitsCommitted,
+      materialValueGp: dragonSelection.unitsCommitted * (config.tierPricesGp[dragonSelection.tier] ?? 0),
     };
     previews.push({
       id: "dragon-scale-resistance",
@@ -788,6 +894,10 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
     }
   }
 
+  const coreMaterialValueGp = normalizedFlags.crafting.core.quantityCommitted * presentation.priceGp;
+  const dragonScaleValueGp = dragonScale
+    ? dragonScale.materialValueGp + dragonScale.presentation.priceGp
+    : 0;
   return {
     active: true,
     flags: normalizedFlags,
@@ -795,10 +905,14 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
     tierBonus,
     presentation,
     dragonScale,
+    coreProgression,
+    capacity,
+    validation,
     effectiveRarity: dragonScale
       ? higherRarity(presentation.rarity, dragonScale.presentation.rarity)
       : presentation.rarity,
-    priceGp: presentation.priceGp + (dragonScale?.presentation.priceGp ?? 0),
+    priceGp: coreMaterialValueGp + dragonScaleValueGp,
+    coreMaterialValueGp,
     previews,
     rules,
   };

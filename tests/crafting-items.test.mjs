@@ -18,13 +18,12 @@ test("the crafting compendium provides one configurable held spell focus", () =>
   assert.equal(focus.system.usage.value, "held-in-one-hand");
   assert.equal(focus.system.traits.otherTags.includes("spell-focus"), true);
   assert.equal(focus.system.rules.length, 0);
-  assert.deepEqual(focus.flags[MODULE_ID], {
-    schemaVersion: 3,
-    material: "metal",
-    tier: 1,
-    dragonScale: { color: "", tier: 1 },
-  });
-  assert.match(focus.system.description.value, /spell attack rolls and spell DCs/i);
+  assert.equal(focus.flags[MODULE_ID].schemaVersion, 4);
+  assert.equal(focus.flags[MODULE_ID].crafting.schemaVersion, 1);
+  assert.deepEqual(focus.flags[MODULE_ID].crafting.core, { materialId: "metal", tier: 1 });
+  assert.deepEqual(focus.flags[MODULE_ID].crafting.artisanMarks, []);
+  assert.match(focus.system.description.value, /spell attack and spell DC progression/i);
+  assert.match(focus.system.description.value, /Make &amp; Marks/i);
 });
 
 test("the generated crafting pack and manifest match the catalogue", async () => {

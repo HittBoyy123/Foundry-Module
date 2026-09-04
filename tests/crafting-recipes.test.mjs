@@ -134,6 +134,33 @@ test("one resource stack cannot satisfy two AND groups at the same time", () => 
   assert.deepEqual(result.allocation, []);
 });
 
+test("required structural components can use one material tier from Core Tier minus two through Core Tier", () => {
+  const recipe = heavyArmorRecipe({
+    tier: 4,
+    ingredientSets: [{
+      id: "mixed-tier",
+      label: "Mixed tier armor",
+      groups: [
+        { id: "core", label: "Core", options: [{ materialId: "metal", tier: 4, units: 6 }] },
+        {
+          id: "lining",
+          label: "Lining",
+          options: [{ materialId: "leather", tier: 2, tierMode: "minimum", maximumTier: 4, units: 2 }],
+        },
+      ],
+    }],
+  });
+  const result = evaluateCraftingRecipe(recipe, {
+    targetItem: { type: "armor", system: { category: "heavy" } },
+    inventoryItems: [
+      resourceItem({ id: "mithril", materialId: "metal", tier: 4, quantity: 6 }),
+      resourceItem({ id: "ironhide", materialId: "leather", tier: 3, quantity: 2 }),
+    ],
+  });
+  assert.equal(result.craftable, true);
+  assert.equal(result.allocation[1].allocations[0].tier, 3);
+});
+
 test("invalid or incomplete recipes are rejected before players can use them", () => {
   assert.throws(
     () => normalizeCraftingRecipe(heavyArmorRecipe({ categoryId: "armor.powered" })),

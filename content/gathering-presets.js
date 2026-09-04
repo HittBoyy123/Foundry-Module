@@ -111,8 +111,8 @@ function buildGatheringTasks() {
       yields: Object.freeze({
         criticalFailure: 0,
         failure: 0,
-        success: 1,
-        criticalSuccess: 2,
+        success: 5,
+        criticalSuccess: 10,
       }),
       timeMinutes: 60,
       requiredToolUuids: Object.freeze([]),

@@ -28,10 +28,10 @@ test("dashboard context exposes friendly crafting, profession, and material summ
   );
   assert.equal(context.hexplorationEnabled, true);
   assert.equal(context.professions.length, 11);
-  assert.match(context.professions.find((profession) => profession.id === "blacksmithing").specialties, /Specialty I/);
+  assert.match(context.professions.find((profession) => profession.id === "blacksmithing").specialties, /Hellforging/);
   const metal = context.materials.find((material) => material.id === "metal");
   assert.match(metal.tiers, /1: Iron/);
-  assert.equal(metal.itemTypes, "Weapons, Armor, and Spell Focuses");
+  assert.equal(metal.itemTypes, "Weapons, Armor, Shields, and Spell Focuses");
 });
 
 test("dashboard changes toggle optional systems while flanking stays permanent", () => {
@@ -69,10 +69,16 @@ test("profession editor saves three world-configurable specialty names and descr
   const editor = buildProfessionEditorContext(config, "blacksmithing");
   assert.equal(editor.name, "Blacksmithing");
   assert.equal(editor.specialties.length, 3);
+  assert.equal(editor.specialties[0].proficiency.label, "Blacksmithing: Hellforging");
+  assert.equal(editor.specialties[0].stages[0].key, "signature");
 
   const changed = normalizeRulesConfig(applyProfessionChanges(config, "blacksmithing", {
     "specialties.specialty-1.label": "Weaponsmith",
     "specialties.specialty-1.description": "Creates and repairs martial weapons.",
+    "specialties.specialty-1.proficiency.label": "Weaponsmithing",
+    "specialties.specialty-1.proficiency.description": "Lore concerning forged weapons.",
+    "specialties.specialty-1.stages.signature.label": "Signature Weapon",
+    "specialties.specialty-1.stages.signature.description": "Descriptive placeholder for the signature stage.",
     "specialties.specialty-2.label": "Armorsmith",
     "specialties.specialty-2.description": "Creates and repairs armor.",
     "specialties.specialty-3.label": "Farrier",
@@ -80,6 +86,8 @@ test("profession editor saves three world-configurable specialty names and descr
   }));
   assert.equal(changed.professions.blacksmithing.specialties[0].label, "Weaponsmith");
   assert.equal(changed.professions.blacksmithing.specialties[1].description, "Creates and repairs armor.");
+  assert.equal(changed.professions.blacksmithing.specialties[0].proficiency.label, "Weaponsmithing");
+  assert.equal(changed.professions.blacksmithing.specialties[0].stages.signature.label, "Signature Weapon");
 });
 
 test("Foundry dotted form fields expand before dashboard toggles are saved", () => {
@@ -188,7 +196,9 @@ test("flat material editor fields save names, tiers, and an untyped bonus", () =
   assert.equal(changed.materials.metal.label, "Forged Metal");
   assert.equal(changed.materials.metal.enabled, true);
   assert.equal(changed.materials.metal.tierLabels[2], "Kingssteel");
-  assert.equal(changed.materials.metal.effects.every((effect) => effect.modifierType === "untyped"), true);
+  assert.equal(changed.materials.metal.effects
+    .filter((effect) => effect.kind === "flatModifier")
+    .every((effect) => effect.modifierType === "untyped"), true);
 });
 
 test("dragon-scale editor changes color mappings and resistance values", () => {

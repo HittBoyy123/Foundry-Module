@@ -110,7 +110,8 @@ test("profession milestone specialties create visible feats and Lore at the same
   assert.equal(getProfessionSpecialty(specialty).milestoneLevel, 4);
   assert.equal(getProfessionSpecialty(specialty).professionId, "blacksmithing");
   const lore = createProfessionSpecialtyLoreSource(profession, "specialty-1", 4, 7);
-  assert.equal(lore.name, "Blacksmithing: Specialty I");
+  assert.equal(lore.name, "Blacksmithing: Hellforging");
+  assert.match(lore.system.description.value, /Dedicated Lore for Hellforging/);
   assert.equal(lore.system.proficient.value, 3);
   assert.deepEqual(lore.flags[MODULE_ID].professionGrant, {
     schemaVersion: 2,
@@ -322,7 +323,7 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     const lore = grants.find((item) => item.type === "lore");
     assert.equal(lore.system.proficient.value, 2);
     assert.equal(lore.name, "Blacksmithing");
-    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 2);
+    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 3);
     assert.match(profession.system.description.value, /expert at level 3/i);
     const specialty = grants.find((item) => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting");
     assert.equal(specialty.system.rules[0].selection, "blacksmithing");
@@ -418,7 +419,7 @@ test("a level 10 character can combine a starting profession, a new profession, 
       .filter((item) => item.type === "lore")
       .map((item) => item.name)
       .sort();
-    assert.deepEqual(loreNames, ["Alchemy", "Blacksmithing", "Blacksmithing: Specialty I"]);
+    assert.deepEqual(loreNames, ["Alchemy", "Blacksmithing", "Blacksmithing: Hellforging"]);
     assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 9);
   } finally {
     globalThis.game = originalGame;

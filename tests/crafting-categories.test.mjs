@@ -47,12 +47,19 @@ test("recipe keys combine the broad PF2e category with material and tier", () =>
 
 test("resource flags normalize from plain sources and Foundry item documents", () => {
   const resource = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     materialId: "metal",
+    family: "metal",
     tier: 2,
     unit: "ingot",
     unitsPerItem: 1,
     variantId: "",
+    bundleSize: 1,
+    tags: ["metal"],
+    nativeEffects: [],
+    eligibleItemTags: ["weapon"],
+    specialisationHooks: ["blacksmithing"],
+    pricePerUnitGp: 15,
   };
   const expected = { ...resource, level: 4, baseDC: 19 };
   assert.deepEqual(getCraftingResourceData({ flags: { [MODULE_ID]: { resource } } }), expected);

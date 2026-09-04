@@ -75,7 +75,7 @@
       <span>{{localize "CMT.Settings.Material.Tier"}}</span>
       <span>{{localize "CMT.Settings.Material.CraftedName"}}</span>
       <span>{{#if isDragonScale}}{{localize "CMT.Settings.Material.Resistance"}}{{else}}{{localize "CMT.Settings.Material.Bonus"}}{{/if}}</span>
-      <span>{{localize "CMT.Settings.Material.Price"}}</span>
+      <span>{{#if isDragonScale}}{{localize "CMT.Settings.Material.AddedPrice"}}{{else}}{{localize "CMT.Settings.Material.UnitPrice"}}{{/if}}</span>
       <span>{{localize "CMT.Settings.Material.Rarity"}}</span>
     </div>
     {{#each tiers}}
@@ -84,7 +84,7 @@
         <input type="text" name="tiers.{{tier}}.label" value="{{label}}" aria-label="Tier {{tier}} crafted name" required>
         <input type="number" name="tiers.{{tier}}.bonus" value="{{bonus}}" {{#if ../isDragonScale}}min="0"{{/if}} step="any" aria-label="Tier {{tier}} {{#if ../isDragonScale}}resistance{{else}}bonus{{/if}}" required>
         <div class="cmt-price-input">
-          <input type="number" name="tiers.{{tier}}.priceGp" value="{{priceGp}}" min="0" step="0.01" aria-label="Tier {{tier}} added price" required>
+          <input type="number" name="tiers.{{tier}}.priceGp" value="{{priceGp}}" min="0" step="0.01" aria-label="Tier {{tier}} price" required>
           <span>gp</span>
         </div>
         <select name="tiers.{{tier}}.rarity" aria-label="Tier {{tier}} PF2e rarity">
