@@ -12,12 +12,39 @@
   --cmt-workbench-gold: #e9d7a1;
 }
 
+.pf2e-crafting-material-tiers.cmt-workbench-app .window-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .pf2e-crafting-material-tiers .cmt-workbench-body {
-  min-height: 100%;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
   padding: 0.75rem;
+  scrollbar-color: var(--cmt-workbench-red) var(--cmt-workbench-paper);
+  scrollbar-gutter: stable;
   color: #2c2522;
   background: linear-gradient(rgb(248 243 235 / 94%), rgb(248 243 235 / 94%)),
     url("../../../systems/pf2e/assets/sheet/parchment.webp");
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-body::-webkit-scrollbar {
+  width: 12px;
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-body::-webkit-scrollbar-track {
+  border-left: 1px solid #b7a397;
+  background: var(--cmt-workbench-paper);
+}
+
+.pf2e-crafting-material-tiers .cmt-workbench-body::-webkit-scrollbar-thumb {
+  border: 2px solid var(--cmt-workbench-paper);
+  border-radius: 6px;
+  background: var(--cmt-workbench-red);
 }
 
 .pf2e-crafting-material-tiers .cmt-workbench-header {

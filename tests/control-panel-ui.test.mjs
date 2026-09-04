@@ -167,4 +167,8 @@ test("Workbench exposes recipe planning, reservations, downtime, and confirmed c
   assert.match(css, /--cmt-workbench-red:\s*#5e0000/i);
   assert.match(css, /--cmt-workbench-paper:\s*#e7d9cf/i);
   assert.match(css, /--cmt-workbench-gold:\s*#e9d7a1/i);
+  assert.match(css, /\.pf2e-crafting-material-tiers\.cmt-workbench-app \.window-content\s*\{[^}]*overflow:\s*hidden/is);
+  assert.match(css, /\.cmt-workbench-body\s*\{[^}]*height:\s*100%[^}]*overflow-y:\s*scroll/is);
+  assert.match(css, /\.cmt-workbench-body::\-webkit-scrollbar-thumb\s*\{/i);
+  assert.match(application, /this\.workbenchState\.scrollTop\s*=\s*scrollContainer\.scrollTop/);
 });

@@ -862,6 +862,7 @@ export function createWorkbenchApplication() {
         selectedMarks: [],
         projectName: "",
         requiredProgress: 0,
+        scrollTop: 0,
       };
     }
 
@@ -874,8 +875,16 @@ export function createWorkbenchApplication() {
       super._onRender(context, options);
       const root = rootElement(this.element);
       if (!root) return;
+      const scrollContainer = root.querySelector(".cmt-workbench-body");
+      if (scrollContainer) {
+        scrollContainer.scrollTop = Math.max(0, Number(this.workbenchState.scrollTop) || 0);
+        scrollContainer.addEventListener("scroll", () => {
+          this.workbenchState.scrollTop = scrollContainer.scrollTop;
+        }, { passive: true });
+      }
       for (const button of root.querySelectorAll("[data-cmt-workbench-tab]")) {
         button.addEventListener("click", async () => {
+          this.workbenchState.scrollTop = 0;
           this.workbenchState.tab = button.dataset.cmtWorkbenchTab;
           await this.render({ force: true });
         });

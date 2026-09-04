@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.1 — Workbench scrolling fix (2026-09-04)
+
+- Fixed the expanded Artisan Mark Workbench exceeding its window by adding a persistent PF2e-styled vertical scrollbar and preserving its position while Mark choices rerender.
+
 ## 0.18.0 — Artisan Mark Workbench (2026-09-04)
 
 - Added all 253 Artisan Marks from the Wrathmaker Notion guide: 55 universal profession Marks and six Marks for each of the 33 specialisations.
