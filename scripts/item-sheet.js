@@ -173,9 +173,10 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
   core.title = localize("CMT.ItemSheet.CoreMaterialHint", "The Core Material sets the item's fundamental progression.");
   core.textContent = `${result.presentation.label} · T${result.flags.tier}`;
 
+  const activeMarks = result.flags.crafting.artisanMarks.filter((mark) => mark.status !== "suppressed");
   const marks = document.createElement("span");
   marks.className = "cmt-make-mark-chip";
-  const markCount = result.flags.crafting.artisanMarks.filter((mark) => mark.status !== "suppressed").length;
+  const markCount = activeMarks.length;
   marks.textContent = game.i18n.format("CMT.ItemSheet.ArtisanMarksCount", { count: markCount });
 
   const capacity = document.createElement("span");
@@ -196,6 +197,35 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
   capacity.append(capacityLabel, segments);
   chips.append(core, marks, capacity);
   strip.append(heading, chips);
+  if (activeMarks.length) {
+    const details = document.createElement("details");
+    details.className = "cmt-applied-marks";
+    const summary = document.createElement("summary");
+    summary.textContent = localize("CMT.ItemSheet.AppliedMarks", "Applied Artisan Marks");
+    const list = document.createElement("div");
+    for (const mark of activeMarks) {
+      const card = document.createElement("article");
+      const header = document.createElement("header");
+      const name = document.createElement("strong");
+      name.textContent = mark.name;
+      const grade = document.createElement("span");
+      grade.textContent = `${mark.grade[0].toUpperCase() + mark.grade.slice(1)} · ${mark.capacityCost} Capacity · T${mark.effectiveMarkTier}`;
+      const effect = document.createElement("p");
+      effect.textContent = mark.effectSummary;
+      const provenance = document.createElement("small");
+      provenance.textContent = [
+        mark.profession,
+        mark.specialisation,
+        mark.maker?.name ? `by ${mark.maker.name}` : "",
+        mark.anchorSlotIds.length ? `Anchor: ${mark.anchorSlotIds.join(", ")}` : "",
+      ].filter(Boolean).join(" · ");
+      header.append(name, grade);
+      card.append(header, effect, provenance);
+      list.append(card);
+    }
+    details.append(summary, list);
+    strip.append(details);
+  }
   return strip;
 }
 

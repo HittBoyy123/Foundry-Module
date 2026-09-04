@@ -550,6 +550,24 @@ test("version 13 rules gain profession settings and canonical permanent flanking
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
 });
 
+test("version 16 placeholder profession stages migrate to the Artisan Mark catalogue", () => {
+  const legacy = cloneDefaultRulesConfig();
+  legacy.schemaVersion = 16;
+  const hellforging = legacy.professions.blacksmithing.specialties[0];
+  hellforging.stages.signature = {
+    label: "Hellforged Temper",
+    description: "Placeholder for creating infernal equipment.",
+  };
+  hellforging.stages.mastery = {
+    label: "My Custom Mastery",
+    description: "A table-approved custom mastery.",
+  };
+  const migrated = normalizeRulesConfig(legacy);
+  assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
+  assert.equal(migrated.professions.blacksmithing.specialties[0].stages.signature.label, "Infernal Temper");
+  assert.equal(migrated.professions.blacksmithing.specialties[0].stages.mastery.label, "My Custom Mastery");
+});
+
 test("crafting master switch hides controls and disables prepared effects", () => {
   const disabled = cloneDefaultRulesConfig();
   disabled.crafting.enabled = false;

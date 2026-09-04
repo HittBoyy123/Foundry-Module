@@ -77,6 +77,18 @@ import {
 } from "../content/gathering-presets.js";
 import { PROFESSION_DEFINITIONS, PROFESSION_SCHEMA_VERSION } from "../content/professions.js";
 import {
+  ARTISAN_MARK_SCHEMA_VERSION,
+  getArtisanMarkDefinition as getArtisanMarkDefinitionById,
+  listArtisanMarks as listArtisanMarkDefinitions,
+} from "../content/artisan-marks.js";
+import {
+  augmentRecipeWithArtisanMarks,
+  buildRecipeAnchorSlots,
+  calculateMarkLabourDays,
+  getArtisanProfile as buildArtisanProfile,
+  selectedMarkCapacity,
+} from "./artisan-marks.js";
+import {
   clearActorProfession,
   getActorProfession,
   getActorProfessionPlan,
@@ -126,6 +138,7 @@ export function createPublicApi() {
     craftingWorkbenchSchemaVersion: CRAFTING_WORKBENCH_SCHEMA_VERSION,
     gatheringSchemaVersion: GATHERING_SCHEMA_VERSION,
     professionSchemaVersion: PROFESSION_SCHEMA_VERSION,
+    artisanMarkSchemaVersion: ARTISAN_MARK_SCHEMA_VERSION,
     itemSchemaVersion: ITEM_SCHEMA_VERSION,
     rulesSchemaVersion: RULES_SCHEMA_VERSION,
     hexplorationPlanSchemaVersion: HEXPLORATION_PLAN_SCHEMA_VERSION,
@@ -260,6 +273,34 @@ export function createPublicApi() {
 
     listCraftingRecipeBands(group = "") {
       return listCraftingRecipeBands(group);
+    },
+
+    listArtisanMarks(options = {}) {
+      return listArtisanMarkDefinitions(options);
+    },
+
+    getArtisanMark(id) {
+      return getArtisanMarkDefinitionById(id);
+    },
+
+    getArtisanProfile(actor) {
+      return buildArtisanProfile(actor);
+    },
+
+    buildArtisanAnchorSlots(recipe) {
+      return buildRecipeAnchorSlots(recipe);
+    },
+
+    addArtisanMarksToRecipe(recipe, assignments = []) {
+      return augmentRecipeWithArtisanMarks(recipe, assignments);
+    },
+
+    getArtisanMarkCapacity(assignments, coreTier) {
+      return selectedMarkCapacity(assignments, coreTier);
+    },
+
+    getArtisanMarkLabourDays(assignments, coreTier) {
+      return calculateMarkLabourDays(assignments, coreTier);
     },
 
     compatibleCraftingRecipeBands(item) {

@@ -267,7 +267,11 @@ function normalizeProfessionsConfig(source, sourceSchemaVersion) {
             description: specialtyText(proficiency.description, fallback.proficiency.description),
           },
           stages: Object.fromEntries(SPECIALIZATION_STAGE_KEYS.map((key) => {
-            const configuredStage = isPlainObject(stages[key]) ? stages[key] : fallback.stages[key];
+            const suppliedStage = isPlainObject(stages[key]) ? stages[key] : fallback.stages[key];
+            const configuredStage = sourceSchemaVersion < 17
+              && /^Placeholder for\b/iu.test(String(suppliedStage.description ?? "").trim())
+              ? fallback.stages[key]
+              : suppliedStage;
             if (stages[key] !== undefined && !isPlainObject(stages[key])) {
               throw new ConfigValidationError(`professions.${definition.id}.${fallback.id}.stages.${key} must be an object.`);
             }

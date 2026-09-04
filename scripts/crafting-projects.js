@@ -2,9 +2,10 @@ import { getCraftingResourceData } from "./crafting-categories.js";
 import { evaluateCraftingRecipe, normalizeCraftingRecipe } from "./crafting-recipes.js";
 import { defaultProjectProgress } from "./recipe-catalog.js";
 import { MODULE_ID } from "./constants.js";
+import { normalizeCraftingState } from "./crafting-model.js";
 
-export const CRAFTING_PROJECT_SCHEMA_VERSION = 1;
-export const CRAFTING_WORKBENCH_SCHEMA_VERSION = 1;
+export const CRAFTING_PROJECT_SCHEMA_VERSION = 2;
+export const CRAFTING_WORKBENCH_SCHEMA_VERSION = 2;
 
 export const CRAFTING_PROJECT_STAGES = Object.freeze([
   "planning",
@@ -100,6 +101,32 @@ function normalizeAuditEntry(source, index) {
   };
 }
 
+function normalizeContributor(source, index) {
+  return {
+    actorUuid: text(source?.actorUuid ?? source?.uuid),
+    actorId: text(source?.actorId ?? source?.id),
+    name: text(source?.name, `Artisan ${index + 1}`),
+    img: text(source?.img, "icons/svg/mystery-man.svg"),
+    professionIds: [...new Set((Array.isArray(source?.professionIds) ? source.professionIds : [])
+      .map((value) => text(value))
+      .filter(Boolean))],
+    specializations: (Array.isArray(source?.specializations) ? source.specializations : [])
+      .filter((value) => value && typeof value === "object")
+      .map((value) => ({
+        professionId: text(value.professionId),
+        specializationId: text(value.specializationId ?? value.specialtyId),
+        name: text(value.name),
+      })),
+  };
+}
+
+function normalizeProjectMark(source, index, coreTier) {
+  return normalizeCraftingState({
+    core: { materialId: "metal", tier: coreTier },
+    artisanMarks: [{ ...source, id: text(source?.id, `project-mark-${index + 1}`) }],
+  }).artisanMarks[0];
+}
+
 export function progressForWorkBlock(days, degree) {
   const committed = integer(days, 1, 1, 5);
   switch (degree) {
@@ -120,6 +147,13 @@ export function normalizeCraftingProject(source) {
   const stage = CRAFTING_PROJECT_STAGES.includes(source.stage)
     ? source.stage
     : status === "draft" ? "planning" : "components";
+  const contributors = (Array.isArray(source.contributors) ? source.contributors : []).map(normalizeContributor);
+  if (contributors.length === 0 && (source.leadArtisanUuid || source.leadArtisanName)) {
+    contributors.push(normalizeContributor({
+      actorUuid: source.leadArtisanUuid,
+      name: source.leadArtisanName,
+    }, 0));
+  }
   return {
     schemaVersion: CRAFTING_PROJECT_SCHEMA_VERSION,
     id: id(source.id),
@@ -134,6 +168,9 @@ export function normalizeCraftingProject(source) {
     coreTier: integer(source.coreTier, recipe.tier, 1, 6),
     leadArtisanUuid: text(source.leadArtisanUuid),
     leadArtisanName: text(source.leadArtisanName),
+    contributors,
+    artisanMarks: (Array.isArray(source.artisanMarks) ? source.artisanMarks : [])
+      .map((mark, index) => normalizeProjectMark(mark, index, integer(source.coreTier, recipe.tier, 1, 6))),
     status,
     stage,
     reservations: (Array.isArray(source.reservations) ? source.reservations : []).map(normalizeReservation),

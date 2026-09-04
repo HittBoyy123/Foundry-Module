@@ -1,4 +1,4 @@
-export const CRAFTING_STATE_SCHEMA_VERSION = 1;
+export const CRAFTING_STATE_SCHEMA_VERSION = 2;
 
 export const CORE_TIER_PROGRESSION = Object.freeze({
   1: Object.freeze({ attack: 0, weaponDice: 0, spellcasting: 0, armor: 0, saves: 0, capacity: 1 }),
@@ -70,13 +70,17 @@ function normalizeMark(source, index) {
   const status = MARK_STATUSES.has(source?.status) ? source.status : "planned";
   return {
     id: text(source?.id, `mark-${index + 1}`),
+    definitionId: text(source?.definitionId, source?.id),
     name: text(source?.name, `Artisan Mark ${index + 1}`),
+    professionId: text(source?.professionId),
     profession: text(source?.profession),
+    specializationId: text(source?.specializationId),
     specialisation: text(source?.specialisation),
     grade,
     capacityCost: gradeDefinition.capacityCost,
     minimumTier: tier(source?.minimumTier),
     anchorSlotIds: stringArray(source?.anchorSlotIds),
+    anchorSlotTypes: stringArray(source?.anchorSlotTypes),
     minimumAnchorTier: tier(source?.minimumAnchorTier, gradeDefinition.minimumAnchorTier),
     requiresCoreTierAnchors: source?.requiresCoreTierAnchors === true,
     effectiveMarkTier: tier(source?.effectiveMarkTier),
@@ -86,6 +90,13 @@ function normalizeMark(source, index) {
     maker: source?.maker && typeof source.maker === "object" ? clone(source.maker) : null,
     effects: Array.isArray(source?.effects) ? clone(source.effects) : [],
     synergyTags: stringArray(source?.synergyTags),
+    stackGroup: text(source?.stackGroup),
+    scalingSource: text(source?.scalingSource, "fixed"),
+    requiredMaterialIds: stringArray(source?.requiredMaterialIds),
+    materialUnits: Math.max(0, Math.trunc(Number(source?.materialUnits) || 0)),
+    materialTierOffset: Math.min(0, Math.max(-5, Math.trunc(Number(source?.materialTierOffset) || 0))),
+    artisanDayMultiplier: Math.max(0, Math.trunc(Number(source?.artisanDayMultiplier) || 0)),
+    materialRequirementGroupId: text(source?.materialRequirementGroupId),
   };
 }
 
@@ -143,7 +154,18 @@ export function validateCraftingState(state) {
       });
     }
   }
-  const componentById = new Map(normalized.components.map((component) => [component.id, component]));
+  const componentById = new Map([
+    ["core", {
+      id: "core",
+      name: normalized.core.resourceName || "Core Material",
+      classification: "core",
+      slotType: "core",
+      materialId: normalized.core.materialId,
+      tier: normalized.core.tier,
+      structural: true,
+    }],
+    ...normalized.components.map((component) => [component.id, component]),
+  ]);
   for (const mark of normalized.artisanMarks) {
     if (mark.status === "suppressed") continue;
     if (mark.anchorSlotIds.length === 0) {

@@ -1,6 +1,8 @@
+import { getSpecialisationFeaturesByName } from "./artisan-marks.js";
+
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
-export const PROFESSION_SCHEMA_VERSION = 3;
+export const PROFESSION_SCHEMA_VERSION = 4;
 
 export const PF2E_PROFESSION_FEAT_UUIDS = Object.freeze({
   additionalLore: "Compendium.pf2e.feats-srd.Item.BocFD2KV0qgUC76x",
@@ -15,6 +17,13 @@ export const PF2E_PROFESSION_FEAT_UUIDS = Object.freeze({
 export const SPECIALIZATION_STAGE_KEYS = Object.freeze(["signature", "mastery", "legacy"]);
 
 function specialization(profession, id, label, description, stages) {
+  const authoritative = getSpecialisationFeaturesByName(profession, label);
+  const resolvedStages = authoritative?.stages
+    ? Object.fromEntries(SPECIALIZATION_STAGE_KEYS.map((key) => [
+      key,
+      [authoritative.stages[key].name, authoritative.stages[key].description],
+    ]))
+    : stages;
   return Object.freeze({
     id,
     label,
@@ -26,8 +35,8 @@ function specialization(profession, id, label, description, stages) {
     stages: Object.freeze(Object.fromEntries(SPECIALIZATION_STAGE_KEYS.map((key) => Object.freeze([
       key,
       Object.freeze({
-        label: stages[key][0],
-        description: stages[key][1],
+        label: resolvedStages[key][0],
+        description: resolvedStages[key][1],
       }),
     ])))),
   });
@@ -363,7 +372,7 @@ function professionDescription(profession) {
     "</ul>",
     "<p><strong>Specialisations</strong></p>",
     `<ol>${specialties}</ol>`,
-    "<p><em>Signature, Mastery, and Legacy entries are descriptive placeholders only. They do not add numerical modifiers until their rules are approved.</em></p>",
+    "<p><em>Signature, Mastery, and Legacy benefits follow the Wrathmaker profession rules. Artisan Marks are selected and anchored to items in the Wrathmaker Workbench.</em></p>",
   ].join("\n");
 }
 

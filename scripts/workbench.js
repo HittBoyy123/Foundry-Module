@@ -22,6 +22,15 @@ import {
 import { normalizeItemFlags } from "./model.js";
 import { normalizeDegreeOfSuccess } from "./gathering-model.js";
 import { openGatheringApplication } from "./gathering.js";
+import {
+  augmentRecipeWithArtisanMarks,
+  buildArtisanMarkAssignment,
+  buildRecipeAnchorSlots,
+  calculateMarkLabourDays,
+  evaluateArtisanMarkChoice,
+  getArtisanProfile,
+  selectedMarkCapacity,
+} from "./artisan-marks.js";
 
 let WorkbenchApplication = null;
 const WORKBENCH_SOCKET = `module.${MODULE_ID}`;
@@ -130,6 +139,124 @@ async function resolveBaseItem(uuid) {
   return document?.documentName === "Item" ? document : null;
 }
 
+async function resolveActor(uuid) {
+  if (!uuid || typeof globalThis.fromUuid !== "function") return null;
+  const document = await fromUuid(uuid);
+  return document?.documentName === "Actor" && ["character", "npc"].includes(document.type)
+    ? document
+    : null;
+}
+
+async function contributorProfiles(application) {
+  const uuids = [...new Set(Array.isArray(application.workbenchState.contributorUuids)
+    ? application.workbenchState.contributorUuids.filter(Boolean)
+    : [])];
+  const actors = (await Promise.all(uuids.map(resolveActor))).filter(Boolean);
+  const profiles = actors.map(getArtisanProfile).filter((profile) => profile?.professions.length > 0);
+  application.workbenchState.contributorUuids = profiles.map((profile) => profile.actorUuid);
+  if (!profiles.some((profile) => profile.actorUuid === application.workbenchState.leadArtisanUuid)) {
+    application.workbenchState.leadArtisanUuid = profiles[0]?.actorUuid ?? "";
+  }
+  return profiles;
+}
+
+function reconcileMarkAssignments(application, profiles, recipe, itemGroup, coreTier) {
+  if (!recipe) {
+    application.workbenchState.selectedMarks = [];
+    return { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], coreTier) };
+  }
+  const anchorSlots = buildRecipeAnchorSlots(recipe);
+  const requested = Array.isArray(application.workbenchState.selectedMarks)
+    ? application.workbenchState.selectedMarks
+    : [];
+  const assignments = [];
+  for (const choice of requested) {
+    const profile = profiles.find((entry) => entry.actorUuid === choice.actorUuid);
+    const mark = profile?.marks.find((entry) => entry.id === choice.definitionId);
+    if (!profile || !mark) continue;
+    const availability = evaluateArtisanMarkChoice(mark, {
+      itemGroup,
+      coreTier,
+      anchorSlots,
+      capacityUsed: assignments.reduce((total, entry) => total + entry.capacityCost, 0),
+      selectedDefinitionIds: assignments.map((entry) => entry.definitionId),
+      selectedStackGroups: assignments.map((entry) => entry.stackGroup).filter(Boolean),
+    });
+    if (!availability.eligible) continue;
+    const anchor = availability.anchors.find((entry) => entry.id === choice.anchorSlotId)
+      ?? availability.anchors[0];
+    if (!anchor) continue;
+    assignments.push(buildArtisanMarkAssignment(mark, profile, anchor, coreTier));
+  }
+  application.workbenchState.selectedMarks = assignments.map((assignment) => ({
+    definitionId: assignment.definitionId,
+    actorUuid: assignment.maker.actorUuid,
+    anchorSlotId: assignment.anchorSlotIds[0],
+  }));
+  return { assignments, anchorSlots, capacity: selectedMarkCapacity(assignments, coreTier) };
+}
+
+function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier, leadArtisanUuid) {
+  const maximum = selectedMarkCapacity(assignments, coreTier).maximum;
+  return profiles.map((profile) => {
+    const marks = profile.marks.map((mark) => {
+      const selected = assignments.find((entry) => (
+        entry.definitionId === mark.id && entry.maker?.actorUuid === profile.actorUuid
+      ));
+      const otherAssignments = assignments.filter((entry) => entry !== selected);
+      const availability = evaluateArtisanMarkChoice(mark, {
+        itemGroup,
+        coreTier,
+        anchorSlots,
+        capacityUsed: otherAssignments.reduce((total, entry) => total + entry.capacityCost, 0),
+        selectedDefinitionIds: otherAssignments.map((entry) => entry.definitionId),
+        selectedStackGroups: otherAssignments.map((entry) => entry.stackGroup).filter(Boolean),
+      });
+      const chosenAnchorId = selected?.anchorSlotIds[0] ?? availability.defaultAnchorId;
+      return {
+        ...mark,
+        gradeLabel: mark.grade[0].toUpperCase() + mark.grade.slice(1),
+        selected: Boolean(selected),
+        eligible: availability.eligible || Boolean(selected),
+        reason: availability.reason,
+        chosenAnchorId,
+        anchors: availability.anchors.map((anchor) => ({
+          ...anchor,
+          selected: anchor.id === chosenAnchorId,
+        })),
+        materialSummary: mark.materialUnits > 0
+          ? `${mark.materialUnits} unit${mark.materialUnits === 1 ? "" : "s"} of ${mark.requiredMaterialIds.join(" or ").replaceAll("-", " ")}`
+          : "Workshop consumables only",
+      };
+    });
+    return {
+      actorUuid: profile.actorUuid,
+      name: profile.name,
+      img: profile.img,
+      isLead: profile.actorUuid === leadArtisanUuid,
+      professionSummary: profile.professions.map((entry) => entry.name).join(" · "),
+      specializations: profile.specializations.map((entry) => ({
+        ...entry,
+        signature: entry.stages?.signature
+          ? { name: entry.stages.signature.label, description: entry.stages.signature.description }
+          : entry.features?.stages?.signature,
+        mastery: entry.stages?.mastery
+          ? { name: entry.stages.mastery.label, description: entry.stages.mastery.description }
+          : entry.features?.stages?.mastery,
+        legacy: entry.stages?.legacy
+          ? { name: entry.stages.legacy.label, description: entry.stages.legacy.description }
+          : entry.features?.stages?.legacy,
+      })),
+      availableMarks: marks.filter((mark) => mark.eligible),
+      unavailableMarks: marks.filter((mark) => !mark.eligible),
+      selectedCapacity: assignments
+        .filter((entry) => entry.maker?.actorUuid === profile.actorUuid)
+        .reduce((total, entry) => total + entry.capacityCost, 0),
+      maximumCapacity: maximum,
+    };
+  });
+}
+
 function recipeGroupContext(group, config) {
   const options = group.options.map((option) => {
     const range = option.tierMode === "minimum" && option.maximumTier > option.tier
@@ -168,22 +295,25 @@ async function workbenchContext(application) {
     ? application.workbenchState.materialId
     : selectedBand?.coreMaterialIds[0] ?? "";
   const tier = Math.min(6, Math.max(1, Math.trunc(Number(application.workbenchState.tier) || 1)));
-  const members = partyMembers(party);
-  application.workbenchState.artisanId = members.some((actor) => actor.id === application.workbenchState.artisanId)
-    ? application.workbenchState.artisanId
-    : members.find((actor) => game.user.isGM || actor.isOwner)?.id ?? members[0]?.id ?? "";
+  const profiles = await contributorProfiles(application);
 
   let recipe = null;
+  let baseRecipe = null;
   let evaluation = null;
+  let markPlan = { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], tier) };
   let requiredProgress = Math.max(1, Math.trunc(Number(application.workbenchState.requiredProgress) || 0));
   if (baseItem && selectedBand) {
     try {
-      recipe = buildCraftingRecipeFromBand(selectedBand.id, {
+      baseRecipe = buildCraftingRecipeFromBand(selectedBand.id, {
         targetItem: baseItem,
         tier,
         coreMaterialId: application.workbenchState.materialId,
       });
-      if (!application.workbenchState.requiredProgress) requiredProgress = defaultProjectProgress(recipe);
+      markPlan = reconcileMarkAssignments(application, profiles, baseRecipe, selectedBand.group, tier);
+      recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments);
+      if (!application.workbenchState.requiredProgress) {
+        requiredProgress = defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, tier);
+      }
       evaluation = evaluateCraftingRecipe(recipe, {
         targetItem: baseItem,
         inventoryItems: virtualUnreservedInventory(party, workbench.projects),
@@ -212,6 +342,8 @@ async function workbenchContext(application) {
       statusClass: `is-${project.status}`,
       progressPercent: Math.round((project.currentProgress / project.requiredProgress) * 100),
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
+      contributorSummary: project.contributors.map((entry) => entry.name).join(", "),
+      markCount: project.artisanMarks.length,
       canWork: craftingEnabled && canEdit && ["reserved", "active"].includes(project.status),
       canComplete: craftingEnabled && canEdit && project.status === "ready",
       canCancel: canEdit && !["completed", "cancelled"].includes(project.status),
@@ -255,17 +387,44 @@ async function workbenchContext(application) {
         ?? `Tier ${value}`,
       selected: value === tier,
     })),
-    artisans: members.map((actor) => ({
-      id: actor.id,
-      name: actor.name,
-      selected: actor.id === application.workbenchState.artisanId,
+    contributors: profiles.map((profile) => ({
+      actorUuid: profile.actorUuid,
+      name: profile.name,
+      img: profile.img,
+      professionSummary: profile.professions.map((entry) => entry.name).join(" · "),
+      isLead: profile.actorUuid === application.workbenchState.leadArtisanUuid,
     })),
+    markTrays: selectedBand ? markTrayContext(
+      profiles,
+      markPlan.assignments,
+      markPlan.anchorSlots,
+      selectedBand.group,
+      tier,
+      application.workbenchState.leadArtisanUuid,
+    ) : [],
+    selectedMarks: markPlan.assignments,
+    markCapacity: {
+      ...markPlan.capacity,
+      segments: Array.from({ length: markPlan.capacity.maximum }, (_value, index) => ({
+        used: index < markPlan.capacity.used,
+      })),
+    },
+    markLabourDays: calculateMarkLabourDays(markPlan.assignments, tier),
     draft: {
       name: application.workbenchState.projectName || (baseItem ? `${materialLabel(application.workbenchState.materialId, tier)} ${baseItem.name}` : ""),
       requiredProgress,
     },
     preview,
-    canCreate: Boolean(craftingEnabled && canEdit && baseItem && selectedBand && application.workbenchState.artisanId && preview?.craftable),
+    canCreate: Boolean(
+      craftingEnabled
+      && canEdit
+      && baseItem
+      && selectedBand
+      && profiles.length
+      && application.workbenchState.leadArtisanUuid
+      && preview?.craftable
+      && !markPlan.capacity.overCapacity
+    ),
     projects,
     projectCount: projects.length,
     activeProjectCount,
@@ -276,13 +435,22 @@ async function createAndReserve(application) {
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const baseItem = await resolveBaseItem(application.workbenchState.baseItemUuid);
   const band = getCraftingRecipeBand(application.workbenchState.bandId);
-  const artisan = partyMembers(party).find((entry) => entry.id === application.workbenchState.artisanId);
-  if (!party || !baseItem || !band || !artisan) throw new Error(localize("CMT.Workbench.IncompleteProject"));
-  const recipe = buildCraftingRecipeFromBand(band.id, {
+  const profiles = await contributorProfiles(application);
+  const lead = profiles.find((entry) => entry.actorUuid === application.workbenchState.leadArtisanUuid);
+  if (!party || !baseItem || !band || !lead) throw new Error(localize("CMT.Workbench.IncompleteProject"));
+  const baseRecipe = buildCraftingRecipeFromBand(band.id, {
     targetItem: baseItem,
     tier: application.workbenchState.tier,
     coreMaterialId: application.workbenchState.materialId,
   });
+  const markPlan = reconcileMarkAssignments(
+    application,
+    profiles,
+    baseRecipe,
+    band.group,
+    application.workbenchState.tier,
+  );
+  const recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments);
   const workbench = projectState(party);
   let project = createCraftingProject({
     name: application.workbenchState.projectName || `${materialLabel(application.workbenchState.materialId, application.workbenchState.tier)} ${baseItem.name}`,
@@ -294,9 +462,23 @@ async function createAndReserve(application) {
     recipe,
     coreMaterialId: application.workbenchState.materialId,
     coreTier: application.workbenchState.tier,
-    leadArtisanUuid: artisan.uuid,
-    leadArtisanName: artisan.name,
-    requiredProgress: application.workbenchState.requiredProgress || defaultProjectProgress(recipe),
+    leadArtisanUuid: lead.actorUuid,
+    leadArtisanName: lead.name,
+    contributors: profiles.map((profile) => ({
+      actorUuid: profile.actorUuid,
+      actorId: profile.actorId,
+      name: profile.name,
+      img: profile.img,
+      professionIds: profile.professions.map((profession) => profession.id),
+      specializations: profile.specializations.map((specialty) => ({
+        professionId: specialty.professionId,
+        specializationId: specialty.specializationId,
+        name: specialty.name,
+      })),
+    })),
+    artisanMarks: markPlan.assignments,
+    requiredProgress: application.workbenchState.requiredProgress
+      || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier),
   }, userAuditIdentity());
   project = reserveCraftingProject(project, {
     inventoryItems: party.items,
@@ -306,6 +488,7 @@ async function createAndReserve(application) {
   await saveWorkbench(party, replaceProject(workbench, project));
   application.workbenchState.tab = "projects";
   application.workbenchState.projectName = "";
+  application.workbenchState.selectedMarks = [];
   ui.notifications.info(format("CMT.Workbench.ProjectCreated", { project: project.name }, `${project.name} was created and its resources were reserved.`));
 }
 
@@ -384,16 +567,17 @@ async function completeProjectTransaction(party, projectId, auditUser) {
   const componentGroups = new Map();
   for (const reservation of current.reservations.filter((entry) => entry.groupId !== "core")) {
     const key = `${reservation.groupId}|${reservation.materialId}|${reservation.tier}|${reservation.variantId}`;
+    const isMarkMaterial = reservation.groupId.startsWith("mark-");
     const component = componentGroups.get(key) ?? {
-      id: `${current.id}-${reservation.groupId}-${reservation.materialId}-${reservation.tier}`,
+      id: reservation.groupId,
       name: reservation.groupLabel,
-      classification: "required-secondary",
-      slotType: reservation.groupId,
+      classification: isMarkMaterial ? "special-treatment" : "required-secondary",
+      slotType: isMarkMaterial ? "artisan-mark-material" : reservation.groupId,
       materialId: reservation.materialId,
       tier: reservation.tier,
       quantityRequired: 0,
       quantityCommitted: 0,
-      structural: true,
+      structural: !isMarkMaterial,
       tags: [reservation.materialId, `tier-${reservation.tier}`],
       contributor: null,
     };
@@ -401,6 +585,21 @@ async function completeProjectTransaction(party, projectId, auditUser) {
     component.quantityCommitted += reservation.units;
     componentGroups.set(key, component);
   }
+  const tierForAnchor = (anchorId) => {
+    if (anchorId === "core") return current.coreTier;
+    const tiers = current.reservations
+      .filter((reservation) => reservation.groupId === anchorId)
+      .map((reservation) => reservation.tier);
+    return tiers.length ? Math.min(...tiers) : 1;
+  };
+  const completedMarks = current.artisanMarks.map((mark) => ({
+    ...mark,
+    status: "completed",
+    effectiveMarkTier: Math.min(
+      current.coreTier,
+      ...mark.anchorSlotIds.map(tierForAnchor),
+    ),
+  }));
   const crafting = {
     ...(priorFlags.crafting ?? {}),
     core: {
@@ -425,6 +624,12 @@ async function completeProjectTransaction(party, projectId, auditUser) {
       )),
       ...componentGroups.values(),
     ],
+    artisanMarks: [
+      ...(priorFlags.crafting?.artisanMarks ?? []).filter((existing) => (
+        !completedMarks.some((mark) => mark.definitionId === existing.definitionId)
+      )),
+      ...completedMarks,
+    ],
     provenance: [
       ...(priorFlags.crafting?.provenance ?? []),
       {
@@ -434,6 +639,18 @@ async function completeProjectTransaction(party, projectId, auditUser) {
         artisanName: current.leadArtisanName,
         completedAt: Date.now(),
         downtimeSpent: current.downtimeSpent,
+        contributors: current.contributors.map((contributor) => ({
+          actorUuid: contributor.actorUuid,
+          name: contributor.name,
+          professionIds: contributor.professionIds,
+        })),
+        artisanMarks: completedMarks.map((mark) => ({
+          definitionId: mark.definitionId,
+          name: mark.name,
+          maker: mark.maker,
+          anchorSlotIds: mark.anchorSlotIds,
+          effectiveMarkTier: mark.effectiveMarkTier,
+        })),
       },
     ],
   };
@@ -638,7 +855,11 @@ export function createWorkbenchApplication() {
         bandId: options.bandId ?? "",
         materialId: options.materialId ?? "",
         tier: Number(options.tier) || 1,
-        artisanId: options.artisanId ?? "",
+        contributorUuids: Array.isArray(options.contributorUuids)
+          ? [...options.contributorUuids]
+          : options.artisanId ? [`Actor.${options.artisanId}`] : [],
+        leadArtisanUuid: options.leadArtisanUuid ?? "",
+        selectedMarks: [],
         projectName: "",
         requiredProgress: 0,
       };
@@ -665,7 +886,6 @@ export function createWorkbenchApplication() {
           recipe: "bandId",
           material: "materialId",
           tier: "tier",
-          artisan: "artisanId",
           "project-name": "projectName",
           "required-progress": "requiredProgress",
         }[field.dataset.cmtWorkbenchField];
@@ -676,7 +896,9 @@ export function createWorkbenchApplication() {
             ? Number(field.value)
             : field.value;
           if (stateKey === "partyId") {
-            this.workbenchState.artisanId = "";
+            this.workbenchState.contributorUuids = [];
+            this.workbenchState.leadArtisanUuid = "";
+            this.workbenchState.selectedMarks = [];
             this.workbenchState.baseItemUuid = "";
           }
           if (["partyId", "bandId", "materialId", "tier"].includes(stateKey)) {
@@ -708,6 +930,82 @@ export function createWorkbenchApplication() {
           ui.notifications.error(error.message);
         }
       });
+      const contributorDrop = root.querySelector('[data-cmt-workbench-drop="contributors"]');
+      contributorDrop?.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        contributorDrop.classList.add("is-dragover");
+      });
+      contributorDrop?.addEventListener("dragleave", () => contributorDrop.classList.remove("is-dragover"));
+      contributorDrop?.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        contributorDrop.classList.remove("is-dragover");
+        try {
+          const data = TextEditor.getDragEventData(event);
+          const uuid = data.uuid ?? (data.type === "Actor" && data.id ? `Actor.${data.id}` : "");
+          const actor = await resolveActor(uuid);
+          const profile = getArtisanProfile(actor);
+          if (!profile?.professions.length) {
+            throw new Error("Drop a PC or NPC with at least one Wrathmaker profession.");
+          }
+          if (!this.workbenchState.contributorUuids.includes(profile.actorUuid)) {
+            this.workbenchState.contributorUuids.push(profile.actorUuid);
+          }
+          this.workbenchState.leadArtisanUuid ||= profile.actorUuid;
+          await this.render({ force: true });
+        } catch (error) {
+          ui.notifications.error(error.message);
+        }
+      });
+      for (const button of root.querySelectorAll("[data-cmt-contributor-remove]")) {
+        button.addEventListener("click", async () => {
+          const uuid = button.dataset.cmtContributorRemove;
+          this.workbenchState.contributorUuids = this.workbenchState.contributorUuids
+            .filter((entry) => entry !== uuid);
+          this.workbenchState.selectedMarks = this.workbenchState.selectedMarks
+            .filter((entry) => entry.actorUuid !== uuid);
+          if (this.workbenchState.leadArtisanUuid === uuid) {
+            this.workbenchState.leadArtisanUuid = this.workbenchState.contributorUuids[0] ?? "";
+          }
+          this.workbenchState.requiredProgress = 0;
+          await this.render({ force: true });
+        });
+      }
+      for (const control of root.querySelectorAll("[data-cmt-lead-artisan]")) {
+        control.addEventListener("change", async () => {
+          if (control.checked) this.workbenchState.leadArtisanUuid = control.value;
+          await this.render({ force: true });
+        });
+      }
+      for (const button of root.querySelectorAll("[data-cmt-mark-toggle]")) {
+        button.addEventListener("click", async () => {
+          const definitionId = button.dataset.cmtMarkToggle;
+          const actorUuid = button.dataset.cmtActorUuid;
+          const existing = this.workbenchState.selectedMarks
+            .findIndex((entry) => entry.definitionId === definitionId);
+          if (existing >= 0) {
+            this.workbenchState.selectedMarks.splice(existing, 1);
+          } else {
+            this.workbenchState.selectedMarks.push({
+              definitionId,
+              actorUuid,
+              anchorSlotId: button.dataset.cmtAnchorId,
+            });
+          }
+          this.workbenchState.requiredProgress = 0;
+          await this.render({ force: true });
+        });
+      }
+      for (const select of root.querySelectorAll("[data-cmt-mark-anchor]")) {
+        select.addEventListener("change", async () => {
+          const selected = this.workbenchState.selectedMarks.find((entry) => (
+            entry.definitionId === select.dataset.cmtMarkAnchor
+            && entry.actorUuid === select.dataset.cmtActorUuid
+          ));
+          if (selected) selected.anchorSlotId = select.value;
+          this.workbenchState.requiredProgress = 0;
+          await this.render({ force: true });
+        });
+      }
       root.querySelector('[data-cmt-workbench-action="clear-base"]')?.addEventListener("click", async () => {
         this.workbenchState.baseItemUuid = "";
         this.workbenchState.bandId = "";

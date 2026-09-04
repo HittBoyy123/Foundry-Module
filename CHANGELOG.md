@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 — Artisan Mark Workbench (2026-09-04)
+
+- Added all 253 Artisan Marks from the Wrathmaker Notion guide: 55 universal profession Marks and six Marks for each of the 33 specialisations.
+- Replaced every placeholder Signature, Mastery, and Legacy entry with the completed rules text and migrated unchanged placeholder world settings safely.
+- Added drag-and-drop PC/NPC contributors to the Workbench, with a selectable Lead Artisan and profession-aware Mark trays.
+- Added live shared Capacity, compatible component Anchors, exact unavailable reasons, specialist-resource requirements, and Mark labour to project planning.
+- Persisted contributors, Mark assignments, effects, Anchors, effective Tier, and maker provenance through reservation, downtime, completion, and final item creation.
+- Added an Applied Artisan Marks section to finished PF2e item sheets without changing the underlying PF2e base item data.
+
 ## 0.17.0 — player Workbench (2026-09-04)
 
 - Added a separate PF2e-styled Craft/Gather/Projects Workbench available from the party sheet, Items Directory, and Module Settings.

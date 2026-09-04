@@ -38,7 +38,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.17.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.18.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -134,7 +134,7 @@ Shields use the same Core progression as a durability multiplier: each progressi
 
 Metal, wood, stone, leather/hide, herbs/mushrooms, and mana crystals are available as configurable Core Materials for weapons, armor, and shields; Metal and Wood are also available for spell focuses. A weapon receives its Core attack modifier and extra damage dice. Equipped armor receives the Core modifier to AC and all three saves. The default modifier type is **untyped**, and the GM can change flat Core modifiers to item, status, or circumstance in the material editor without changing the module code.
 
-Artisan Marks are generic versioned records rather than hard-coded effects. Minor, Standard, Major, and Superior Marks cost **0, 1, 2, and 3 Capacity**, and require an Anchor of at least **Tier 1, 2, 3, and 4** respectively. Required structural secondary components must be no lower than **Core Tier − 2**. The model reports missing or under-tier Anchors and over-capacity designs before a future Workbench commits them.
+Wrathmaker includes all **253 Artisan Marks** from the campaign guide: five universal Marks for each of the eleven professions and six specialist Marks for each of the 33 specialisations. Minor, Standard, Major, and Superior Marks cost **0, 1, 2, and 3 Capacity**, require Anchors of at least **Tier 1, 2, 3, and 4**, and add their configured specialist stock and artisan-days to the project. Required structural secondary components remain no lower than **Core Tier − 2**.
 
 ## Crafting resources and recipe categories
 
@@ -194,13 +194,13 @@ The public API exposes both the non-destructive recipe preview and the persisten
 
 Open **Wrathmaker Workbench** from the Items Directory header or its Module Settings entry. Its three tabs follow the campaign guide:
 
-- **Craft** accepts a dragged PF2e weapon, armor, shield, or Wrathmaker Spell Focus. Choose its broad recipe, Core Material, Core Tier, Lead Artisan, and Required Progress. The live preview shows each Party Stash requirement and subtracts stock already reserved by another active project.
+- **Craft** accepts a dragged PF2e weapon, armor, shield, or Wrathmaker Spell Focus. Choose its broad recipe, Core Material, and Core Tier, then drag in any participating PCs or NPCs. Each contributor exposes only the universal and specialisation Marks they know which can apply to the current item. Choose a Lead Artisan for the Crafting checks; the live preview spends Capacity immediately, selects a valid component Anchor, adds specialist stock and labour, and subtracts stock already reserved by another active project.
 - **Gather** opens the existing region-aware gathering screen; there is no second Wrathmaker inventory.
 - **Projects** tracks status, progress, artisan-days, exact reserved stacks, and the project history for the selected PF2e party.
 
 Creating a project reserves the exact source stacks but leaves their quantities visibly present in the native Party Stash. Those reserved quantities cannot satisfy another project. Cancelling releases unconsumed reservations. A Lead Artisan advances the project by rolling Crafting after committing a **1–5 day Work Block**: Critical Success produces 150% Progress rounded up, Success 100%, Failure 50% rounded down (minimum 1 when at least 2 days were worked), and Critical Failure 0.
 
-When the required Progress is complete, **Complete Project** opens a final confirmation listing every Party Stash quantity before and after consumption. Wrathmaker sends a player's confirmation to one active GM, locks that Party Stash against overlapping completions, and checks the live stacks again; changed, missing, or renamed resource data blocks completion. Once confirmed, the materials are updated, a real PF2e item is created in the party's existing Stash with its Core and maker provenance, and the project becomes read-only history. If item creation or project saving fails, the inventory update is rolled back. An active GM must therefore be connected when a player completes a project.
+When the required Progress is complete, **Complete Project** opens a final confirmation listing every Party Stash quantity before and after consumption. Wrathmaker sends a player's confirmation to one active GM, locks that Party Stash against overlapping completions, and checks the live stacks again; changed, missing, or renamed resource data blocks completion. Once confirmed, the materials are updated, a real PF2e item is created in the party's existing Stash with its Core, contributors, Marks, Anchors, effect text, effective Tier, and maker provenance, and the project becomes read-only history. The completed item's sheet exposes these rules under **Applied Artisan Marks**. If item creation or project saving fails, the inventory update is rolled back. An active GM must therefore be connected when a player completes a project.
 
 Broad recipes currently cover the campaign guide's weapon groups, shield chassis, light/medium/heavy armor constructions, and spell-focus forms. Required structural secondaries accept material from **Core Tier − 2** through the Core Tier, while the Core itself must match the selected Tier exactly.
 
@@ -468,6 +468,9 @@ Available methods:
 - `evaluateCraftingRecipe(recipe, { targetItem, inventoryItems })`
 - `normalizeCraftingState(state, defaults)` / `validateCraftingState(state)`
 - `calculateArtisanCapacity(state)` / `getCoreTierProgression(tier)`
+- `listArtisanMarks(options)` / `getArtisanMark(id)` / `getArtisanProfile(actor)`
+- `buildArtisanAnchorSlots(recipe)` / `addArtisanMarksToRecipe(recipe, assignments)`
+- `getArtisanMarkCapacity(assignments, coreTier)` / `getArtisanMarkLabourDays(assignments, coreTier)`
 - `craftingRecipeSchemaVersion` and `craftingStateSchemaVersion` report the independent crafting schema versions.
 - `listGatheringEnvironments()` / `listGatheringTasks(environmentId)`
 - `validateGatheringEnvironment(environment)` / `validateGatheringTask(task)`
@@ -483,4 +486,4 @@ The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry i
 
 ## Current scope
 
-Wrathmaker currently automates Core Material progression for weapons, armor, shields, and spell focuses; exposes Make & Marks summaries; validates generic components, Artisan Marks, Capacity, Anchors, synergies, and maker provenance; provides priced Resource Units, gathering, broad recipe selection, persistent Party Stash reservations, downtime project advancement, explicit final consumption, and real PF2e result creation. Crafting Edge, Masterstroke, Complication, facility, parallel-contribution, and full Mark-selection automation remain later Workbench layers.
+Wrathmaker currently automates Core Material progression for weapons, armor, shields, and spell focuses; provides contributor-aware selection for the complete Artisan Mark catalogue; validates Capacity and Anchors; reserves Mark materials; tracks Mark labour and provenance; and writes the selected rules onto completed PF2e items. Mark effects are preserved as authoritative rules text; individual PF2e Rule Element automation is only added where a Mark can be implemented safely without inventing unresolved targeting, activation, or campaign-state behaviour. Crafting Edge, Masterstroke, Complication, facility, and parallel-contribution resolution remain later Workbench layers.

@@ -323,7 +323,7 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     const lore = grants.find((item) => item.type === "lore");
     assert.equal(lore.system.proficient.value, 2);
     assert.equal(lore.name, "Blacksmithing");
-    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 3);
+    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 4);
     assert.match(profession.system.description.value, /expert at level 3/i);
     const specialty = grants.find((item) => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting");
     assert.equal(specialty.system.rules[0].selection, "blacksmithing");

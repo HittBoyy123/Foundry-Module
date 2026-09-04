@@ -154,6 +154,12 @@ test("Workbench exposes recipe planning, reservations, downtime, and confirmed c
   assert.match(template, /data-cmt-workbench-tab="gather"/);
   assert.match(template, /data-cmt-workbench-tab="projects"/);
   assert.match(template, /data-cmt-workbench-drop="base-item"/);
+  assert.match(template, /data-cmt-workbench-drop="contributors"/);
+  assert.match(template, /data-cmt-mark-toggle/);
+  assert.match(template, /data-cmt-mark-anchor/);
+  assert.match(template, /Signature/);
+  assert.match(application, /augmentRecipeWithArtisanMarks/);
+  assert.match(application, /selectedMarks/);
   assert.match(template, /data-cmt-project-action="roll-work"/);
   assert.match(template, /data-cmt-project-action="complete"/);
   assert.match(chatTemplate, /cmt-crafting-chat/);

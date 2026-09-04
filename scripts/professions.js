@@ -552,6 +552,19 @@ function professionSpecialtyEntries(actor) {
     .filter(Boolean);
 }
 
+/** Return every currently active Wrathmaker specialisation owned by an actor. */
+export function getActorProfessionSpecialties(actor) {
+  return professionSpecialtyEntries(actor).map((entry) => ({
+    professionId: entry.professionId,
+    specialtyId: entry.specialtyId,
+    milestoneLevel: entry.milestoneLevel,
+    name: entry.name,
+    description: entry.description,
+    proficiency: clone(entry.proficiency),
+    stages: clone(entry.stages),
+  }));
+}
+
 function grantKey(grant) {
   if (!grant) return "";
   return [grant.kind, grant.professionId, grant.specialtyId ?? "", grant.milestoneLevel ?? ""].join(":");

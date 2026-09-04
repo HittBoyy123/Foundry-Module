@@ -19,7 +19,7 @@ test("the crafting compendium provides one configurable held spell focus", () =>
   assert.equal(focus.system.traits.otherTags.includes("spell-focus"), true);
   assert.equal(focus.system.rules.length, 0);
   assert.equal(focus.flags[MODULE_ID].schemaVersion, 4);
-  assert.equal(focus.flags[MODULE_ID].crafting.schemaVersion, 1);
+  assert.equal(focus.flags[MODULE_ID].crafting.schemaVersion, 2);
   assert.deepEqual(focus.flags[MODULE_ID].crafting.core, { materialId: "metal", tier: 1 });
   assert.deepEqual(focus.flags[MODULE_ID].crafting.artisanMarks, []);
   assert.match(focus.system.description.value, /spell attack and spell DC progression/i);

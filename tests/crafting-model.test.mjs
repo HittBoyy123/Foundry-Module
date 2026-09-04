@@ -91,9 +91,9 @@ test("validation enforces structural floors, required Anchors, Anchor Tiers, and
 
 test("the public API exposes the versioned crafting-state foundation", () => {
   const api = createPublicApi();
-  assert.equal(api.craftingStateSchemaVersion, 1);
-  assert.equal(api.craftingProjectSchemaVersion, 1);
-  assert.equal(api.craftingWorkbenchSchemaVersion, 1);
+  assert.equal(api.craftingStateSchemaVersion, 2);
+  assert.equal(api.craftingProjectSchemaVersion, 2);
+  assert.equal(api.craftingWorkbenchSchemaVersion, 2);
   assert.equal(api.getCoreTierProgression(6).capacity, 8);
   assert.equal(api.calculateArtisanCapacity({ core: { tier: 1 } }).maximum, 1);
   assert.equal(api.validateCraftingState({ core: { tier: 1 } }).valid, true);

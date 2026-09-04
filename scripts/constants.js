@@ -2,7 +2,7 @@ import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 16;
+export const RULES_SCHEMA_VERSION = 17;
 export const ITEM_SCHEMA_VERSION = 4;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -16,7 +16,7 @@ export const DEFAULT_ITEM_FLAGS = Object.freeze({
     unitsCommitted: 0,
   }),
   crafting: Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: 2,
     core: Object.freeze({ materialId: "metal", tier: 1 }),
     components: Object.freeze([]),
     artisanMarks: Object.freeze([]),
