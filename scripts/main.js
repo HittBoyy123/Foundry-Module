@@ -9,6 +9,7 @@ import { registerGathering } from "./gathering.js";
 import { installHexploration } from "./hexploration.js";
 import { installRuleElementBridge, registerPreparedItemHooks } from "./integration.js";
 import { registerItemSheetHooks } from "./item-sheet.js";
+import { registerItemChatHooks } from "./item-chat.js";
 import { registerProfessionHooks } from "./professions.js";
 import { registerWorkbench } from "./workbench.js";
 
@@ -61,6 +62,7 @@ Hooks.once("init", () => {
   hexplorationInstalled = installHexploration(getRulesConfig);
   registerPreparedItemHooks(getRulesConfig);
   registerItemSheetHooks(getRulesConfig);
+  registerItemChatHooks(getRulesConfig);
   professionsInstalled = registerProfessionHooks();
 
   const module = game.modules.get(MODULE_ID);

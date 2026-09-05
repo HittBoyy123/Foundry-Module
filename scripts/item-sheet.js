@@ -149,6 +149,27 @@ function hideRuneControls(root) {
   }
 }
 
+function placeMakeAndMarks(root, strip, fallback) {
+  const nativePanel = root.querySelector("fieldset.material-runes")
+    ?? root.querySelector('[data-property="system.material"], [name="system.material.type"], [name^="system.runes."]')?.closest("fieldset");
+  if (nativePanel) {
+    // Keep the native inputs and their values intact for PF2e form submission.
+    nativePanel.hidden = true;
+    nativePanel.dataset.cmtReplacedMaterialRunes = "true";
+    strip.classList.add("cmt-make-marks-details");
+    nativePanel.before(strip);
+    return;
+  }
+  const details = root.querySelector('.tab[data-tab="details"], .tab.details');
+  if (details) {
+    strip.classList.add("cmt-make-marks-details");
+    details.append(strip);
+  } else {
+    // Compatibility with alternate physical-item sheets.
+    fallback.after(strip);
+  }
+}
+
 function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
   const result = calculateItemEffects({
     itemType: craftingItemType,
@@ -304,7 +325,7 @@ function insertControls(application, item, root, config, craftingItemType) {
   anchor.after(...rows);
   const makeAndMarks = createMakeAndMarksStrip(item, rawFlags, config, craftingItemType);
   if (makeAndMarks) {
-    rows.at(-1).after(makeAndMarks);
+    placeMakeAndMarks(root, makeAndMarks, rows.at(-1));
     hideRuneControls(root);
   }
   const updateDragonScaleControls = () => {

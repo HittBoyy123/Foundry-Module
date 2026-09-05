@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.1 — Item Make & Marks presentation (2026-09-05)
+
+- Moved Make & Marks from the physical-item sidebar into the Details panel's Precious Material and Runes area. Native fields remain intact but hidden while the replacement is displayed.
+- Added a compact material/Tier and Artisan Mark count to crafted item chat cards between traits and description. Hovering the count lists only Mark names and makers; unidentified or hidden messages do not disclose this information.
+
 ## 0.19.0 — Compact artisan Workbench (2026-09-05)
 
 - Replaced the expanding contributor list with six stable artisan slots in a three-by-two grid. Core and secondary artisans must have the selected material expertise; recipes validate all required structural materials.

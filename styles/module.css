@@ -1234,6 +1234,26 @@
   margin: 0 0 0.3rem;
 }
 
+[data-cmt-replaced-material-runes][hidden] { display: none !important; }
+.cmt-make-marks-details { min-width: 0; width: 100%; box-sizing: border-box; }
+.cmt-make-marks-details .cmt-applied-marks article header { flex-wrap: wrap; gap: 0.35rem; }
+.cmt-chat-make-marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.35rem 0;
+  padding: 0.35rem;
+  border-block: 1px solid #a88973;
+  background: #e7d9cf;
+  color: #332d29;
+  font-size: 0.8rem;
+}
+.cmt-chat-core, .cmt-chat-mark-count { padding: 0.15rem 0.35rem; border-radius: 2px; }
+.cmt-chat-core { background: #5e0000; color: #fff8e9; }
+.cmt-chat-mark-count { background: #605856; color: #fff8e9; cursor: help; }
+.cmt-chat-mark-count:focus-visible { outline: 2px solid #5e0000; outline-offset: 2px; }
+
 .cmt-make-marks-chips {
   align-items: center;
   display: flex;
