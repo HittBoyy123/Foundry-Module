@@ -38,7 +38,7 @@ This same link lets Foundry detect future Wrathmaker releases automatically.
 
 ### Manual installation
 
-Download `wrathmaker-v0.18.1.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
+Download `wrathmaker-v0.19.0.zip` from the latest GitHub release and extract its contents into a folder named `pf2e-crafting-material-tiers` under Foundry's `Data/modules` folder. Restart Foundry and enable **Wrathmaker**.
 
 The GM settings panel is under **Configure Settings → Module Settings → Wrathmaker → Open Control Panel**.
 
@@ -194,9 +194,9 @@ The public API exposes both the non-destructive recipe preview and the persisten
 
 Open **Wrathmaker Workbench** from the Items Directory header or its Module Settings entry. Its three tabs follow the campaign guide:
 
-- **Craft** accepts a dragged PF2e weapon, armor, shield, or Wrathmaker Spell Focus. Choose its broad recipe, Core Material, and Core Tier, then drag in any participating PCs or NPCs. Each contributor exposes only the universal and specialisation Marks they know which can apply to the current item. Choose a Lead Artisan for the Crafting checks; the live preview spends Capacity immediately, selects a valid component Anchor, adds specialist stock and labour, and subtracts stock already reserved by another active project.
-- **Gather** opens the existing region-aware gathering screen; there is no second Wrathmaker inventory.
-- **Projects** tracks status, progress, artisan-days, exact reserved stacks, and the project history for the selected PF2e party.
+- **Craft** accepts a dragged PF2e weapon, armor, shield, or Wrathmaker Spell Focus. Choose the recipe, Core Material/Tier, and required secondary materials. Six artisan slots form a three-by-two grid: the Core Artisan leads the Crafting checks, the Component Specialist covers the required secondary, and four optional artisans can supply other benefits. Required slots validate profession/material expertise, and every required structural material must have a qualified contributor. Click an artisan to choose compatible Marks in a scrollable picker, then **Continue** to keep the selection. Closing the picker without Continue leaves the plan unchanged. Selected Marks appear as compact badges: hover for rules text or double-click for details. Capacity, Anchors, resources, and labour are calculated automatically.
+- **Gather** contains the region-aware gathering controls directly inside the Workbench; there is no second window or inventory.
+- **Projects** provides a scrollable, collapsible ledger for the selected party. Archive completed/cancelled projects to hide them, then Restore from the Archive view when needed. The X button asks for confirmation before removing a record and releasing unconsumed reservations; it does not refund spent resources or delete the finished item.
 
 Creating a project reserves the exact source stacks but leaves their quantities visibly present in the native Party Stash. Those reserved quantities cannot satisfy another project. Cancelling releases unconsumed reservations. A Lead Artisan advances the project by rolling Crafting after committing a **1–5 day Work Block**: Critical Success produces 150% Progress rounded up, Success 100%, Failure 50% rounded down (minimum 1 when at least 2 days were worked), and Critical Failure 0.
 
@@ -206,7 +206,7 @@ Broad recipes currently cover the campaign guide's weapon groups, shield chassis
 
 ### Gathering resources
 
-Wrathmaker includes an independent, Fabricate-inspired gathering screen for all 66 crafting resources. Players can open **Gather Resources** from the Items Directory header or from Wrathmaker's settings entry, then choose an owned character and visible resource task. Every task option ends with its tier, such as `Gather Steel Ingot — Tier 2`, for quick comparison in the native dropdown.
+Wrathmaker includes Fabricate-inspired gathering for all 66 crafting resources inside **Workbench → Gather**. Open the Workbench from the Items Directory, party sheet, or module settings, then choose an owned character and visible resource task. The former standalone gathering sidebar button has been removed; existing gathering macros remain compatible. Every task option ends with its tier, such as `Gather Steel Ingot — Tier 2`, for quick comparison in the native dropdown.
 
 By default, **Use current Stolen Lands / Scene region** is enabled. Wrathmaker checks which Foundry Region contains the selected character's token and reads PF2e's Environment behavior from that Region. A Forest region offers Wood, Leather/Hide, and Herbs/Mushrooms; Mountain terrain offers Metal and Stone; Swamp terrain uses Wetlands; and PF2e's Plains and Underground terrain map directly to their gathering environments. If the map uses environment data on the Scene instead of a containing Region, the Scene is used as the fallback.
 
@@ -483,6 +483,10 @@ Available methods:
 - `hexplorationPlanSchemaVersion` reports the current saved party-plan schema.
 
 The hook `pf2e-crafting-material-tiers.ready` fires with the API after Foundry is ready.
+
+### Artisan Mark automation
+
+Finished items retain every selected Mark's full rules text, maker, Anchor, and effect choice. Explicit adapters apply supported attack/damage, spell attack/DC, AC, HP, resistance, range, and durability values when the item is used or equipped. The picker labels which Marks include numerical automation. Elemental/skill choices are saved with the item, Blood Temper checks PF2e's current HP percentage, and conditional object/skill benefits expose check toggles. These adapters do not create independent automation for every special action: once-per-day activations, light, saves, campaign permissions, and other unsupported clauses still use the saved rules text and GM adjudication. No arbitrary rules text is executed as code.
 
 ## Current scope
 

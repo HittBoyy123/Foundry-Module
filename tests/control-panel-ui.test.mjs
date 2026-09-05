@@ -101,7 +101,7 @@ test("gathering exposes a PF2e-styled player workflow and safe inventory awards"
     readSource("../styles/module.css"),
   ]);
 
-  assert.match(application, /Hooks\.on\("renderItemDirectory"/);
+  assert.doesNotMatch(application, /Hooks\.on\("renderItemDirectory"/);
   assert.match(application, /recipient\?\.canUserModify\?\.\(game\.user, "update"\)/);
   assert.match(application, /recipient\.createEmbeddedDocuments\("Item"/);
   assert.match(application, /existing\.update\(\{ "system\.quantity"/);
@@ -154,10 +154,8 @@ test("Workbench exposes recipe planning, reservations, downtime, and confirmed c
   assert.match(template, /data-cmt-workbench-tab="gather"/);
   assert.match(template, /data-cmt-workbench-tab="projects"/);
   assert.match(template, /data-cmt-workbench-drop="base-item"/);
-  assert.match(template, /data-cmt-workbench-drop="contributors"/);
-  assert.match(template, /data-cmt-mark-toggle/);
-  assert.match(template, /data-cmt-mark-anchor/);
-  assert.match(template, /Signature/);
+  assert.match(template, /data-cmt-artisan-slot/);
+  assert.match(template, /data-cmt-open-marks/);
   assert.match(application, /augmentRecipeWithArtisanMarks/);
   assert.match(application, /selectedMarks/);
   assert.match(template, /data-cmt-project-action="roll-work"/);

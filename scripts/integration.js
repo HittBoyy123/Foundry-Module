@@ -1,5 +1,6 @@
 import { MODULE_ID } from "./constants.js";
 import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
+import { applyMarkItemStats, buildArtisanMarkRules } from "./artisan-mark-effects.js";
 
 const PATCH_MARKER = Symbol.for(`${MODULE_ID}.prepareRuleElements`);
 const adjustedPrices = new WeakSet();
@@ -51,7 +52,8 @@ export function buildItemRuleElements(item, config) {
   const craftingItemType = getCraftingItemType(item);
   if (["armor", "spellFocus"].includes(craftingItemType) && item.isEquipped === false) return [];
   if (craftingItemType === "spellFocus" && !isPrimarySpellFocus(item, config)) return [];
-  return calculateItem(item, config).rules;
+  const result = calculateItem(item, config);
+  return [...result.rules, ...(result.active ? buildArtisanMarkRules(item, craftingItemType) : [])];
 }
 
 function suppressPf2eRuneProgression(item) {
@@ -97,6 +99,7 @@ export function applyPreparedItemPresentation(item, config) {
 
   suppressPf2eRuneProgression(item);
   applyShieldCoreProgression(item, result);
+  applyMarkItemStats(item);
 
   if (item.isIdentified !== false) {
     const baseName = item._source?.name ?? item.name;

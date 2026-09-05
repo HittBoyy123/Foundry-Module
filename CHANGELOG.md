@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.19.0 — Compact artisan Workbench (2026-09-05)
+
+- Replaced the expanding contributor list with six stable artisan slots in a three-by-two grid. Core and secondary artisans must have the selected material expertise; recipes validate all required structural materials.
+- Added per-artisan Mark pickers with draft selections, Continue, effect choices, shared Capacity, and compatible Anchors. Selected Marks appear as compact badges with hover text and double-click details.
+- Added explicit numerical adapters for supported damage, attack, spell, AC, resistance, HP, range, and durability effects. Unsupported special activations remain clearly labelled rules text, preserved on finished items.
+- Filtered irrelevant weapon, armor, focus, ranged, durability, and dragon-scale Marks; normalized non-stacking groups and enforced Crown Prism's Tier 5 Anchor.
+- Embedded the resource-gathering controls directly in the Workbench Gather tab and removed the separate sidebar/settings gathering launcher. Existing gathering macros remain compatible.
+- Added collapsible projects, a completed/cancelled archive with Restore, and confirmed record removal. Removing a project releases unconsumed reservations without refunding spent materials or deleting finished gear.
+- Kept scrolling throughout the Workbench and Mark picker, with retained project expansion and scroll positions.
+- Verified 173 automated tests and rendered Craft, Mark picker, Gather, and Projects layouts.
+
 ## 0.18.1 — Workbench scrolling fix (2026-09-04)
 
 - Fixed the expanded Artisan Mark Workbench exceeding its window by adding a persistent PF2e-styled vertical scrollbar and preserving its position while Mark choices rerender.

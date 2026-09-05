@@ -109,123 +109,42 @@
         </label>
       </div>
 
+
+      <div class="cmt-workbench-form-grid">
+        {{#each secondaryMaterials}}
+          <label><span>{{label}} material</span><select data-cmt-secondary="{{id}}">
+            {{#each options}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select></label>
+        {{/each}}
+      </div>
       <section class="cmt-workbench-contributors">
-        <div class="cmt-workbench-section-title">
-          <h3><i class="fa-solid fa-people-group" aria-hidden="true"></i> Artisans involved</h3>
-          <span>Drag PCs or NPCs here</span>
-        </div>
-        <div class="cmt-workbench-contributor-drop {{#if contributors.length}}is-filled{{/if}}" data-cmt-workbench-drop="contributors">
-          {{#each contributors}}
-            <article class="cmt-workbench-contributor">
-              <img src="{{img}}" alt="">
-              <div>
-                <strong>{{name}}</strong>
-                <span>{{professionSummary}}</span>
-              </div>
-              <label title="Use this artisan for the project's Crafting checks">
-                <input type="radio" name="cmt-lead-artisan" value="{{actorUuid}}" data-cmt-lead-artisan {{#if isLead}}checked{{/if}}>
-                Lead
-              </label>
-              <button type="button" data-cmt-contributor-remove="{{actorUuid}}" title="Remove artisan">
-                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-              </button>
+        <div class="cmt-workbench-section-title"><h3>Artisans involved</h3><span>Up to six artisans</span></div>
+        <div class="cmt-artisan-slots">
+          {{#each artisanSlots}}
+            <article class="cmt-artisan-slot {{#unless qualified}}is-invalid{{/unless}}" data-cmt-artisan-slot="{{index}}">
+              <header><strong>{{role}}</strong><small>{{#if required}}Required{{else}}Optional{{/if}}</small></header>
+              <span class="cmt-slot-requirement">{{requirement}}</span>
+              {{#if actorUuid}}
+                <button type="button" class="cmt-artisan-portrait" data-cmt-open-marks="{{actorUuid}}" title="Choose Artisan Marks">
+                  <img src="{{img}}" alt=""><span><strong>{{name}}</strong><small>{{professionSummary}}</small></span>
+                </button>
+                <div class="cmt-slot-actions"><button type="button" data-cmt-open-marks="{{actorUuid}}">Choose Marks</button>
+                <button type="button" data-cmt-slot-remove="{{index}}" title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
+                <div class="cmt-mark-badges">
+                  {{#each marks}}<button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} · {{capacityCost}}</button>{{/each}}
+                </div>
+              {{else}}
+                <div class="cmt-slot-empty"><i class="fa-solid fa-user-plus"></i><span>Drop artisan</span></div>
+              {{/if}}
             </article>
-          {{else}}
-            <div class="cmt-workbench-contributor-prompt">
-              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-              <strong>Drop an artisan</strong>
-              <span>Their professions and specialisations determine the available Artisan Marks.</span>
-            </div>
           {{/each}}
         </div>
       </section>
-
-      {{#if markTrays.length}}
-        <section class="cmt-workbench-marks">
-          <div class="cmt-workbench-section-title">
-            <h3><i class="fa-solid fa-signature" aria-hidden="true"></i> Artisan Marks</h3>
-            <span>{{markCapacity.used}} / {{markCapacity.maximum}} Capacity · {{markLabourDays}} artisan-days</span>
-          </div>
-          <div class="cmt-workbench-capacity" title="{{markCapacity.remaining}} Capacity remaining">
-            {{#each markCapacity.segments}}
-              <i class="{{#if used}}is-used{{/if}}"></i>
-            {{/each}}
-            <strong>{{../markCapacity.remaining}} remaining</strong>
-          </div>
-          {{#each markTrays}}
-            <article class="cmt-workbench-mark-tray">
-              <header>
-                <img src="{{img}}" alt="">
-                <div>
-                  <strong>{{name}}</strong>
-                  <span>{{professionSummary}}</span>
-                </div>
-                {{#if isLead}}<em>Lead artisan</em>{{/if}}
-              </header>
-              {{#if specializations.length}}
-                <details class="cmt-workbench-specialisations">
-                  <summary>{{specializations.length}} specialisation benefits</summary>
-                  {{#each specializations}}
-                    <section>
-                      <strong>{{name}}</strong>
-                      <dl>
-                        <div><dt>Signature — {{signature.name}}</dt><dd>{{signature.description}}</dd></div>
-                        <div><dt>Mastery — {{mastery.name}}</dt><dd>{{mastery.description}}</dd></div>
-                        <div><dt>Legacy — {{legacy.name}}</dt><dd>{{legacy.description}}</dd></div>
-                      </dl>
-                    </section>
-                  {{/each}}
-                </details>
-              {{/if}}
-              <div class="cmt-workbench-mark-grid">
-                {{#each availableMarks}}
-                  <article class="cmt-workbench-mark {{#if selected}}is-selected{{/if}}">
-                    <header>
-                      <div>
-                        <strong>{{name}}</strong>
-                        <span>{{gradeLabel}} · {{capacityCost}} Capacity</span>
-                      </div>
-                      <button
-                        type="button"
-                        data-cmt-mark-toggle="{{id}}"
-                        data-cmt-actor-uuid="{{../actorUuid}}"
-                        data-cmt-anchor-id="{{chosenAnchorId}}"
-                        title="{{#if selected}}Remove Mark{{else}}Apply Mark{{/if}}"
-                      >
-                        <i class="fa-solid {{#if selected}}fa-circle-check{{else}}fa-plus{{/if}}" aria-hidden="true"></i>
-                      </button>
-                    </header>
-                    <p>{{effectSummary}}</p>
-                    <small>{{materialSummary}}</small>
-                    {{#if selected}}
-                      <label>
-                        <span>Anchor</span>
-                        <select data-cmt-mark-anchor="{{id}}" data-cmt-actor-uuid="{{../actorUuid}}">
-                          {{#each anchors}}
-                            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-                          {{/each}}
-                        </select>
-                      </label>
-                    {{/if}}
-                  </article>
-                {{else}}
-                  <p class="cmt-workbench-no-marks">No Marks from this artisan apply to the selected item.</p>
-                {{/each}}
-              </div>
-              {{#if unavailableMarks.length}}
-                <details class="cmt-workbench-unavailable-marks">
-                  <summary>{{unavailableMarks.length}} unavailable Marks</summary>
-                  <ul>
-                    {{#each unavailableMarks}}
-                      <li><strong>{{name}}</strong><span>{{reason}}</span></li>
-                    {{/each}}
-                  </ul>
-                </details>
-              {{/if}}
-            </article>
-          {{/each}}
-        </section>
-      {{/if}}
+      {{#each teamReasons}}<p class="cmt-workbench-notice is-warning">{{this}}</p>{{/each}}
+      <div class="cmt-workbench-capacity">
+        {{#each markCapacity.segments}}<i class="{{#if used}}is-used{{/if}}"></i>{{/each}}
+        <strong>{{markCapacity.remaining}} / {{markCapacity.maximum}} Capacity remaining · {{markLabourDays}} artisan-days</strong>
+      </div>
 
       {{#if preview}}
         <section class="cmt-workbench-requirements">
@@ -261,22 +180,14 @@
   {{/if}}
 
   {{#if tabs.gather}}
-    <section class="cmt-workbench-panel cmt-workbench-gather-link">
-      <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
-      <h3>{{localize "CMT.Workbench.GatherHeading"}}</h3>
-      <p>{{localize "CMT.Workbench.GatherHint"}}</p>
-      <button type="button" data-cmt-workbench-action="open-gathering">
-        <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-        {{localize "CMT.Gathering.Open"}}
-      </button>
-    </section>
+    <section class="cmt-gathering-app cmt-workbench-gather">{{{gatheringHtml}}}</section>
   {{/if}}
 
   {{#if tabs.projects}}
     <section class="cmt-workbench-panel cmt-workbench-projects">
       <div class="cmt-workbench-section-title">
         <h3>{{localize "CMT.Workbench.ProjectLedger"}}</h3>
-        <span>{{projectCount}} {{localize "CMT.Workbench.Projects"}}</span>
+        <button type="button" data-cmt-show-archived>{{#if showArchived}}Back to projects{{else}}Archive ({{archivedCount}}){{/if}}</button>
       </div>
       {{#each projects}}
         <article class="cmt-workbench-project {{statusClass}}" data-cmt-project-id="{{id}}">
@@ -287,7 +198,10 @@
               <span>{{recipeName}} · {{coreLabel}}</span>
             </div>
             <span class="cmt-workbench-status">{{statusLabel}}</span>
+            {{#if canArchive}}<button type="button" data-cmt-project-action="archive" title="{{#if archived}}Restore{{else}}Archive{{/if}}" aria-label="Archive or restore"><i class="fa-solid fa-box-archive"></i></button>{{/if}}
+            {{#if canManage}}<button type="button" data-cmt-project-action="remove" title="Remove project" aria-label="Remove project"><i class="fa-solid fa-xmark"></i></button>{{/if}}
           </header>
+          <details class="cmt-project-details" {{#if expanded}}open{{/if}}><summary>Project details & actions</summary>
           <div class="cmt-workbench-progress" title="{{currentProgress}} / {{requiredProgress}}">
             <span style="width: {{progressPercent}}%"></span>
           </div>
@@ -303,7 +217,7 @@
               <summary>Artisan Marks</summary>
               <ul>
                 {{#each artisanMarks}}
-                  <li><span>{{name}} — {{maker.name}}</span><strong>{{capacityCost}} Capacity</strong></li>
+                  <li><button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} — {{maker.name}}</button><strong>{{capacityCost}} Capacity</strong></li>
                 {{/each}}
               </ul>
             </details>
@@ -350,6 +264,7 @@
               </button>
             {{/if}}
           </footer>
+          </details>
         </article>
       {{else}}
         <div class="cmt-workbench-empty">

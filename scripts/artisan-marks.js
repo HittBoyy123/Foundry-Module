@@ -7,6 +7,7 @@ import {
 import { getCoreTierProgression } from "./crafting-model.js";
 import { normalizeCraftingRecipe } from "./crafting-recipes.js";
 import { getActorProfessionSpecialties, getActorProfessions } from "./professions.js";
+import { markAppliesToItem, artisanMarkStackGroup } from "./artisan-mark-effects.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -76,7 +77,8 @@ export function buildRecipeAnchorSlots(recipe) {
 }
 
 function markRequiredAnchorTier(mark, coreTier) {
-  return mark.requiresCoreTierAnchors ? coreTier : mark.minimumAnchorTier;
+  const tier = mark.requiresCoreTierAnchors ? coreTier : mark.minimumAnchorTier;
+  return mark.id === "glassmaking-specialty-1-crown-prism" ? Math.max(5, tier) : tier;
 }
 
 export function evaluateArtisanMarkChoice(markSource, {
@@ -86,6 +88,7 @@ export function evaluateArtisanMarkChoice(markSource, {
   capacityUsed = 0,
   selectedDefinitionIds = [],
   selectedStackGroups = [],
+  targetItem = null,
 } = {}) {
   const mark = getArtisanMarkDefinition(markSource?.definitionId ?? markSource?.id) ?? clone(markSource);
   const maximum = getCoreTierProgression(coreTier).capacity;
@@ -99,7 +102,7 @@ export function evaluateArtisanMarkChoice(markSource, {
       label: `${slot.label} (T${requiredTier}+)`,
     }));
   let reason = "";
-  if (!mark.validItemGroups.includes(itemGroup)) {
+  if (!markAppliesToItem(mark, itemGroup, targetItem)) {
     reason = "This Mark does not apply to the selected item type.";
   } else if (coreTier < mark.minimumTier) {
     reason = `${mark.name} requires a Tier ${mark.minimumTier} or higher Core.`;
@@ -107,8 +110,8 @@ export function evaluateArtisanMarkChoice(markSource, {
     reason = `${mark.name} has no compatible Tier ${requiredTier}+ Anchor in this recipe.`;
   } else if (selectedDefinitionIds.includes(mark.id)) {
     reason = "This Mark is already supplied by another contributor.";
-  } else if (mark.stackGroup && selectedStackGroups.includes(mark.stackGroup)) {
-    reason = `Another selected Mark already uses the ${mark.stackGroup.replaceAll("-", " ")} stacking group.`;
+  } else if (artisanMarkStackGroup(mark) && selectedStackGroups.includes(artisanMarkStackGroup(mark))) {
+    reason = `Another selected Mark already uses the ${artisanMarkStackGroup(mark).replaceAll("-", " ")} stacking group.`;
   } else if (capacityUsed + mark.capacityCost > maximum) {
     reason = `${mark.name} needs ${mark.capacityCost} Capacity; only ${Math.max(0, maximum - capacityUsed)} remains.`;
   }
@@ -151,7 +154,7 @@ export function buildArtisanMarkAssignment(markSource, artisan, anchorSlot, core
     },
     effects: clone(mark.effects),
     synergyTags: [...mark.synergyTags],
-    stackGroup: mark.stackGroup,
+    stackGroup: artisanMarkStackGroup(mark),
     scalingSource: mark.scalingSource,
     requiredMaterialIds: [...mark.requiredMaterialIds],
     materialUnits: mark.materialUnits,

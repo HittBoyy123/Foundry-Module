@@ -4,6 +4,32 @@
 }
 
 /* Player Workbench ------------------------------------------------------- */
+.cmt-artisan-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; padding: 0.6rem; }
+.cmt-artisan-slot { min-width: 0; border: 1px solid #a88973; background: #e7d9cf; padding: 0.6rem; }
+.cmt-artisan-slot > header, .cmt-slot-actions { display: flex; justify-content: space-between; gap: 0.4rem; }
+.cmt-artisan-slot > header strong { color: #5e0000; }
+.cmt-artisan-slot.is-dragover { outline: 3px solid #0c4f2e; }
+.cmt-artisan-slot.is-invalid { border: 2px solid #5e0000; }
+.cmt-artisan-portrait { display: flex; width: 100%; height: auto; gap: 0.5rem; text-align: left; white-space: normal; margin: 0.5rem 0; background: #fffdf8; color: #2c2522; }
+.cmt-artisan-portrait img { width: 44px; height: 44px; object-fit: cover; }
+.cmt-artisan-portrait span { display: grid; min-width: 0; }
+.cmt-slot-empty { display: grid; place-items: center; gap: 0.6rem; padding: 1.4rem 0; border: 1px dashed #a88973; margin-top: 0.5rem; }
+.cmt-slot-requirement { font-size: 0.85rem; }
+.cmt-mark-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.cmt-mark-badges button { width: auto; height: auto; white-space: normal; background: #e9d7a1; color: #5e0000; font-size: 0.85rem; }
+.cmt-mark-picker-footer { position: sticky; bottom: 0; background: #e7d9cf; padding: 0.5rem; }
+.cmt-mark-picker-footer button { width: 100%; background: #e9d7a1; color: #5e0000; }
+.pf2e-crafting-material-tiers.cmt-mark-picker .cmt-workbench-body > .cmt-workbench-section-title { margin: 0 0 0.8rem; }
+.cmt-artisan-slot, .cmt-workbench-mark, .cmt-workbench-mark > header > div { min-width: 0; overflow-wrap: anywhere; }
+.cmt-project-details > summary { padding: 0.5rem; color: #5e0000; cursor: pointer; }
+.cmt-workbench-gather .cmt-gathering-body { height: auto; overflow: visible; }
+.cmt-workbench-project > header > button { flex: 0 0 2rem; width: 2rem; }
+.pf2e-crafting-material-tiers.cmt-workbench-app .cmt-workbench-project > header { grid-template-columns: 3rem minmax(0, 1fr) auto auto auto; }
+.pf2e-crafting-material-tiers .cmt-slot-actions button,
+.pf2e-crafting-material-tiers .cmt-workbench-project > header > button,
+.pf2e-crafting-material-tiers [data-cmt-show-archived] { background: #e9d7a1; color: #5e0000; border: 1px solid #a88973; }
+@media (max-width: 700px) { .cmt-artisan-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 .pf2e-crafting-material-tiers.cmt-workbench-app {
   --cmt-workbench-green: #0c4f2e;
   --cmt-workbench-gray: #605856;

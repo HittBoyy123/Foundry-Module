@@ -107,6 +107,7 @@ function normalizeContributor(source, index) {
     actorId: text(source?.actorId ?? source?.id),
     name: text(source?.name, `Artisan ${index + 1}`),
     img: text(source?.img, "icons/svg/mystery-man.svg"),
+    slotIndex: integer(source?.slotIndex, index, 0, 5),
     professionIds: [...new Set((Array.isArray(source?.professionIds) ? source.professionIds : [])
       .map((value) => text(value))
       .filter(Boolean))],
@@ -172,6 +173,7 @@ export function normalizeCraftingProject(source) {
     artisanMarks: (Array.isArray(source.artisanMarks) ? source.artisanMarks : [])
       .map((mark, index) => normalizeProjectMark(mark, index, integer(source.coreTier, recipe.tier, 1, 6))),
     status,
+    archived: source.archived === true && TERMINAL_STATUSES.has(status),
     stage,
     reservations: (Array.isArray(source.reservations) ? source.reservations : []).map(normalizeReservation),
     requiredProgress,

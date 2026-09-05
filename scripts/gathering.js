@@ -376,20 +376,7 @@ export function createGatheringApplication(getConfig) {
 
 export function registerGathering(getConfig) {
   GatheringApplication = createGatheringApplication(getConfig);
-  Hooks.on("renderItemDirectory", (_application, element) => {
-    if (getConfig().gathering?.enabled === false) return;
-    const root = rootElement(element);
-    if (!root || root.querySelector("[data-cmt-open-gathering]")) return;
-    const actions = root.querySelector(".directory-header .header-actions, .directory-header .action-buttons, .directory-header");
-    if (!actions) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "cmt-open-gathering";
-    button.dataset.cmtOpenGathering = "true";
-    button.innerHTML = `<i class="fa-solid fa-basket-shopping" aria-hidden="true"></i> ${localize("CMT.Gathering.Open")}`;
-    button.addEventListener("click", () => openGatheringApplication());
-    actions.append(button);
-  });
+  // Gathering is embedded in the Workbench; the legacy API remains available.
   return GatheringApplication;
 }
 
@@ -398,4 +385,36 @@ export function openGatheringApplication(options = {}) {
   const application = new GatheringApplication(options);
   application.render({ force: true });
   return application;
+}
+
+export async function renderWorkbenchGathering(application) {
+  application.getConfig = () => application.workbenchConfig ?? {};
+  application.gatheringState ??= { actorId: "", environmentId: "", taskId: "", lastResult: null };
+  return renderTemplate(`modules/${MODULE_ID}/templates/gathering.hbs`, {
+    ...applicationContext(application), embedded: true,
+  });
+}
+
+export function bindWorkbenchGathering(application, root) {
+  for (const field of ["actorId", "environmentId", "taskId"]) {
+    root.querySelector(`[name="${field}"]`)?.addEventListener("change", async (event) => {
+      application.gatheringState[field] = event.currentTarget.value;
+      application.gatheringState.lastResult = null;
+      await application.render({ force: true });
+    });
+  }
+  const button = root.querySelector("[data-cmt-gather-attempt]");
+  button?.addEventListener("click", async (event) => {
+    if (application.gatheringBusy) return;
+    application.gatheringBusy = true;
+    button.disabled = true;
+    try {
+      await attemptGathering(application, application.gatheringState, event);
+    } catch (error) {
+      ui.notifications.error(error.message);
+    } finally {
+      application.gatheringBusy = false;
+      await application.render({ force: true });
+    }
+  });
 }

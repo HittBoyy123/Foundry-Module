@@ -89,6 +89,7 @@ function normalizeMark(source, index) {
     dormantReason: status === "dormant" ? text(source?.dormantReason, "Requirements are not currently met.") : "",
     maker: source?.maker && typeof source.maker === "object" ? clone(source.maker) : null,
     effects: Array.isArray(source?.effects) ? clone(source.effects) : [],
+    configuration: { choice: typeof source?.configuration?.choice === "string" ? source.configuration.choice : "" },
     synergyTags: stringArray(source?.synergyTags),
     stackGroup: text(source?.stackGroup),
     scalingSource: text(source?.scalingSource, "fixed"),

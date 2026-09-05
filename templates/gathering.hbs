@@ -115,7 +115,7 @@
   {{/if}}
 
   <footer class="cmt-gathering-actions">
-    <button type="submit" {{#unless canAttempt}}disabled{{/unless}}>
+    <button type="{{#if embedded}}button{{else}}submit{{/if}}" {{#if embedded}}data-cmt-gather-attempt{{/if}} {{#unless canAttempt}}disabled{{/unless}}>
       <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
       {{localize "CMT.Gathering.Attempt"}}
     </button>

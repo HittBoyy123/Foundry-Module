@@ -1,0 +1,81 @@
+<div class="cmt-workbench-body">
+<div class="cmt-workbench-section-title"><h3>Artisan Marks</h3><span>{{markCapacity.used}} / {{markCapacity.maximum}} Capacity</span></div>
+          {{#each markTrays}}
+            <article class="cmt-workbench-mark-tray">
+              <header>
+                <img src="{{img}}" alt="">
+                <div>
+                  <strong>{{name}}</strong>
+                  <span>{{professionSummary}}</span>
+                </div>
+                {{#if isLead}}<em>Lead artisan</em>{{/if}}
+              </header>
+              {{#if specializations.length}}
+                <details class="cmt-workbench-specialisations">
+                  <summary>{{specializations.length}} specialisation benefits</summary>
+                  {{#each specializations}}
+                    <section>
+                      <strong>{{name}}</strong>
+                      <dl>
+                        <div><dt>Signature — {{signature.name}}</dt><dd>{{signature.description}}</dd></div>
+                        <div><dt>Mastery — {{mastery.name}}</dt><dd>{{mastery.description}}</dd></div>
+                        <div><dt>Legacy — {{legacy.name}}</dt><dd>{{legacy.description}}</dd></div>
+                      </dl>
+                    </section>
+                  {{/each}}
+                </details>
+              {{/if}}
+              <div class="cmt-workbench-mark-grid">
+                {{#each availableMarks}}
+                  <article class="cmt-workbench-mark {{#if selected}}is-selected{{/if}}">
+                    <header>
+                      <div>
+                        <strong>{{name}}</strong>
+                        <span>{{gradeLabel}} · {{capacityCost}} Capacity</span>
+                      </div>
+                      <button
+                        type="button"
+                        data-cmt-mark-toggle="{{id}}"
+                        data-cmt-actor-uuid="{{../actorUuid}}"
+                        data-cmt-anchor-id="{{chosenAnchorId}}"
+                        title="{{#if selected}}Remove Mark{{else}}Apply Mark{{/if}}"
+                      >
+                        <i class="fa-solid {{#if selected}}fa-circle-check{{else}}fa-plus{{/if}}" aria-hidden="true"></i>
+                      </button>
+                    </header>
+                    <p>{{effectSummary}}</p>
+                    <small>{{materialSummary}}</small>
+                    <small>{{automationLabel}}</small>
+                    {{#if selected}}
+                      {{#if configurationChoices.length}}<label><span>Effect choice</span><select data-cmt-mark-choice="{{id}}">
+                        {{#each configurationChoices}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{value}}</option>{{/each}}
+                      </select></label>{{/if}}
+                      <label>
+                        <span>Anchor</span>
+                        <select data-cmt-mark-anchor="{{id}}" data-cmt-actor-uuid="{{../actorUuid}}">
+                          {{#each anchors}}
+                            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+                          {{/each}}
+                        </select>
+                      </label>
+                    {{/if}}
+                  </article>
+                {{else}}
+                  <p class="cmt-workbench-no-marks">No Marks from this artisan apply to the selected item.</p>
+                {{/each}}
+              </div>
+              {{#if unavailableMarks.length}}
+                <details class="cmt-workbench-unavailable-marks">
+                  <summary>{{unavailableMarks.length}} unavailable Marks</summary>
+                  <ul>
+                    {{#each unavailableMarks}}
+                      <li><strong>{{name}}</strong><span>{{reason}}</span></li>
+                    {{/each}}
+                  </ul>
+                </details>
+              {{/if}}
+            </article>
+          {{/each}}
+
+<footer class="cmt-mark-picker-footer"><button type="button" data-cmt-marks-continue>Continue</button></footer>
+</div>

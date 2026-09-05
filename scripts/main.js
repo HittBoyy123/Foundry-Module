@@ -38,15 +38,7 @@ Hooks.once("init", () => {
     restricted: true,
   });
 
-  const GatheringApplication = registerGathering(getRulesConfig);
-  game.settings.registerMenu(MODULE_ID, "gatheringMenu", {
-    name: "CMT.Gathering.MenuName",
-    label: "CMT.Gathering.Open",
-    hint: "CMT.Gathering.MenuHint",
-    icon: "fa-solid fa-basket-shopping",
-    type: GatheringApplication,
-    restricted: false,
-  });
+  registerGathering(getRulesConfig);
   gatheringInstalled = true;
 
   const WorkbenchApplication = registerWorkbench();

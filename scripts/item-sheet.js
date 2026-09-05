@@ -208,6 +208,7 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
       const header = document.createElement("header");
       const name = document.createElement("strong");
       name.textContent = mark.name;
+      name.title = mark.effectSummary;
       const grade = document.createElement("span");
       grade.textContent = `${mark.grade[0].toUpperCase() + mark.grade.slice(1)} · ${mark.capacityCost} Capacity · T${mark.effectiveMarkTier}`;
       const effect = document.createElement("p");
@@ -216,6 +217,7 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
       provenance.textContent = [
         mark.profession,
         mark.specialisation,
+        mark.configuration?.choice ? `Choice: ${mark.configuration.choice}` : "",
         mark.maker?.name ? `by ${mark.maker.name}` : "",
         mark.anchorSlotIds.length ? `Anchor: ${mark.anchorSlotIds.join(", ")}` : "",
       ].filter(Boolean).join(" · ");

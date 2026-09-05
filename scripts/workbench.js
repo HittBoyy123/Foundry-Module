@@ -21,7 +21,9 @@ import {
 } from "./recipe-catalog.js";
 import { normalizeItemFlags } from "./model.js";
 import { normalizeDegreeOfSuccess } from "./gathering-model.js";
-import { openGatheringApplication } from "./gathering.js";
+import { renderWorkbenchGathering, bindWorkbenchGathering } from "./gathering.js";
+import { validateArtisanTeam, chooseSecondaryMaterials } from "./workbench-team.js";
+import { markAppliesToItem, markConfigurationChoices, markAutomationLabel } from "./artisan-mark-effects.js";
 import {
   augmentRecipeWithArtisanMarks,
   buildArtisanMarkAssignment,
@@ -154,13 +156,11 @@ async function contributorProfiles(application) {
   const actors = (await Promise.all(uuids.map(resolveActor))).filter(Boolean);
   const profiles = actors.map(getArtisanProfile).filter((profile) => profile?.professions.length > 0);
   application.workbenchState.contributorUuids = profiles.map((profile) => profile.actorUuid);
-  if (!profiles.some((profile) => profile.actorUuid === application.workbenchState.leadArtisanUuid)) {
-    application.workbenchState.leadArtisanUuid = profiles[0]?.actorUuid ?? "";
-  }
+  application.workbenchState.leadArtisanUuid = application.workbenchState.artisanSlots?.[0] ?? "";
   return profiles;
 }
 
-function reconcileMarkAssignments(application, profiles, recipe, itemGroup, coreTier) {
+function reconcileMarkAssignments(application, profiles, recipe, itemGroup, coreTier, targetItem = null) {
   if (!recipe) {
     application.workbenchState.selectedMarks = [];
     return { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], coreTier) };
@@ -175,6 +175,7 @@ function reconcileMarkAssignments(application, profiles, recipe, itemGroup, core
     const mark = profile?.marks.find((entry) => entry.id === choice.definitionId);
     if (!profile || !mark) continue;
     const availability = evaluateArtisanMarkChoice(mark, {
+      targetItem,
       itemGroup,
       coreTier,
       anchorSlots,
@@ -186,20 +187,24 @@ function reconcileMarkAssignments(application, profiles, recipe, itemGroup, core
     const anchor = availability.anchors.find((entry) => entry.id === choice.anchorSlotId)
       ?? availability.anchors[0];
     if (!anchor) continue;
-    assignments.push(buildArtisanMarkAssignment(mark, profile, anchor, coreTier));
+    const assignment = buildArtisanMarkAssignment(mark, profile, anchor, coreTier);
+    const choices = markConfigurationChoices(mark.id);
+    assignment.configuration = { choice: choices.includes(choice.configuration?.choice) ? choice.configuration.choice : choices[0] ?? "" };
+    assignments.push(assignment);
   }
   application.workbenchState.selectedMarks = assignments.map((assignment) => ({
     definitionId: assignment.definitionId,
     actorUuid: assignment.maker.actorUuid,
     anchorSlotId: assignment.anchorSlotIds[0],
+    configuration: assignment.configuration,
   }));
   return { assignments, anchorSlots, capacity: selectedMarkCapacity(assignments, coreTier) };
 }
 
-function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier, leadArtisanUuid) {
+function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier, leadArtisanUuid, targetItem = null) {
   const maximum = selectedMarkCapacity(assignments, coreTier).maximum;
   return profiles.map((profile) => {
-    const marks = profile.marks.map((mark) => {
+    const marks = profile.marks.filter((mark) => markAppliesToItem(mark, itemGroup, targetItem)).map((mark) => {
       const selected = assignments.find((entry) => (
         entry.definitionId === mark.id && entry.maker?.actorUuid === profile.actorUuid
       ));
@@ -215,6 +220,8 @@ function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier
       const chosenAnchorId = selected?.anchorSlotIds[0] ?? availability.defaultAnchorId;
       return {
         ...mark,
+        automationLabel: markAutomationLabel(mark),
+        configurationChoices: markConfigurationChoices(mark.id).map((value, index) => ({ value, selected: selected?.configuration?.choice === value || (!selected?.configuration?.choice && index === 0) })),
         gradeLabel: mark.grade[0].toUpperCase() + mark.grade.slice(1),
         selected: Boolean(selected),
         eligible: availability.eligible || Boolean(selected),
@@ -295,6 +302,8 @@ async function workbenchContext(application) {
     ? application.workbenchState.materialId
     : selectedBand?.coreMaterialIds[0] ?? "";
   const tier = Math.min(6, Math.max(1, Math.trunc(Number(application.workbenchState.tier) || 1)));
+  application.workbenchState.artisanSlots ??= Array.from({ length: 6 }, (_, i) => application.workbenchState.contributorUuids?.[i] ?? "");
+  application.workbenchState.contributorUuids = application.workbenchState.artisanSlots.filter(Boolean);
   const profiles = await contributorProfiles(application);
 
   let recipe = null;
@@ -309,7 +318,8 @@ async function workbenchContext(application) {
         tier,
         coreMaterialId: application.workbenchState.materialId,
       });
-      markPlan = reconcileMarkAssignments(application, profiles, baseRecipe, selectedBand.group, tier);
+      chooseSecondaryMaterials(baseRecipe, application.workbenchState.secondaryMaterials ??= {});
+      markPlan = reconcileMarkAssignments(application, profiles, baseRecipe, selectedBand.group, tier, baseItem);
       recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments);
       if (!application.workbenchState.requiredProgress) {
         requiredProgress = defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, tier);
@@ -346,6 +356,9 @@ async function workbenchContext(application) {
       markCount: project.artisanMarks.length,
       canWork: craftingEnabled && canEdit && ["reserved", "active"].includes(project.status),
       canComplete: craftingEnabled && canEdit && project.status === "ready",
+      canManage: canEdit,
+      expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
+      canArchive: canEdit && ["completed", "cancelled"].includes(project.status),
       canCancel: canEdit && !["completed", "cancelled"].includes(project.status),
     }));
 
@@ -356,9 +369,20 @@ async function workbenchContext(application) {
     groups: evaluation.ingredientSets[0].groups.map((group) => recipeGroupContext(group, config)),
   } : null;
 
+  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles);
+  application.workbenchConfig = config;
+  const gatheringHtml = application.workbenchState.tab === "gather" ? await renderWorkbenchGathering(application) : "";
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
   return {
     party,
+    gatheringHtml,
+    teamReasons: baseRecipe ? team.reasons : [],
+    artisanSlots: team.slots.map((slot) => ({ ...slot, marks: markPlan.assignments.filter((mark) => mark.maker.actorUuid === slot.actorUuid) })),
+    secondaryMaterials: (selectedBand?.secondaries ?? []).filter((entry) => !entry.optional).map((entry) => ({
+      id: entry.id, label: entry.label, options: entry.materialIds.map((id) => ({ id, label: config.materials?.[id]?.label ?? id, selected: application.workbenchState.secondaryMaterials?.[entry.id] === id })),
+    })),
+    showArchived: application.workbenchState.showArchived === true,
+    archivedCount: projects.filter((entry) => entry.archived).length,
     canEdit,
     craftingEnabled,
     worldDate: currentWorldDate(),
@@ -401,6 +425,7 @@ async function workbenchContext(application) {
       selectedBand.group,
       tier,
       application.workbenchState.leadArtisanUuid,
+      baseItem,
     ) : [],
     selectedMarks: markPlan.assignments,
     markCapacity: {
@@ -420,12 +445,13 @@ async function workbenchContext(application) {
       && canEdit
       && baseItem
       && selectedBand
+      && team.valid
       && profiles.length
       && application.workbenchState.leadArtisanUuid
       && preview?.craftable
       && !markPlan.capacity.overCapacity
     ),
-    projects,
+    projects: projects.filter((entry) => application.workbenchState.showArchived ? entry.archived : !entry.archived),
     projectCount: projects.length,
     activeProjectCount,
   };
@@ -435,6 +461,8 @@ async function createAndReserve(application) {
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const baseItem = await resolveBaseItem(application.workbenchState.baseItemUuid);
   const band = getCraftingRecipeBand(application.workbenchState.bandId);
+  application.workbenchState.artisanSlots ??= Array.from({ length: 6 }, (_, i) => application.workbenchState.contributorUuids?.[i] ?? "");
+  application.workbenchState.contributorUuids = application.workbenchState.artisanSlots.filter(Boolean);
   const profiles = await contributorProfiles(application);
   const lead = profiles.find((entry) => entry.actorUuid === application.workbenchState.leadArtisanUuid);
   if (!party || !baseItem || !band || !lead) throw new Error(localize("CMT.Workbench.IncompleteProject"));
@@ -443,12 +471,16 @@ async function createAndReserve(application) {
     tier: application.workbenchState.tier,
     coreMaterialId: application.workbenchState.materialId,
   });
+  chooseSecondaryMaterials(baseRecipe, application.workbenchState.secondaryMaterials ??= {});
+  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles);
+  if (!team.valid) throw new Error(team.reasons.join(" "));
   const markPlan = reconcileMarkAssignments(
     application,
     profiles,
     baseRecipe,
     band.group,
     application.workbenchState.tier,
+    baseItem,
   );
   const recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments);
   const workbench = projectState(party);
@@ -467,6 +499,7 @@ async function createAndReserve(application) {
     contributors: profiles.map((profile) => ({
       actorUuid: profile.actorUuid,
       actorId: profile.actorId,
+      slotIndex: application.workbenchState.artisanSlots.indexOf(profile.actorUuid),
       name: profile.name,
       img: profile.img,
       professionIds: profile.professions.map((profession) => profession.id),
@@ -859,6 +892,10 @@ export function createWorkbenchApplication() {
           ? [...options.contributorUuids]
           : options.artisanId ? [`Actor.${options.artisanId}`] : [],
         leadArtisanUuid: options.leadArtisanUuid ?? "",
+        artisanSlots: Array.from({ length: 6 }, (_, i) => options.contributorUuids?.[i] ?? (i === 0 && options.artisanId ? `Actor.${options.artisanId}` : "")),
+        secondaryMaterials: {},
+        showArchived: false,
+        expandedProjectIds: [],
         selectedMarks: [],
         projectName: "",
         requiredProgress: 0,
@@ -875,6 +912,22 @@ export function createWorkbenchApplication() {
       super._onRender(context, options);
       const root = rootElement(this.element);
       if (!root) return;
+      if (this.workbenchState.tab === "gather") bindWorkbenchGathering(this, root);
+      for (const select of root.querySelectorAll("[data-cmt-secondary]")) {
+        select.addEventListener("change", async () => {
+          this.workbenchState.secondaryMaterials[select.dataset.cmtSecondary] = select.value;
+          this.workbenchState.requiredProgress = 0;
+          await this.render({ force: true });
+        });
+      }
+      for (const button of root.querySelectorAll("[data-cmt-open-marks]")) {
+        button.addEventListener("click", () => openArtisanMarkPicker(this, button.dataset.cmtOpenMarks));
+      }
+      bindMarkDetails(root, context.selectedMarks ?? []);
+      root.querySelector("[data-cmt-show-archived]")?.addEventListener("click", async () => {
+        this.workbenchState.showArchived = !this.workbenchState.showArchived;
+        await this.render({ force: true });
+      });
       const scrollContainer = root.querySelector(".cmt-workbench-body");
       if (scrollContainer) {
         scrollContainer.scrollTop = Math.max(0, Number(this.workbenchState.scrollTop) || 0);
@@ -905,6 +958,7 @@ export function createWorkbenchApplication() {
             ? Number(field.value)
             : field.value;
           if (stateKey === "partyId") {
+            this.workbenchState.artisanSlots = Array(6).fill("");
             this.workbenchState.contributorUuids = [];
             this.workbenchState.leadArtisanUuid = "";
             this.workbenchState.selectedMarks = [];
@@ -939,78 +993,34 @@ export function createWorkbenchApplication() {
           ui.notifications.error(error.message);
         }
       });
-      const contributorDrop = root.querySelector('[data-cmt-workbench-drop="contributors"]');
-      contributorDrop?.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        contributorDrop.classList.add("is-dragover");
-      });
-      contributorDrop?.addEventListener("dragleave", () => contributorDrop.classList.remove("is-dragover"));
-      contributorDrop?.addEventListener("drop", async (event) => {
-        event.preventDefault();
-        contributorDrop.classList.remove("is-dragover");
-        try {
-          const data = TextEditor.getDragEventData(event);
-          const uuid = data.uuid ?? (data.type === "Actor" && data.id ? `Actor.${data.id}` : "");
-          const actor = await resolveActor(uuid);
-          const profile = getArtisanProfile(actor);
-          if (!profile?.professions.length) {
-            throw new Error("Drop a PC or NPC with at least one Wrathmaker profession.");
-          }
-          if (!this.workbenchState.contributorUuids.includes(profile.actorUuid)) {
-            this.workbenchState.contributorUuids.push(profile.actorUuid);
-          }
-          this.workbenchState.leadArtisanUuid ||= profile.actorUuid;
-          await this.render({ force: true });
-        } catch (error) {
-          ui.notifications.error(error.message);
-        }
-      });
-      for (const button of root.querySelectorAll("[data-cmt-contributor-remove]")) {
+
+      for (const slot of root.querySelectorAll("[data-cmt-artisan-slot]")) {
+        const index = Number(slot.dataset.cmtArtisanSlot);
+        slot.addEventListener("dragover", (event) => { event.preventDefault(); slot.classList.add("is-dragover"); });
+        slot.addEventListener("dragleave", () => slot.classList.remove("is-dragover"));
+        slot.addEventListener("drop", async (event) => {
+          event.preventDefault();
+          slot.classList.remove("is-dragover");
+          try {
+            const data = TextEditor.getDragEventData(event);
+            const profile = getArtisanProfile(await resolveActor(data.uuid ?? (data.type === "Actor" ? `Actor.${data.id}` : "")));
+            if (!profile?.professions.length) throw new Error("Choose an actor with a Wrathmaker profession.");
+            const requirement = context.artisanSlots[index];
+            if (requirement.required && requirement.materialIds.length && !profile.professions.some((profession) => (
+              profession.materialIds.some((id) => requirement.materialIds.includes(id))
+            ))) throw new Error(`${requirement.role} requires ${requirement.requirement} expertise.`);
+            if (this.workbenchState.artisanSlots.some((uuid, i) => uuid === profile.actorUuid && i !== index)) {
+              throw new Error("This artisan already occupies a slot.");
+            }
+            this.workbenchState.artisanSlots[index] = profile.actorUuid;
+            this.workbenchState.requiredProgress = 0;
+            await this.render({ force: true });
+          } catch (error) { ui.notifications.error(error.message); }
+        });
+      }
+      for (const button of root.querySelectorAll("[data-cmt-slot-remove]")) {
         button.addEventListener("click", async () => {
-          const uuid = button.dataset.cmtContributorRemove;
-          this.workbenchState.contributorUuids = this.workbenchState.contributorUuids
-            .filter((entry) => entry !== uuid);
-          this.workbenchState.selectedMarks = this.workbenchState.selectedMarks
-            .filter((entry) => entry.actorUuid !== uuid);
-          if (this.workbenchState.leadArtisanUuid === uuid) {
-            this.workbenchState.leadArtisanUuid = this.workbenchState.contributorUuids[0] ?? "";
-          }
-          this.workbenchState.requiredProgress = 0;
-          await this.render({ force: true });
-        });
-      }
-      for (const control of root.querySelectorAll("[data-cmt-lead-artisan]")) {
-        control.addEventListener("change", async () => {
-          if (control.checked) this.workbenchState.leadArtisanUuid = control.value;
-          await this.render({ force: true });
-        });
-      }
-      for (const button of root.querySelectorAll("[data-cmt-mark-toggle]")) {
-        button.addEventListener("click", async () => {
-          const definitionId = button.dataset.cmtMarkToggle;
-          const actorUuid = button.dataset.cmtActorUuid;
-          const existing = this.workbenchState.selectedMarks
-            .findIndex((entry) => entry.definitionId === definitionId);
-          if (existing >= 0) {
-            this.workbenchState.selectedMarks.splice(existing, 1);
-          } else {
-            this.workbenchState.selectedMarks.push({
-              definitionId,
-              actorUuid,
-              anchorSlotId: button.dataset.cmtAnchorId,
-            });
-          }
-          this.workbenchState.requiredProgress = 0;
-          await this.render({ force: true });
-        });
-      }
-      for (const select of root.querySelectorAll("[data-cmt-mark-anchor]")) {
-        select.addEventListener("change", async () => {
-          const selected = this.workbenchState.selectedMarks.find((entry) => (
-            entry.definitionId === select.dataset.cmtMarkAnchor
-            && entry.actorUuid === select.dataset.cmtActorUuid
-          ));
-          if (selected) selected.anchorSlotId = select.value;
+          this.workbenchState.artisanSlots[Number(button.dataset.cmtSlotRemove)] = "";
           this.workbenchState.requiredProgress = 0;
           await this.render({ force: true });
         });
@@ -1024,7 +1034,7 @@ export function createWorkbenchApplication() {
         const party = partyActors().find((entry) => entry.id === this.workbenchState.partyId);
         party?.sheet?.render(true);
       });
-      root.querySelector('[data-cmt-workbench-action="open-gathering"]')?.addEventListener("click", () => openGatheringApplication());
+
       root.querySelector('[data-cmt-workbench-action="create-project"]')?.addEventListener("click", async () => {
         try {
           await createAndReserve(this);
@@ -1035,7 +1045,38 @@ export function createWorkbenchApplication() {
         }
       });
       for (const card of root.querySelectorAll("[data-cmt-project-id]")) {
+        card.querySelector(".cmt-project-details")?.addEventListener("toggle", (event) => {
+          const ids = new Set(this.workbenchState.expandedProjectIds ?? []);
+          if (event.currentTarget.open) ids.add(card.dataset.cmtProjectId);
+          else ids.delete(card.dataset.cmtProjectId);
+          this.workbenchState.expandedProjectIds = [...ids];
+        });
         const projectId = card.dataset.cmtProjectId;
+        bindMarkDetails(card, context.projects.find((entry) => entry.id === projectId)?.artisanMarks ?? []);
+        for (const action of ["archive", "remove"]) {
+          card.querySelector(`[data-cmt-project-action="${action}"]`)?.addEventListener("click", async () => {
+            try {
+              const party = partyActors().find((entry) => entry.id === this.workbenchState.partyId);
+              if (!canEditParty(party)) throw new Error("You cannot edit this Party Stash.");
+              if (action === "remove" && !await foundry.applications.api.DialogV2.confirm({
+                window: { title: "Remove project" },
+                content: "<p>Remove this project record and release any unconsumed reservations? Created items and spent materials are unaffected.</p>",
+              })) return;
+              const state = projectState(party);
+              const project = state.projects.find((entry) => entry.id === projectId);
+              if (!project) return;
+              if (completionLocks.has(party.id)) throw new Error("This Party Stash is completing a project.");
+              if (action === "archive") {
+                if (!["completed", "cancelled"].includes(project.status)) throw new Error("Complete or cancel this project first.");
+                project.archived = !project.archived;
+              } else {
+                state.projects = state.projects.filter((entry) => entry.id !== projectId);
+              }
+              await saveWorkbench(party, state);
+              await this.render({ force: true });
+            } catch (error) { ui.notifications.error(error.message); }
+          });
+        }
         card.querySelector('[data-cmt-project-action="roll-work"]')?.addEventListener("click", async (event) => {
           try {
             const days = Number(card.querySelector('[data-cmt-project-field="days"]')?.value) || 1;
@@ -1116,4 +1157,93 @@ export function openWorkbenchApplication(options = {}) {
   const application = new WorkbenchApplication(options);
   application.render({ force: true });
   return application;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]);
+}
+
+function bindMarkDetails(root, marks) {
+  for (const badge of root.querySelectorAll("[data-cmt-mark-detail]")) {
+    const mark = marks.find((entry) => entry.definitionId === badge.dataset.cmtMarkDetail || entry.id === badge.dataset.cmtMarkDetail);
+    if (!mark || badge.dataset.cmtDetailBound) continue;
+    badge.dataset.cmtDetailBound = "true";
+    badge.addEventListener("dblclick", () => {
+      new foundry.applications.api.DialogV2({
+        window: { title: mark.name },
+        content: `<p>${escapeHtml(mark.effectSummary)}</p><p>${escapeHtml(mark.grade)} · ${mark.capacityCost} Capacity</p>`,
+        buttons: [{ action: "close", label: "Close", default: true }],
+      }).render({ force: true });
+    });
+  }
+}
+
+function openArtisanMarkPicker(owner, actorUuid) {
+  const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+  const planKey = () => JSON.stringify([
+    owner.workbenchState.baseItemUuid, owner.workbenchState.bandId,
+    owner.workbenchState.materialId, owner.workbenchState.tier,
+    owner.workbenchState.artisanSlots, owner.workbenchState.secondaryMaterials,
+    owner.workbenchState.selectedMarks,
+  ]);
+  const originalPlan = planKey();
+  class ArtisanMarkPicker extends HandlebarsApplicationMixin(ApplicationV2) {
+    static DEFAULT_OPTIONS = {
+      classes: [MODULE_ID, "cmt-workbench-app", "cmt-mark-picker"],
+      position: { width: 780, height: 700 },
+      window: { title: "Choose Artisan Marks", resizable: true },
+    };
+    static PARTS = { main: { template: `modules/${MODULE_ID}/templates/artisan-mark-picker.hbs` } };
+    constructor() {
+      super();
+      this.draft = { workbenchState: clone(owner.workbenchState) };
+      this.scrollTop = 0;
+    }
+    async _prepareContext() {
+      const context = await workbenchContext(this.draft);
+      const tray = context.markTrays.find((entry) => entry.actorUuid === actorUuid);
+      return { ...context, markTrays: tray ? [tray] : [] };
+    }
+    _onRender(context, options) {
+      super._onRender(context, options);
+      const root = rootElement(this.element);
+      const scroll = root.querySelector(".cmt-workbench-body");
+      scroll.scrollTop = this.scrollTop;
+      scroll.addEventListener("scroll", () => { this.scrollTop = scroll.scrollTop; }, { passive: true });
+      for (const button of root.querySelectorAll("[data-cmt-mark-toggle]")) {
+        button.addEventListener("click", async () => {
+          const marks = this.draft.workbenchState.selectedMarks;
+          const index = marks.findIndex((entry) => entry.definitionId === button.dataset.cmtMarkToggle);
+          if (index >= 0) marks.splice(index, 1);
+          else marks.push({ definitionId: button.dataset.cmtMarkToggle, actorUuid, anchorSlotId: button.dataset.cmtAnchorId });
+          await this.render({ force: true });
+        });
+      }
+      for (const select of root.querySelectorAll("[data-cmt-mark-anchor]")) {
+        select.addEventListener("change", () => {
+          const mark = this.draft.workbenchState.selectedMarks.find((entry) => entry.definitionId === select.dataset.cmtMarkAnchor);
+          if (mark) mark.anchorSlotId = select.value;
+        });
+      }
+      for (const select of root.querySelectorAll("[data-cmt-mark-choice]")) {
+        select.addEventListener("change", () => {
+          const mark = this.draft.workbenchState.selectedMarks.find((entry) => entry.definitionId === select.dataset.cmtMarkChoice);
+          if (mark) mark.configuration = { choice: select.value };
+        });
+      }
+      root.querySelector("[data-cmt-marks-continue]").addEventListener("click", async () => {
+        if (planKey() !== originalPlan) {
+          ui.notifications.warn("The project changed. Reopen this artisan to choose Marks for the current plan.");
+          return;
+        }
+        owner.workbenchState.selectedMarks = clone(this.draft.workbenchState.selectedMarks);
+        owner.workbenchState.requiredProgress = 0;
+        await owner.render({ force: true });
+        await this.close();
+      });
+    }
+  }
+  new ArtisanMarkPicker().render({ force: true });
 }
