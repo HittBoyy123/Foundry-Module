@@ -443,6 +443,7 @@ export function normalizeRulesConfig(input) {
   }
   const crafting = {
     enabled: parsed.crafting?.enabled !== false,
+    workbenchEnabled: parsed.crafting?.workbenchEnabled === true,
   };
   if (parsed.gathering !== undefined && !isPlainObject(parsed.gathering)) {
     throw new ConfigValidationError("gathering must be an object.");

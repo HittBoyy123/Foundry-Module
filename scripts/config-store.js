@@ -16,6 +16,7 @@ export function registerRulesSetting() {
     onChange: () => {
       cachedConfig = null;
       refreshPreparedData();
+      globalThis.Hooks?.callAll?.("wrathmakerRulesConfigChanged", getRulesConfig());
     },
   });
 }
@@ -35,7 +36,6 @@ export async function setRulesConfig(value) {
   const normalized = normalizeRulesConfig(value);
   await game.settings.set(MODULE_ID, RULES_SETTING, JSON.stringify(normalized));
   cachedConfig = normalized;
-  globalThis.Hooks?.callAll?.("wrathmakerRulesConfigChanged", normalized);
   return normalized;
 }
 

@@ -87,6 +87,7 @@ export function expandDottedFormData(form) {
 export function buildDashboardContext(config) {
   return {
     craftingEnabled: config.crafting?.enabled !== false,
+    workbenchEnabled: config.crafting?.workbenchEnabled === true,
     gatheringEnabled: config.gathering?.enabled !== false,
     gatheringEnvironments: GATHERING_ENVIRONMENT_SOURCES.map((environment) => ({
       id: environment.id,
@@ -135,6 +136,7 @@ export function applyDashboardChanges(config, form) {
   const updated = clone(config);
   updated.crafting ??= {};
   updated.crafting.enabled = checked(form.crafting?.enabled);
+  updated.crafting.workbenchEnabled = checked(form.crafting?.workbenchEnabled);
   updated.gathering ??= {};
   updated.gathering.enabled = checked(form.gathering?.enabled);
   updated.gathering.environmentId = String(

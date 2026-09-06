@@ -15,6 +15,32 @@ import {
 
 const config = normalizeRulesConfig(cloneDefaultRulesConfig());
 
+test("experimental Workbench is opt-in for new and existing worlds", () => {
+  assert.equal(config.crafting.workbenchEnabled, false);
+  const legacy = cloneDefaultRulesConfig();
+  delete legacy.crafting.workbenchEnabled;
+  assert.equal(normalizeRulesConfig(legacy).crafting.workbenchEnabled, false);
+  const enabled = normalizeRulesConfig(applyDashboardChanges(config, {
+    "crafting.enabled": true,
+    "crafting.workbenchEnabled": "on",
+    "gathering.enabled": true,
+    "hexploration.enabled": true,
+  }));
+  assert.equal(enabled.crafting.workbenchEnabled, true);
+  assert.equal(buildDashboardContext(enabled).workbenchEnabled, true);
+  const disabled = normalizeRulesConfig(applyDashboardChanges(enabled, {
+    "crafting.enabled": true,
+    "crafting.workbenchEnabled": false,
+    "gathering.enabled": true,
+    "hexploration.enabled": true,
+  }));
+  assert.equal(disabled.crafting.workbenchEnabled, false);
+  assert.equal(disabled.crafting.enabled, true);
+  assert.equal(disabled.gathering.enabled, true);
+  assert.deepEqual(disabled.materials, enabled.materials);
+  assert.deepEqual(disabled.professions, enabled.professions);
+});
+
 test("dashboard context exposes friendly crafting, profession, and material summaries", () => {
   const context = buildDashboardContext(config);
   assert.equal(context.craftingEnabled, true);

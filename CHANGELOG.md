@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.20.0 — Workbench controls, recovery, and disassembly (2026-09-06)
+
+- Added a Disassemble Workbench tab with a confirmed 90% return of recorded consumed materials, rounded down per material/tier/variant. Single completed outputs in the Party Stash are processed by the active GM with transaction locking, fresh-preview checks, rollback, and a permanent disassembly record that blocks repeat salvage and item recovery.
+
+- Added a default-off Crafting Workbench (Experimental) GM switch, separate from existing material rules. Disabling hides launch controls, refreshes open windows, and blocks crafting project actions, including GM socket completion, without deleting saved projects or changing existing gear.
+
+- Added a GM-only Recover Missing Item action for completed projects, including archived records. Recovery restores the output to the Party Stash without consuming resources or downtime, checks for an existing output, and rolls back a replacement if its project record cannot be saved.
+- Newly completed projects retain an output snapshot for recovery. Older projects can be rebuilt from their original base item and saved crafting data when that base item remains available.
+- Refined artisan cards with portrait-only white frames and names, professions, and learned specialisations alongside them; capitalised material requirement labels.
+- Restyled item-sheet Make & Marks as a neutral Details fieldset with material, Mark count, Capacity, and expandable Mark information.
+
 ## 0.19.1 — Item Make & Marks presentation (2026-09-05)
 
 - Moved Make & Marks from the physical-item sidebar into the Details panel's Precious Material and Runes area. Native fields remain intact but hidden while the replacement is displayed.

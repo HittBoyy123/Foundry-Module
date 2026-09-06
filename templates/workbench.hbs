@@ -1,4 +1,7 @@
 <div class="cmt-workbench-body">
+  {{#unless workbenchEnabled}}
+    <p class="cmt-workbench-empty" role="status">{{localize "CMT.Workbench.FeatureDisabled"}}</p>
+  {{else}}
   <header class="cmt-workbench-header">
     <div>
       <h2><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{localize "CMT.Workbench.Heading"}}</h2>
@@ -33,6 +36,9 @@
       <i class="fa-solid fa-list-check" aria-hidden="true"></i> {{localize "CMT.Workbench.Projects"}}
       <span>{{activeProjectCount}}</span>
     </button>
+    <button type="button" data-cmt-workbench-tab="disassemble" class="{{#if tabs.disassemble}}active{{/if}}">
+      <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Disassemble
+    </button>
   </nav>
 
   {{#unless canEdit}}
@@ -45,6 +51,23 @@
       <i class="fa-solid fa-ban" aria-hidden="true"></i> {{localize "CMT.Workbench.Disabled"}}
     </div>
   {{/unless}}
+
+  {{#if tabs.disassemble}}
+    <section class="cmt-workbench-panel cmt-workbench-projects">
+      <div class="cmt-workbench-section-title"><h3>Disassemble Items</h3><span>90% material return</span></div>
+      <p>Place a completed Workbench item in the Party Stash. Recover 90% of each consumed material, rounded down. Marks are destroyed; disassembled items cannot be recovered.</p>
+      {{#each disassemblyItems}}
+        <article class="cmt-panel">
+          <h4>{{itemName}}</h4>
+          {{#if error}}<p class="cmt-workbench-notice is-warning">{{error}}</p>{{/if}}
+          <ul>{{#each returns}}<li>{{name}} — Tier {{tier}}: {{consumed}} used → <strong>{{quantity}} returned</strong></li>{{/each}}</ul>
+          <div class="cmt-workbench-actions"><button type="button" data-cmt-disassemble="{{projectId}}" {{#unless canDisassemble}}disabled{{/unless}}>
+            <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Disassemble…
+          </button></div>
+        </article>
+      {{else}}<p>No eligible recorded items in the Party Stash. Single-item projects only; unstack and unequip the item first.</p>{{/each}}
+    </section>
+  {{/if}}
 
   {{#if tabs.craft}}
     <section class="cmt-workbench-panel cmt-workbench-craft">
@@ -125,9 +148,14 @@
               <header><strong>{{role}}</strong><small>{{#if required}}Required{{else}}Optional{{/if}}</small></header>
               <span class="cmt-slot-requirement">{{requirement}}</span>
               {{#if actorUuid}}
-                <button type="button" class="cmt-artisan-portrait" data-cmt-open-marks="{{actorUuid}}" title="Choose Artisan Marks">
-                  <img src="{{img}}" alt=""><span><strong>{{name}}</strong><small>{{professionSummary}}</small></span>
-                </button>
+                <div class="cmt-artisan-identity">
+                  <button type="button" class="cmt-artisan-portrait" data-cmt-open-marks="{{actorUuid}}" title="Choose Artisan Marks for {{name}}" aria-label="Choose Artisan Marks for {{name}}">
+                    <img src="{{img}}" alt="">
+                  </button>
+                  <div class="cmt-artisan-text"><strong>{{name}}</strong><span>{{professionSummary}}</span>
+                    {{#if specializationSummary}}<small>{{specializationSummary}}</small>{{/if}}
+                  </div>
+                </div>
                 <div class="cmt-slot-actions"><button type="button" data-cmt-open-marks="{{actorUuid}}">Choose Marks</button>
                 <button type="button" data-cmt-slot-remove="{{index}}" title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
                 <div class="cmt-mark-badges">
@@ -251,6 +279,9 @@
             </div>
           {{/if}}
           <footer>
+            {{#if canRecover}}
+              <button type="button" data-cmt-project-action="recover"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Recover Missing Item</button>
+            {{/if}}
             {{#if canComplete}}
               <button type="button" data-cmt-project-action="complete" class="primary">
                 <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
@@ -274,4 +305,5 @@
       {{/each}}
     </section>
   {{/if}}
+  {{/unless}}
 </div>

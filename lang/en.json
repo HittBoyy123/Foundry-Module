@@ -82,6 +82,8 @@
         "Heading": "Wrathmaker Game Settings",
         "Intro": "World rules for crafting, gathering, travel, and professions.",
         "Features": "Enabled features",
+        "Workbench": "Crafting Workbench (Experimental)",
+        "WorkbenchHint": "Off by default. Enable project crafting and Artisan Mark selection for testing. Disabling preserves projects, resources, and existing gear.",
         "Crafting": "Crafting material rules",
         "CraftingHint": "Show Material and Tier on supported item sheets and apply their names, prices, rarities, and bonuses.",
         "Gathering": "Resource gathering",
@@ -208,6 +210,7 @@
       }
     },
     "Workbench": {
+      "FeatureDisabled": "The experimental Crafting Workbench is disabled. A GM can enable it in Wrathmaker Game Settings. Saved projects and existing gear are preserved.",
       "Title": "Wrathmaker Workbench",
       "Open": "Open Workbench",
       "MenuName": "Wrathmaker Workbench",

@@ -26,6 +26,16 @@ test("Core and secondary slots require material expertise and preserve six stabl
   assert.equal(plan.ingredientSets[0].groups[1].options[0].materialId, "wood");
 });
 
+test("artisan cards capitalize requirements and include learned specializations", () => {
+  const plan = chooseSecondaryMaterials(recipe(), { grip: "leather" });
+  const cards = buildArtisanSlots(plan, ["smith", "leather"], [
+    { ...smith, specializations: [{ name: "Hellforging" }, { name: "Radiant Forging" }] }, leather,
+  ]);
+  assert.equal(cards[0].requirement, "Metal");
+  assert.equal(cards[1].requirement, "Leather / Hide");
+  assert.equal(cards[0].specializationSummary, "Hellforging · Radiant Forging");
+});
+
 test("secondary coverage accounts for every required component in a multi-material recipe", () => {
   const plan = chooseSecondaryMaterials(buildCraftingRecipeFromBand("weapon-firearm", { targetItem: weapon, tier: 4 }), {});
   assert.equal(validateArtisanTeam(plan, ["smith", "carpenter"], [smith, carpenter]).valid, false);
@@ -99,6 +109,7 @@ test("equivalent non-stacking effects share a group and Crown Prism requires a T
 
 test("Workbench prepares six qualified slots, Mark choices, and embedded Gathering", async () => {
   const config = cloneDefaultRulesConfig();
+  config.crafting.workbenchEnabled = true;
   const makeActor = (id, professionId) => ({
     id, uuid: "Actor." + id, documentName: "Actor", type: "character", name: id, level: 10,
     items: [{ type: "feat", flags: { [MODULE]: { profession: { id: professionId } } } }],

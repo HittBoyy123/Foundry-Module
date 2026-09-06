@@ -22,7 +22,9 @@ import {
 import { normalizeItemFlags } from "./model.js";
 import { normalizeDegreeOfSuccess } from "./gathering-model.js";
 import { renderWorkbenchGathering, bindWorkbenchGathering } from "./gathering.js";
-import { validateArtisanTeam, chooseSecondaryMaterials } from "./workbench-team.js";
+import { validateArtisanTeam, chooseSecondaryMaterials, materialDisplayName } from "./workbench-team.js";
+import { recoverProjectItem } from "./project-recovery.js";
+import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem } from "./disassembly.js";
 import { markAppliesToItem, markConfigurationChoices, markAutomationLabel } from "./artisan-mark-effects.js";
 import {
   augmentRecipeWithArtisanMarks,
@@ -40,6 +42,15 @@ const COMPLETION_REQUEST_TIMEOUT_MS = 30_000;
 const pendingCompletionRequests = new Map();
 const completionLocks = new Set();
 let workbenchSocketInstalled = false;
+const openWorkbenches = new Set();
+
+function workbenchEnabled() {
+  return getRulesConfig().crafting?.workbenchEnabled === true;
+}
+
+function requireWorkbench() {
+  if (!workbenchEnabled()) throw new Error(localize("CMT.Workbench.FeatureDisabled"));
+}
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -89,6 +100,7 @@ function projectState(party) {
 }
 
 async function saveWorkbench(party, workbench) {
+  requireWorkbench();
   if (!canEditParty(party)) throw new Error(localize("CMT.Workbench.NotEditable"));
   const normalized = normalizeCraftingWorkbench(workbench);
   await party.setFlag(MODULE_ID, "workbench", normalized);
@@ -97,7 +109,7 @@ async function saveWorkbench(party, workbench) {
 
 function materialLabel(materialId, tier = null) {
   const material = getRulesConfig().materials?.[materialId];
-  if (!material) return materialId.replaceAll("-", " ");
+  if (!material) return materialDisplayName(materialId);
   if (tier && material.tierLabels?.[tier]) return material.tierLabels[tier];
   return material.label;
 }
@@ -232,7 +244,7 @@ function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier
           selected: anchor.id === chosenAnchorId,
         })),
         materialSummary: mark.materialUnits > 0
-          ? `${mark.materialUnits} unit${mark.materialUnits === 1 ? "" : "s"} of ${mark.requiredMaterialIds.join(" or ").replaceAll("-", " ")}`
+          ? `${mark.materialUnits} unit${mark.materialUnits === 1 ? "" : "s"} of ${mark.requiredMaterialIds.map(id => materialLabel(id)).join(" or ")}`
           : "Workshop consumables only",
       };
     });
@@ -348,7 +360,7 @@ async function workbenchContext(application) {
       ...project,
       recipeName: getCraftingRecipeBand(project.recipeBandId)?.label ?? project.recipe.name,
       coreLabel: `Tier ${project.coreTier} ${materialLabel(project.coreMaterialId, project.coreTier)}`,
-      statusLabel: statusLabels[project.status] ?? project.status,
+      statusLabel: project.disassembledAt ? "Disassembled" : statusLabels[project.status] ?? project.status,
       statusClass: `is-${project.status}`,
       progressPercent: Math.round((project.currentProgress / project.requiredProgress) * 100),
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
@@ -359,6 +371,7 @@ async function workbenchContext(application) {
       canManage: canEdit,
       expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
       canArchive: canEdit && ["completed", "cancelled"].includes(project.status),
+      canRecover: game.user.isGM && canEdit && project.status === "completed" && !project.disassembledAt,
       canCancel: canEdit && !["completed", "cancelled"].includes(project.status),
     }));
 
@@ -375,6 +388,13 @@ async function workbenchContext(application) {
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
   return {
     party,
+    disassemblyItems: workbench.projects.filter(project => project.status === "completed" && !project.disassembledAt)
+      .map(project => {
+        const item = findDisassemblyItem(party, project);
+        if (!item) return null;
+        try { return { ...buildDisassemblyPlan(project, item), canDisassemble: canEdit }; }
+        catch (error) { return { projectId: project.id, itemName: item.name, error: error.message, canDisassemble: false }; }
+      }).filter(Boolean),
     gatheringHtml,
     teamReasons: baseRecipe ? team.reasons : [],
     artisanSlots: team.slots.map((slot) => ({ ...slot, marks: markPlan.assignments.filter((mark) => mark.maker.actorUuid === slot.actorUuid) })),
@@ -391,6 +411,7 @@ async function workbenchContext(application) {
       craft: application.workbenchState.tab === "craft",
       gather: application.workbenchState.tab === "gather",
       projects: application.workbenchState.tab === "projects",
+      disassemble: application.workbenchState.tab === "disassemble",
     },
     baseItem: baseItem ? {
       name: baseItem.name,
@@ -458,6 +479,7 @@ async function workbenchContext(application) {
 }
 
 async function createAndReserve(application) {
+  requireWorkbench();
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const baseItem = await resolveBaseItem(application.workbenchState.baseItemUuid);
   const band = getCraftingRecipeBand(application.workbenchState.bandId);
@@ -526,6 +548,7 @@ async function createAndReserve(application) {
 }
 
 async function rollWorkBlock(application, projectId, days, event) {
+  requireWorkbench();
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const workbench = projectState(party);
   const project = workbench.projects.find((entry) => entry.id === projectId);
@@ -584,14 +607,7 @@ function cloneItemSource(document) {
   return source;
 }
 
-async function completeProjectTransaction(party, projectId, auditUser) {
-  const workbench = projectState(party);
-  const current = workbench.projects.find((entry) => entry.id === projectId);
-  if (!current) throw new Error(localize("CMT.Workbench.ProjectMissing"));
-  const freshPlan = buildConsumptionPlan(current, party.items);
-  const baseItem = await resolveBaseItem(current.baseItemUuid);
-  if (!baseItem) throw new Error(localize("CMT.Workbench.BaseItemMissing"));
-  const config = getRulesConfig();
+function buildCompletedItemSource(current, baseItem, config = getRulesConfig()) {
   const source = cloneItemSource(baseItem);
   source.system ??= {};
   source.system.quantity = current.recipe.result.quantity;
@@ -670,7 +686,7 @@ async function completeProjectTransaction(party, projectId, auditUser) {
         projectName: current.name,
         artisanUuid: current.leadArtisanUuid,
         artisanName: current.leadArtisanName,
-        completedAt: Date.now(),
+        completedAt: current.completedAt ?? Date.now(),
         downtimeSpent: current.downtimeSpent,
         contributors: current.contributors.map((contributor) => ({
           actorUuid: contributor.actorUuid,
@@ -693,15 +709,30 @@ async function completeProjectTransaction(party, projectId, auditUser) {
     tier: current.coreTier,
     crafting,
   }, config);
+  return source;
+}
+
+async function completeProjectTransaction(party, projectId, auditUser) {
+  requireWorkbench();
+  const workbench = projectState(party);
+  const current = workbench.projects.find((entry) => entry.id === projectId);
+  if (!current) throw new Error(localize("CMT.Workbench.ProjectMissing"));
+  const freshPlan = buildConsumptionPlan(current, party.items);
+  const baseItem = await resolveBaseItem(current.baseItemUuid);
+  if (!baseItem) throw new Error(localize("CMT.Workbench.BaseItemMissing"));
+  const source = buildCompletedItemSource(current, baseItem);
 
   const consumeUpdates = freshPlan.map((entry) => ({ _id: entry.itemId, "system.quantity": entry.afterQuantity }));
   const rollbackUpdates = freshPlan.map((entry) => ({ _id: entry.itemId, "system.quantity": entry.beforeQuantity }));
   let created = null;
+  requireWorkbench();
   try {
     await party.updateEmbeddedDocuments("Item", consumeUpdates);
     [created] = await party.createEmbeddedDocuments("Item", [source]);
+    if (!created?.uuid) throw new Error("Foundry did not create the completed item.");
     const completed = completeCraftingProject(current, {
       finalItemUuid: created?.uuid ?? "",
+      finalItemSource: source,
       user: auditUser,
     });
     await saveWorkbench(party, replaceProject(workbench, completed));
@@ -727,7 +758,44 @@ async function completeProjectTransaction(party, projectId, auditUser) {
   return { projectId: current.id, projectName: current.name, finalItemUuid: created?.uuid ?? "" };
 }
 
+async function recoverFinishedItem(application, projectId) {
+  requireWorkbench();
+  if (!game.user.isGM) throw new Error("Only a GM can recover a project item.");
+  const primaryGM = activePrimaryGM();
+  if (primaryGM && primaryGM.id !== game.user.id) {
+    throw new Error(`Ask ${primaryGM.name}, the active primary GM, to recover this item.`);
+  }
+  const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
+  if (!party) throw new Error("Choose the project's party.");
+  const project = projectState(party).projects.find(entry => entry.id === projectId);
+  if (!project || project.status !== "completed") throw new Error("Only completed projects can recover an item.");
+  const legacyNotice = project.finalItemSource ? "" : "<p>This older project will be rebuilt from its original base item and saved crafting data.</p>";
+  const confirmed = await foundry.applications.api.DialogV2.confirm({
+    window: { title: "Recover finished item" },
+    content: "<p>Create a replacement in the Party Stash if the original item is missing? This costs no resources or downtime.</p>" + legacyNotice,
+  });
+  if (!confirmed) return;
+  requireWorkbench();
+  await recoverProjectItem(party, projectId, {
+    user: game.user, locks: completionLocks, loadWorkbench: projectState, saveWorkbench,
+    findExisting: async (entry) => {
+      if (entry.finalItemUuid && await resolveBaseItem(entry.finalItemUuid)) return true;
+      const actors = [...Array.from(game.actors ?? []), ...Array.from(game.scenes ?? []).flatMap(scene =>
+        Array.from(scene.tokens ?? []).map(token => token.actor).filter(Boolean))];
+      const items = [...Array.from(game.items ?? []), ...actors.flatMap(actor => Array.from(actor.items ?? []))];
+      return items.some(item => item.flags?.[MODULE_ID]?.crafting?.provenance?.some(record => record.projectId === entry.id));
+    },
+    buildLegacySource: async (entry) => {
+      const base = await resolveBaseItem(entry.baseItemUuid);
+      if (!base) throw new Error("The original base item is missing and this older project has no saved output snapshot.");
+      return buildCompletedItemSource(entry, base);
+    },
+  });
+  ui.notifications.info("Finished item recovered into the Party Stash. No resources were consumed.");
+}
+
 async function runCompletionWithLock(party, projectId, auditUser) {
+  requireWorkbench();
   // Lock the whole Party Stash, not only one project. Two different projects
   // can reserve different quantities from the same stack and must not calculate
   // their before/after values concurrently.
@@ -741,7 +809,7 @@ async function runCompletionWithLock(party, projectId, auditUser) {
   }
 }
 
-function requestGMProjectCompletion(party, projectId) {
+function requestGMProjectCompletion(party, projectId, disassemblySignature = null) {
   const gm = activePrimaryGM();
   if (!gm) return Promise.reject(new Error(localize("CMT.Workbench.NoActiveGM")));
   const requestId = foundry.utils.randomID();
@@ -752,7 +820,8 @@ function requestGMProjectCompletion(party, projectId) {
     }, COMPLETION_REQUEST_TIMEOUT_MS);
     pendingCompletionRequests.set(requestId, { resolve, reject, timeout, gmId: gm.id });
     game.socket.emit(WORKBENCH_SOCKET, {
-      type: "complete-request",
+      type: disassemblySignature ? "disassemble-request" : "complete-request",
+      disassemblySignature,
       requestId,
       gmId: gm.id,
       userId: game.user.id,
@@ -790,10 +859,12 @@ async function handleCompletionRequest(payload) {
     if (party.canUserModify?.(requestingUser, "update") !== true) {
       throw new Error(localize("CMT.Workbench.CompletionNotAllowed"));
     }
-    response.result = await runCompletionWithLock(party, payload.projectId, {
-      id: requestingUser.id,
-      name: requestingUser.name,
-    });
+    response.result = payload.type === "disassemble-request"
+      ? await runDisassembly(party, payload.projectId, payload.disassemblySignature)
+      : await runCompletionWithLock(party, payload.projectId, {
+        id: requestingUser.id,
+        name: requestingUser.name,
+      });
     response.ok = true;
   } catch (error) {
     console.error(`${MODULE_ID} | GM project completion failed.`, error);
@@ -807,7 +878,7 @@ function installWorkbenchSocket() {
   workbenchSocketInstalled = true;
   game.socket.on(WORKBENCH_SOCKET, (payload) => {
     if (settleCompletionResponse(payload)) return;
-    if (payload?.type !== "complete-request" || !game.user.isGM) return;
+    if (!["complete-request", "disassemble-request"].includes(payload?.type) || !game.user.isGM) return;
     const primaryGM = activePrimaryGM();
     if (payload.gmId !== game.user.id || primaryGM?.id !== game.user.id) return;
     void handleCompletionRequest(payload);
@@ -815,6 +886,7 @@ function installWorkbenchSocket() {
 }
 
 async function completeProject(application, projectId) {
+  requireWorkbench();
   const { DialogV2 } = foundry.applications.api;
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const workbench = projectState(party);
@@ -840,6 +912,35 @@ async function completeProject(application, projectId) {
     { project: result.projectName ?? project.name },
     `${result.projectName ?? project.name} was completed and added to the Party Stash.`,
   ));
+}
+
+async function runDisassembly(party, projectId, expectedSignature) {
+  return disassembleProjectItem(party, projectId, {
+    user: game.user, locks: completionLocks, loadWorkbench: projectState, requireEnabled: requireWorkbench,
+    expectedSignature,
+    saveWorkbench: (actor, state, options = {}) => options.rollback
+      ? actor.setFlag(MODULE_ID, "workbench", normalizeCraftingWorkbench(state))
+      : saveWorkbench(actor, state),
+  });
+}
+
+async function confirmDisassembly(application, projectId) {
+  requireWorkbench();
+  const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
+  if (!canEditParty(party)) throw new Error("You cannot modify this Party Stash.");
+  const project = projectState(party).projects.find(entry => entry.id === projectId);
+  const plan = buildDisassemblyPlan(project, findDisassemblyItem(party, project));
+  const list = plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.consumed} → ${row.quantity}</li>`).join("");
+  const confirmed = await foundry.applications.api.DialogV2.confirm({
+    window: { title: "Disassemble Item" }, modal: true,
+    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)}</strong> and return these materials to the Party Stash?</p><ul>${list}</ul><p>90% return, rounded down per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
+  });
+  if (!confirmed) return;
+  requireWorkbench();
+  const primaryGM = activePrimaryGM();
+  if (game.user.isGM && primaryGM?.id === game.user.id) await runDisassembly(party, projectId, plan.signature);
+  else await requestGMProjectCompletion(party, projectId, plan.signature);
+  ui.notifications.info("Item disassembled. Returned materials are in the Party Stash.");
 }
 
 async function cancelProject(application, projectId) {
@@ -905,14 +1006,30 @@ export function createWorkbenchApplication() {
 
     async _prepareContext(options) {
       const context = await super._prepareContext(options);
-      return { ...context, ...(await workbenchContext(this)) };
+      if (!workbenchEnabled()) return { ...context, workbenchEnabled: false };
+      return { ...context, ...(await workbenchContext(this)), workbenchEnabled: true };
+    }
+
+    async close(options) {
+      openWorkbenches.delete(this);
+      return super.close(options);
     }
 
     _onRender(context, options) {
       super._onRender(context, options);
+      openWorkbenches.add(this);
+      if (!workbenchEnabled()) return;
       const root = rootElement(this.element);
       if (!root) return;
       if (this.workbenchState.tab === "gather") bindWorkbenchGathering(this, root);
+      for (const button of root.querySelectorAll("[data-cmt-disassemble]")) {
+        button.addEventListener("click", async () => {
+          try {
+            await confirmDisassembly(this, button.dataset.cmtDisassemble);
+            await this.render({ force: true });
+          } catch (error) { ui.notifications.error(error.message, { permanent: true }); }
+        });
+      }
       for (const select of root.querySelectorAll("[data-cmt-secondary]")) {
         select.addEventListener("change", async () => {
           this.workbenchState.secondaryMaterials[select.dataset.cmtSecondary] = select.value;
@@ -1096,6 +1213,12 @@ export function createWorkbenchApplication() {
             ui.notifications.error(error.message, { permanent: true });
           }
         });
+        card.querySelector('[data-cmt-project-action="recover"]')?.addEventListener("click", async () => {
+          try {
+            await recoverFinishedItem(this, projectId);
+            await this.render({ force: true });
+          } catch (error) { ui.notifications.error(error.message); }
+        });
         card.querySelector('[data-cmt-project-action="cancel"]')?.addEventListener("click", async () => {
           try {
             await cancelProject(this, projectId);
@@ -1113,8 +1236,18 @@ export function createWorkbenchApplication() {
 export function registerWorkbench() {
   WorkbenchApplication = createWorkbenchApplication();
   Hooks.once("ready", installWorkbenchSocket);
+  Hooks.on("wrathmakerRulesConfigChanged", () => {
+    for (const application of openWorkbenches) {
+      if (application.rendered) void application.render({ force: true });
+    }
+    ui.items?.render?.(false);
+  });
   Hooks.on("renderItemDirectory", (_application, element) => {
     const root = rootElement(element);
+    if (!workbenchEnabled()) {
+      root?.querySelector("[data-cmt-open-workbench]")?.remove();
+      return;
+    }
     if (!root || root.querySelector("[data-cmt-open-workbench]")) return;
     const actions = root.querySelector(".directory-header .header-actions, .directory-header .action-buttons, .directory-header");
     if (!actions) return;
@@ -1129,6 +1262,10 @@ export function registerWorkbench() {
     const party = application.actor ?? application.document;
     if (party?.type !== "party") return;
     const root = rootElement(element) ?? rootElement(application.element);
+    if (!workbenchEnabled()) {
+      root?.querySelector("[data-cmt-party-workbench]")?.remove();
+      return;
+    }
     const form = root?.matches?.("form") ? root : root?.querySelector("form");
     const details = form?.querySelector(":scope > header .details");
     if (!details || details.querySelector("[data-cmt-party-workbench]")) return;
@@ -1153,6 +1290,10 @@ export function registerWorkbench() {
 }
 
 export function openWorkbenchApplication(options = {}) {
+  if (!workbenchEnabled()) {
+    ui.notifications.warn(localize("CMT.Workbench.FeatureDisabled"));
+    return null;
+  }
   if (!WorkbenchApplication) throw new Error("Wrathmaker Workbench has not been initialized.");
   const application = new WorkbenchApplication(options);
   application.render({ force: true });

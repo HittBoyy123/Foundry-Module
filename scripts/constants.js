@@ -247,6 +247,7 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
   schemaVersion: RULES_SCHEMA_VERSION,
   crafting: Object.freeze({
     enabled: true,
+    workbenchEnabled: false,
   }),
   gathering: Object.freeze({
     enabled: true,

@@ -185,8 +185,11 @@ export function normalizeCraftingProject(source) {
     createdAt: timestamp(source.createdAt),
     updatedAt: timestamp(source.updatedAt),
     completedAt: source.completedAt ? timestamp(source.completedAt) : null,
+    disassembledAt: source.disassembledAt ? timestamp(source.disassembledAt) : null,
     completedBy: text(source.completedBy),
     finalItemUuid: text(source.finalItemUuid),
+    finalItemSource: source.finalItemSource && typeof source.finalItemSource === "object"
+      ? clone(source.finalItemSource) : null,
     consumptionConfirmed: source.consumptionConfirmed === true,
   };
 }
@@ -455,7 +458,7 @@ export function buildConsumptionPlan(source, inventoryItems = []) {
   });
 }
 
-export function completeCraftingProject(source, { finalItemUuid = "", user = {} } = {}) {
+export function completeCraftingProject(source, { finalItemUuid = "", finalItemSource = null, user = {} } = {}) {
   let project = normalizeCraftingProject(source);
   if (project.status !== "ready") throw new Error("This project is not ready to complete.");
   project.status = "completed";
@@ -465,8 +468,28 @@ export function completeCraftingProject(source, { finalItemUuid = "", user = {} 
   project.completedAt = Date.now();
   project.completedBy = user.id ?? "";
   project.finalItemUuid = finalItemUuid;
+  project.finalItemSource = finalItemSource ? clone(finalItemSource) : project.finalItemSource;
   project = audit(project, "completed", "Resource consumption confirmed and finished item created.", user, { finalItemUuid });
   return project;
+}
+
+export function recordProjectRecovery(source, { finalItemUuid, finalItemSource, user }) {
+  const project = normalizeCraftingProject(source);
+  if (project.status !== "completed") throw new Error("Only completed projects can recover an item.");
+  if (project.disassembledAt) throw new Error("Disassembled items cannot be recovered.");
+  const previousItemUuid = project.finalItemUuid;
+  project.finalItemUuid = finalItemUuid;
+  project.finalItemSource = clone(finalItemSource);
+  return audit(project, "item-recovered", "GM recovered the finished item without consuming resources.", user, {
+    previousItemUuid, finalItemUuid,
+  });
+}
+
+export function recordProjectDisassembly(source, returns, user) {
+  const project = normalizeCraftingProject(source);
+  if (project.status !== "completed" || project.disassembledAt) throw new Error("This project cannot be disassembled again.");
+  project.disassembledAt = Date.now();
+  return audit(project, "item-disassembled", "Finished item disassembled; 90% of consumed materials returned, rounded down.", user, { returns });
 }
 
 export function replaceProject(workbench, source) {

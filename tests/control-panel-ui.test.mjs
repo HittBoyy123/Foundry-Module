@@ -145,7 +145,7 @@ test("Workbench exposes recipe planning, reservations, downtime, and confirmed c
   assert.match(application, /createEmbeddedDocuments\("Item"/);
   assert.match(application, /rollbackUpdates/);
   assert.match(application, /WORKBENCH_SOCKET\s*=\s*`module\.\$\{MODULE_ID\}`/);
-  assert.match(application, /type:\s*"complete-request"/);
+  assert.match(application, /type:\s*disassemblySignature\s*\?\s*"disassemble-request"\s*:\s*"complete-request"/);
   assert.match(application, /type:\s*"complete-response"/);
   assert.match(application, /activePrimaryGM/);
   assert.match(application, /party\.canUserModify\?\.\(requestingUser, "update"\)/);

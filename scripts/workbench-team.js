@@ -1,3 +1,8 @@
+export function materialDisplayName(id) {
+  return ({ leather: "Leather / Hide", herbs: "Herbs / Mushrooms", "mana-crystal": "Mana Crystals" })[id]
+    ?? String(id).replaceAll("-", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
 /** Six stable slots: Core lead, required component specialist, four assistants. */
 export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
   const groups = recipe?.ingredientSets?.[0]?.groups ?? [];
@@ -15,11 +20,12 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
       role: index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
       required: index === 0 || (index === 1 && Boolean(secondary)),
       materialIds,
-      requirement: group ? materialIds.join(" / ").replaceAll("-", " ") : "Any profession",
+      requirement: group ? materialIds.map(materialDisplayName).join(" / ") : "Any Profession",
       actorUuid: profile?.actorUuid ?? "",
       name: profile?.name ?? "",
       img: profile?.img ?? "icons/svg/mystery-man.svg",
       professionSummary: profile?.professions.map((profession) => profession.name).join(" · ") ?? "",
+      specializationSummary: profile?.specializations?.map(specialty => specialty.name).filter(Boolean).join(" · ") ?? "",
       qualified,
     };
   });

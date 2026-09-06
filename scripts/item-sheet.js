@@ -180,44 +180,33 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
   });
   if (!result.active) return null;
 
-  const strip = document.createElement("section");
+  const strip = document.createElement("fieldset");
   strip.className = "cmt-make-marks-strip";
   strip.dataset.cmtMakeMarks = "true";
 
-  const heading = document.createElement("h3");
+  const heading = document.createElement("legend");
   heading.textContent = localize("CMT.ItemSheet.MakeAndMarks", "Make & Marks");
 
-  const chips = document.createElement("div");
-  chips.className = "cmt-make-marks-chips";
-  const core = document.createElement("span");
-  core.className = "cmt-make-mark-chip is-core";
-  core.title = localize("CMT.ItemSheet.CoreMaterialHint", "The Core Material sets the item's fundamental progression.");
-  core.textContent = `${result.presentation.label} · T${result.flags.tier}`;
-
-  const activeMarks = result.flags.crafting.artisanMarks.filter((mark) => mark.status !== "suppressed");
-  const marks = document.createElement("span");
-  marks.className = "cmt-make-mark-chip";
-  const markCount = activeMarks.length;
-  marks.textContent = game.i18n.format("CMT.ItemSheet.ArtisanMarksCount", { count: markCount });
-
-  const capacity = document.createElement("span");
-  capacity.className = `cmt-make-mark-capacity${result.capacity.overCapacity ? " is-invalid" : ""}`;
-  capacity.title = localize("CMT.ItemSheet.CapacityHint", "Core Tier determines available Artisan Capacity.");
-  const capacityLabel = document.createElement("strong");
-  capacityLabel.textContent = game.i18n.format("CMT.ItemSheet.Capacity", {
-    used: result.capacity.used,
-    maximum: result.capacity.maximum,
-  });
-  const segments = document.createElement("span");
-  segments.className = "cmt-capacity-segments";
-  for (let index = 0; index < result.capacity.maximum; index += 1) {
-    const segment = document.createElement("i");
-    if (index < result.capacity.used) segment.className = "is-used";
-    segments.append(segment);
-  }
-  capacity.append(capacityLabel, segments);
-  chips.append(core, marks, capacity);
-  strip.append(heading, chips);
+  strip.append(heading);
+  const addRow = (name, value) => {
+    const row = document.createElement("div");
+    row.className = "form-group";
+    const label = document.createElement("label");
+    label.textContent = name;
+    const field = document.createElement("input");
+    field.type = "text";
+    field.readOnly = true;
+    field.value = value;
+    field.setAttribute("aria-label", name);
+    row.append(label, field);
+    strip.append(row);
+    return row;
+  };
+  addRow(localize("CMT.ItemSheet.Material", "Material"), `${result.presentation.label} · T${result.flags.tier}`);
+  const activeMarks = result.flags.crafting.artisanMarks.filter(mark => mark.status !== "suppressed");
+  addRow(localize("CMT.ItemSheet.AppliedMarks", "Applied Artisan Marks"), String(activeMarks.length));
+  const capacityRow = addRow(localize("CMT.ItemSheet.CapacityLabel", "Capacity"), `${result.capacity.used} / ${result.capacity.maximum}`);
+  if (result.capacity.overCapacity) capacityRow.classList.add("is-invalid");
   if (activeMarks.length) {
     const details = document.createElement("details");
     details.className = "cmt-applied-marks";
