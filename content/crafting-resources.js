@@ -136,7 +136,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
     sort: index * 100_000,
     system: {
       baseItem: null,
-      bulk: { value: 0.2 },
+      bulk: { value: 0.2, heldOrStowed: 0.2 },
       containerId: null,
       description: {
         value: resourceDescription({
@@ -154,7 +154,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
       hp: { max: 0, value: 0 },
       level: { value: craftingDC.level },
       material: { grade: null, type: null },
-      price: { value: { gp: priceGp } },
+      price: { value: { gp: priceGp }, per: 1, sizeSensitive: false },
       publication: { license: "ORC", remaster: true, title: "Wrathmaker" },
       quantity: 1,
       rules: [],
@@ -163,10 +163,10 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
       traits: {
         otherTags,
         rarity,
-        value: [],
+        value: ["precious"],
       },
     },
-    type: "treasure",
+    type: "equipment",
     flags: {
       [MODULE_ID]: {
         resource: {

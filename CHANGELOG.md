@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.23.0 — Campaign guides and equipment resources (2026-09-07)
+
+- Added a player-facing Wrathmaker Player Guide: all campaign systems, Core/resource tables, eleven professions and 33 specialisations with Signature/Mastery/Legacy, and all 253 Mark references.
+- Added a separate GM Companion with setup, awards, custom item, recovery and adjudication pages. The GM pack denies Player/Trusted access; imported journal and page defaults are also None. Guides describe shipped defaults rather than live world overrides.
+
+- All 66 crafting resource sources are now Equipment with the Precious trait rather than Treasure. Listed prices remain full unit values for normal equipment selling.
+- Explicitly set carried/stowed Bulk to 0.2 per inventory unit with no stack group: five units weigh 1 Bulk and ten weigh 2 Bulk.
+- Existing imported inventory documents are not replaced or retyped automatically; their resource flags remain compatible with crafting, gathering and disassembly.
+
 ## 0.22.0 — Team crafting and crafting handbook (2026-09-07)
 
 - All supported recipes can be crafted solo. Material expertise unlocks eligible Marks rather than blocking base-item creation; component specialists are optional.

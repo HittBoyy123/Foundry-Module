@@ -1,5 +1,9 @@
 # Wrathmaker
 
+The **Pathfinder 2E Wrathmaker** compendium folder includes **Wrathmaker Player Guide** and a restricted **Wrathmaker GM Companion**. Import the Player Guide into Journals for a shared campaign handout; it covers points, professions, equipment, resources, crafting, gathering, disassembly, flanking, travel and all Marks. The GM companion's administrative pages are in a separate GM-only pack, with None permission on the journal and pages for ordinary users. Do not grant players ownership of the GM guide. Guide tables reflect shipped defaults, so annotate your world copy for campaign overrides. Imported copies are not overwritten automatically.
+
+Crafting resources are Equipment with the Precious trait. Each inventory unit is 0.2 Bulk (2 light Bulk): five units weigh 1 Bulk and ten weigh 2 Bulk. Prices are full unit values, not pre-halved sale prices. Newly imported or generated resources use this format; existing Treasure copies are preserved to avoid disturbing stock and reservations.
+
 ### Crafting together and the rules handbook
 
 Every supported recipe can be crafted solo. The six artisan slots are optional beyond the lead; material specialists unlock their own eligible Marks. Each distinct assigned artisan contributes progress on a Work Block, up to six, and each commits the same downtime. The displayed time estimate assumes successful checks. Existing project progress is preserved.

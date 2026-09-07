@@ -8,6 +8,7 @@ import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 import { PROFESSION_ITEM_SOURCES } from "../content/professions.js";
 import { ARTISAN_MARK_JOURNAL_SOURCES } from "../content/artisan-mark-journals.js";
 import { CRAFTING_GUIDE } from "../content/crafting-guide.js";
+import { WRATHMAKER_PLAYER_GUIDE, WRATHMAKER_GM_GUIDE } from "../content/wrathmaker-guide.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = path.join(projectRoot, "packs");
@@ -17,6 +18,8 @@ const packs = Object.freeze({
   "crafting-resources.db": CRAFTING_RESOURCE_SOURCES,
   "professions.db": PROFESSION_ITEM_SOURCES,
   "artisan-marks.db": [...ARTISAN_MARK_JOURNAL_SOURCES, CRAFTING_GUIDE],
+  "player-guide.db": [WRATHMAKER_PLAYER_GUIDE],
+  "gm-guide.db": [WRATHMAKER_GM_GUIDE],
 });
 
 await mkdir(outputDirectory, { recursive: true });
