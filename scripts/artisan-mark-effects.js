@@ -41,7 +41,6 @@ export function markAppliesToItem(mark, itemGroup, item = null) {
 
 export function markConfigurationChoices(id) {
   if (["enchanting-specialty-2-elemental-essence", "weaving-specialty-1-manaweave"].includes(id)) return energyChoices;
-  if (id === "leatherwork-specialty-3-sovereign-pelt") return ["intimidation", "diplomacy"];
   if (id === "enchanting-specialty-1-focused-empowerment") return [...skillChoices, "initiative"];
   if (id === "enchanting-specialty-1-minor-empowerment") return skillChoices;
   if (id === "blacksmithing-universal-perfect-balance") return ["trip", "shove", "disarm", "grapple", "reposition"];
@@ -51,13 +50,8 @@ export function markConfigurationChoices(id) {
 const DURABILITY = {
   "blacksmithing-universal-tempered-construction": [0.1, 1],
   "blacksmithing-universal-fortified-frame": [0.2, 2],
-  "leatherwork-universal-reinforced-hide": [0.1, 1],
   "carpentry-universal-seasoned-construction": [0.1, 0],
   "stonemason-universal-stonebound": [0.1, 1],
-  "glassmaking-universal-hardened-glass": [0.2, 2],
-  "pottery-universal-hardened-ceramic": [0.1, 1],
-  "weaving-universal-reinforced-weave": [0.2, 1],
-  "tailoring-universal-reinforced-seam": [0.1, 1],
 };
 const appliedSystems = new WeakSet();
 
@@ -105,28 +99,38 @@ export function rulesForArtisanMark(mark, item) {
   const permitted = markConfigurationChoices(id);
   if (permitted.length && !permitted.includes(choice)) return [];
   switch (id) {
+    case "leatherwork-universal-reinforced-hide": return [resist("acid", tier)];
+    case "weaving-universal-reinforced-weave": return [flat("athletics", 2, { predicate: ["action:escape"] }), flat("acrobatics", 2, { predicate: ["action:escape"] })];
+    case "tailoring-universal-reinforced-seam": return [flat("will", 1, { predicate: ["wrathmaker:mark-condition"] })];
+    case "glassmaking-universal-hardened-glass": return [flat("perception", 1, { predicate: ["action:seek", "wrathmaker:mark-condition"] })];
+    case "pottery-universal-hardened-ceramic": return [resist("fire", 1)];
+    case "leatherwork-universal-perfect-fit": return [flat("acrobatics", 1, { predicate: ["action:squeeze"] })];
+    case "tailoring-universal-perfect-fit": return [flat("diplomacy", 1, { predicate: ["action:make-an-impression"] })];
+    case "glassmaking-specialty-1-calibrated-lens": return [flat("initiative", 1)];
+    case "leatherwork-specialty-3-weather-mantle": return [resist("cold", 2 * tier)];
     case "blacksmithing-specialty-1-perfected-killing-edge":
-    case "carpentry-specialty-1-perfected-tension": return [flat(attack, 1)];
+      return [{ key: "DamageDice", selector: [damage], diceNumber: tier >= 6 ? 3 : 2, dieSize: "d6", category: "precision", predicate: ["wrathmaker:mark-condition"] }];
+    case "carpentry-specialty-1-perfected-tension": return [flat(attack, 2, { predicate: ["wrathmaker:mark-condition"] })];
     case "enchanting-specialty-1-overlord-matrix":
       return item.type === "weapon" ? [flat(attack, 1)] : [flat("spell-attack", 1), flat("spell-dc", 1)];
-    case "glassmaking-specialty-1-crown-prism": return [flat("spell-attack", 1), flat("spell-dc", 1)];
+    case "glassmaking-specialty-1-crown-prism": return [flat("spell-attack", -1, { type: "untyped" }), flat("spell-dc", 1), flat("arcana", 2)];
     case "blacksmithing-specialty-1-ember-temper": return [flat(damage, tier, { critical: true, damageType: "fire" })];
     case "blacksmithing-specialty-1-blood-temper":
       return [flat(damage, tier >= 5 ? 4 : 2, { predicate: [{ lte: ["hp-percent", 50] }] })];
     case "blacksmithing-universal-reinforced-edge":
-    case "carpentry-universal-reinforced-limb":
       return [flat(damage, dice * (id.includes("reinforced-edge") && tier >= 5 ? 2 : 1), { predicate: ["wrathmaker:target-object"] })];
+    case "carpentry-universal-reinforced-limb": return [flat(damage, tier, { predicate: ["wrathmaker:mark-condition"] })];
     case "blacksmithing-specialty-2-dawnbound":
       return [flat(damage, dice, { damageType: "spirit", predicate: [{ or: ["target:trait:undead", "target:trait:fiend"] }] })];
     case "blacksmithing-specialty-2-aegis-of-dawn": return [hp(4 * tier), resist("spirit", tier), resist("void", tier)];
-    case "stonemason-specialty-3-mountain-plate": return [hp(4 * tier), resist("physical", tier)];
-    case "stonemason-specialty-3-mountain-blood-plate": return [hp(8 * tier), resist("physical", 2 * tier)];
+    case "stonemason-specialty-3-mountain-plate": return [resist("physical", tier), flat("fortitude", 2)];
+    case "stonemason-specialty-3-mountain-blood-plate": return [resist("physical", 2 * tier), flat("fortitude", 3), flat("land-speed", -5, { type: "untyped" })];
     case "tailoring-specialty-1-vital-reinforcement": return [hp(5 * tier)];
-    case "weaving-specialty-2-unbreakable-braid": return [hp(6 * tier)];
-    case "leatherwork-specialty-3-sovereign-pelt": return [hp(6 * tier), flat(choice, 2)];
+    case "weaving-specialty-2-unbreakable-braid": return [resist("bleed", 2 * tier), flat("athletics", 3, { predicate: ["action:escape"] }), flat("acrobatics", 3, { predicate: ["action:escape"] })];
+    case "leatherwork-specialty-3-sovereign-pelt": return [flat("intimidation", 3), flat("survival", 2)];
     case "weaving-specialty-2-impact-mesh": return [resist("physical", Math.ceil(tier / 2))];
     case "weaving-specialty-2-silken-steel": return [flat("ac", 1), resist("physical", tier)];
-    case "tailoring-specialty-1-war-skin": return [flat("ac", 1), flat("land-speed", 5), resist("physical", tier)];
+    case "tailoring-specialty-1-war-skin": return [flat("ac", 1), flat("land-speed", 10), flat("reflex", 2)];
     case "enchanting-specialty-2-elemental-essence":
       return item.type === "weapon" ? [{
         key: "DamageDice", selector: [damage], diceNumber: tier >= 6 ? 3 : tier >= 4 ? 2 : 1,

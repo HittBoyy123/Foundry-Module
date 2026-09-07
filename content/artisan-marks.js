@@ -1,4 +1,5 @@
 import { markCategories, MARK_ACTIVATIONS } from "./mark-applicability.js";
+import { MARK_REVISIONS } from "./mark-revisions.js";
 export const ARTISAN_MARK_SCHEMA_VERSION = 1;
 
 export const ARTISAN_MARK_GRADE_RULES = Object.freeze({
@@ -3253,6 +3254,9 @@ function stackGroup(effect) {
 }
 
 function makeDefinition([id, professionId, specializationId, name, grade, effectSummary, source]) {
+  const revision = MARK_REVISIONS[id];
+  name = revision?.name ?? name;
+  effectSummary = revision?.effectSummary ?? effectSummary;
   const profession = ARTISAN_PROFESSION_RULES[professionId];
   const gradeRules = ARTISAN_MARK_GRADE_RULES[grade];
   const feature = SPECIALISATION_FEATURES.find((entry) => (
@@ -3262,6 +3266,8 @@ function makeDefinition([id, professionId, specializationId, name, grade, effect
     schemaVersion: ARTISAN_MARK_SCHEMA_VERSION,
     id,
     name,
+    revision: revision ? 1 : 0,
+    revisionRationale: revision?.rationale ?? "",
     professionId,
     profession: profession?.label ?? professionId,
     specializationId,
@@ -3275,13 +3281,13 @@ function makeDefinition([id, professionId, specializationId, name, grade, effect
     anchorSlotTypes: Object.freeze([...(profession?.anchorSlotTypes ?? ["core"])]),
     minimumAnchorTier: gradeRules.minimumAnchorTier,
     requiresCoreTierAnchors: /beyond Core|above Core|Core-exceeding|Over-Potency/i.test(effectSummary),
-    validItemGroups: Object.freeze(markCategories(id, validItemGroups(effectSummary, professionId)).includes("item") ? validItemGroups(effectSummary, professionId) : []),
+    validItemGroups: Object.freeze(revision?.validItemGroups ?? (markCategories(id, validItemGroups(effectSummary, professionId)).includes("item") ? validItemGroups(effectSummary, professionId) : [])),
     requiredMaterialIds: Object.freeze([...(profession?.materialIds ?? [])]),
     materialUnits: gradeRules.materialUnits,
     materialTierOffset: gradeRules.materialTierOffset,
     artisanDayMultiplier: gradeRules.artisanDayMultiplier,
     scalingSource: /Core Tier|Core T\d|at T\d|T\d[–-]/i.test(effectSummary) ? "core-tier" : "fixed",
-    stackGroup: stackGroup(effectSummary),
+    stackGroup: revision?.stackGroup ?? stackGroup(effectSummary),
     effectSummary,
     effects: Object.freeze([{ kind: "rules-text", text: effectSummary }]),
     synergyTags: Object.freeze([]),

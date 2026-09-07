@@ -2704,7 +2704,10 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-rules-handbook { color: #302b28; background: #f5f0e8; padding: 1rem; line-height: 1.5; }
 .cmt-rules-handbook header { background: #164d32; color: #fff; padding: 1rem; margin-bottom: 1rem; }
 .cmt-rules-handbook header h1 { color: #fff; }
-.cmt-rules-handbook h2 { color: #5e0000; margin-top: 1.2rem; }
-.cmt-rules-handbook th { background: #605856; color: #fff; padding: 0.4rem; }
+.cmt-rules-handbook :is(h2, h3, h4) { color: #5e0000; margin-top: 1.2rem; }
+.cmt-rules-handbook table thead tr th { background: #e4b6b6; color: #302b28; padding: 0.4rem; }
 .cmt-rules-handbook td { padding: 0.4rem; border-bottom: 1px solid #cbbbad; }
-.cmt-rules-handbook tbody tr:nth-child(even) { background: #e7d9cf; }
+.cmt-rules-handbook table tbody tr:nth-child(odd) { background: #f0d3d3; color: #302b28; }
+.cmt-rules-handbook table tbody tr:nth-child(even) { background: #faeeee; color: #302b28; }
+.cmt-guide-marks article { border-bottom: 1px solid #d8b5b5; padding: 0.4rem 0; }
+.cmt-guide-marks article p { margin: 0.35rem 0; }

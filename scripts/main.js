@@ -13,6 +13,7 @@ import { registerItemChatHooks } from "./item-chat.js";
 import { registerProfessionHooks } from "./professions.js";
 import { registerWorkbench } from "./workbench.js";
 import { registerGMItemCreator } from "./gm-item-creator.js";
+import { registerMarkActionHooks } from "./mark-actions.js";
 
 let bridgeInstalled = false;
 let abilityBoostsInstalled = false;
@@ -57,6 +58,7 @@ Hooks.once("init", () => {
   });
   workbenchInstalled = true;
   registerGMItemCreator();
+  registerMarkActionHooks();
 
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
   abilityBoostsInstalled = installAbilityBoostBridge();

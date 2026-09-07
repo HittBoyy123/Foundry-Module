@@ -5,7 +5,10 @@ import { WRATHMAKER_PLAYER_GUIDE as player, WRATHMAKER_GM_GUIDE as gm } from "..
 import { SPECIALTIES_BY_PROFESSION } from "../content/professions.js";
 
 test("player handbook covers all systems, 33 specialisations and 253 Marks", () => {
-  assert.equal(player.pages.length, 274);
+  assert.equal(player.pages.length, 21);
+  const markIds = player.pages.flatMap(page => [...page.text.content.matchAll(/data-mark-id="([^"]+)"/g)].map(match => match[1]));
+  assert.equal(markIds.length, 253);
+  assert.equal(new Set(markIds).size, 253);
   const text = player.pages.map(page => page.text.content).join(" ");
   for (const phrase of ["Nephilim", "Hero Points", "Apex", "Dragon Scales", "Disassemble", "Express Rider", "Capacity", "Spell Focus"]) assert.ok(text.includes(phrase));
   for (const specialty of Object.values(SPECIALTIES_BY_PROFESSION).flat()) assert.ok(text.includes(specialty.stages.signature.label));

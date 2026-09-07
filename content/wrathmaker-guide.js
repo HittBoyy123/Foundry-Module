@@ -1,7 +1,7 @@
 import { CORE_TIER_PROGRESSION } from "../scripts/crafting-model.js";
 import { CRAFTING_RESOURCE_SOURCES } from "./crafting-resources.js";
 import { PROFESSION_DEFINITIONS, SPECIALTIES_BY_PROFESSION } from "./professions.js";
-import { ARTISAN_MARK_JOURNAL_SOURCES } from "./artisan-mark-journals.js";
+import { ARTISAN_MARK_DEFINITIONS } from "./artisan-marks.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const table = (head, rows) => `<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
@@ -12,6 +12,11 @@ function page(index, name, content, gm = false) {
 }
 const coreRows = Object.entries(CORE_TIER_PROGRESSION).map(([tier, values]) => [tier, `+${values.attack}`, values.weaponDice, `+${values.spellcasting}`, `+${values.armor} / +${values.saves}`, values.capacity]);
 const resourceRows = CRAFTING_RESOURCE_SOURCES.map(item => [item.name, item.flags["pf2e-crafting-material-tiers"].resource.tier, item.system.level.value, `${item.system.price.value.gp} gp`, "0.2"]);
+
+function markList(professionId, specializationId = "") {
+  const marks = ARTISAN_MARK_DEFINITIONS.filter(mark => mark.professionId === professionId && (mark.specializationId || "") === specializationId);
+  return `<div class="cmt-guide-marks">${marks.map(mark => `<article data-mark-id="${esc(mark.id)}"><h4>${esc(mark.name)}</h4><p><strong>${esc(mark.grade)} · ${mark.capacityCost} Capacity</strong> · Anchor Tier ${mark.minimumAnchorTier}+ · ${esc(mark.categories.join(", "))}</p><p>${esc(mark.effectSummary)}</p><details><summary>Requirements & source</summary><p>${esc(mark.profession)} — ${esc(mark.specialisation || "Universal")} · Core Tier ${mark.minimumTier}+${mark.requiresCoreTierAnchors ? "; Core-tier Anchor required" : ""}</p><p>Anchors: ${esc(mark.anchorSlotTypes.join(", "))}. ${mark.materialUnits ? `${mark.materialUnits} material unit(s): ${esc(mark.requiredMaterialIds.join(", "))}.` : "Workshop consumables only."}</p></details></article>`).join("")}</div>`;
+}
 
 export const WRATHMAKER_PLAYER_GUIDE = {
   _id: "wmPlayerGuide001", name: "Wrathmaker — Player Guide", ownership: { default: 2 },
@@ -27,9 +32,8 @@ export const WRATHMAKER_PLAYER_GUIDE = {
     page(9, "Flanking", `<p>First establish a normal opposite-side flank with two qualifying melee combatants in reach. Additional qualifying combatants can contribute from other sides.</p>${table(["Qualifying combatants", "Final target AC penalty"], [[2, "−2: Off-guard (Flanked)"], [3, "−3: Outnumbered (Flanked)"], ["4 or more", "−4: Surrounded (Flanked)"]])}<p>These are final penalties, not additions to the normal −2. Only qualifying melee attacks benefit; ranged attacks do not inherit this flanking penalty. Reach weapons count when they can reach the target. A creature unable to flank or an immune target follows its normal restrictions.</p><p>If the target is more than one size category larger than the largest qualifying flanker, the enhanced thresholds become six for −3 and eight for −4. A normal two-person flank still gives −2.</p>`),
     page(10, "Party travel & exploration", `<p>The party's Exploration tab combines normal exploration activities with travel setup, rider assignments and the daily plan. On foot, the slowest member limits shared Speed. Vehicle riders use transport Speed, while walkers can still slow the group. Pulled transport uses the slowest selected hauler, subject to the vehicle limit.</p>${table(["Shared Speed", "Activities per day"], [["10 feet or less", "½ (one activity over two days)"], ["15–25 feet", 1], ["30–40 feet", 2], ["45–55 feet", 3], ["60 feet or more", 4]])}<p>Assign Travel, Reconnoiter, Fortify Camp, Map the Area, Subsist or Other and mark activities Used as they finish. Save Travel Plan preserves choices; Begin Day & Share posts the plan. The sun button starts a new day.</p><h2>Express Rider house rule</h2><p>Select the character rolling Nature, pulling creatures and up to six affected party travellers, including walkers. The check uses the highest selected Will DC. Success or critical success increases affected overland Speeds by half for that day. Unaffected walkers and vehicle limits still constrain the group. This changes overland travel, not encounter Speed.</p>`),
     ...PROFESSION_DEFINITIONS.map((profession, index) => page(index + 11, `${profession.name} — Specialisation reference`,
-      `<p>Campaign descriptions, not a promise that every effect is automated. Check the current profession entry for any local changes.</p>` +
-      (SPECIALTIES_BY_PROFESSION[profession.id] ?? []).map(specialty => `<h2>${esc(specialty.label)}</h2><p>${esc(specialty.description)}</p>${Object.entries(specialty.stages).map(([stage, feature]) => `<h3>${esc(stage[0].toUpperCase() + stage.slice(1))} — ${esc(feature.label)}</h3><p>${esc(feature.description)}</p>`).join("")}`).join(""))),
-    ...ARTISAN_MARK_JOURNAL_SOURCES.map((entry, index) => ({ ...entry.pages[0], ownership: { default: 2 }, name: entry.name, sort: (index + 30) * 100000 })),
+      `<p>Campaign descriptions, not a promise that every effect is automated. Check the current profession entry for any local changes.</p><h2>Universal Artisan Marks</h2>${markList(profession.id)}` +
+      (SPECIALTIES_BY_PROFESSION[profession.id] ?? []).map(specialty => `<h2>${esc(specialty.label)}</h2><p>${esc(specialty.description)}</p>${Object.entries(specialty.stages).map(([stage, feature]) => `<h3>${esc(stage[0].toUpperCase() + stage.slice(1))} — ${esc(feature.label)}</h3><p>${esc(feature.description)}</p>`).join("")}<h3>Artisan Marks</h3>${markList(profession.id, specialty.id)}`).join(""))),
   ],
 };
 

@@ -1,3 +1,4 @@
+import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
 export const CRAFTING_STATE_SCHEMA_VERSION = 2;
 
 export const CORE_TIER_PROGRESSION = Object.freeze({
@@ -65,6 +66,8 @@ function normalizeComponent(source, index) {
 }
 
 function normalizeMark(source, index) {
+  const current = getArtisanMarkDefinition(source?.definitionId ?? source?.id);
+  if (current?.revision) source = { ...source, name: current.name, effectSummary: current.effectSummary, stackGroup: current.stackGroup };
   const grade = Object.hasOwn(ARTISAN_MARK_GRADES, source?.grade) ? source.grade : "minor";
   const gradeDefinition = ARTISAN_MARK_GRADES[grade];
   const status = MARK_STATUSES.has(source?.status) ? source.status : "planned";

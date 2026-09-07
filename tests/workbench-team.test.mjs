@@ -92,14 +92,14 @@ test("Blood Temper remains conditional and Core-tier HP bonuses are numerical", 
   const blood = rulesForArtisanMark({ id: "blacksmithing-specialty-1-blood-temper" }, item)[0];
   assert.equal(blood.value, 4);
   assert.deepEqual(blood.predicate, [{ lte: ["hp-percent", 50] }]);
-  assert.equal(rulesForArtisanMark({ id: "stonemason-specialty-3-mountain-plate" }, item)[0].value, 20);
+  assert.equal(rulesForArtisanMark({ id: "stonemason-specialty-3-mountain-plate" }, item)[0].value, 5);
 });
 
 test("equivalent non-stacking effects share a group and Crown Prism requires a T5 anchor", () => {
   const silk = getArtisanMarkDefinition("weaving-specialty-2-silken-steel");
   const war = getArtisanMarkDefinition("tailoring-specialty-1-war-skin");
   const anchor = { id: "core", minimumTier: 4 };
-  assert.equal(buildArtisanMarkAssignment(silk, { name: "Artisan" }, anchor, 4).stackGroup,
+  assert.notEqual(buildArtisanMarkAssignment(silk, { name: "Artisan" }, anchor, 4).stackGroup,
     buildArtisanMarkAssignment(war, { name: "Artisan" }, anchor, 4).stackGroup);
   const crown = getArtisanMarkDefinition("glassmaking-specialty-1-crown-prism");
   const result = evaluateArtisanMarkChoice(crown, {

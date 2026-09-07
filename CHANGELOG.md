@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.24.0 — Mark actions, revised Marks and compact guides (2026-09-07)
+
+- First differentiation pass revises 18 overlapping equipment Marks with matching numerical adapters: distinct acid/fire/cold defences, escape and social utility, airborne-target damage, initiative optics, precision finishers and specialised Superior defences. Stable IDs and maker provenance are retained; normalized descriptions use the current revision.
+- Artisan numerical bonuses remain untyped and stackable. No new broad stacking prohibition is introduced. Target-dependent revised benefits use explicit condition toggles rather than assuming hidden enemy information.
+
+- Automatically adds supported combat Mark Actions to characters and NPCs when they carry the marked item. Updates source names and action descriptions, removes linked entries when the item is dropped/deleted/transferred, and serializes synchronization to prevent duplicates. Unrelated actions are preserved.
+- Added labelled house-rule action costs for a first expanded set of combat Marks, including free actions, reactions and one/two/three-action activations. Actions provide native rules pop-outs; effect resolution and frequency expenditure are not yet automated.
+
+- Replaced handbook table grays with pastel reds and explicitly colored Signature/Mastery/Legacy headings dark red.
+- Consolidated the Player Guide from 274 pages to 21. Each profession page includes its universal Marks and each specialisation's Marks beneath its stages, with descriptions and expandable requirements. All 253 Marks remain represented exactly once; the standalone Mark reference compendium remains unchanged.
+
 ## 0.23.0 — Campaign guides and equipment resources (2026-09-07)
 
 - Added a player-facing Wrathmaker Player Guide: all campaign systems, Core/resource tables, eleven professions and 33 specialisations with Signature/Mastery/Legacy, and all 253 Mark references.
