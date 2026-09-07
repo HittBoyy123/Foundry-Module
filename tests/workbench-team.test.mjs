@@ -15,13 +15,15 @@ const recipe = () => buildCraftingRecipeFromBand("weapon-sword", { targetItem: w
 const profile = (id, material) => ({ actorUuid: id, name: id, professions: [{ name: material, materialIds: [material] }] });
 const smith = profile("smith", "metal"), carpenter = profile("carpenter", "wood"), leather = profile("leather", "leather");
 
-test("Core and secondary slots require material expertise and preserve six stable positions", () => {
+test("solo and mixed-profession teams are supported with six stable positions", () => {
   const plan = chooseSecondaryMaterials(recipe(), { grip: "wood" });
   const profiles = [smith, carpenter, leather];
   assert.equal(buildArtisanSlots(plan, [], []).length, 6);
   assert.equal(validateArtisanTeam(plan, ["smith", "carpenter"], profiles).valid, true);
-  assert.equal(validateArtisanTeam(plan, ["carpenter", "smith"], profiles).valid, false);
-  assert.equal(validateArtisanTeam(plan, ["smith", "leather"], profiles).valid, false);
+  assert.equal(validateArtisanTeam(plan, ["carpenter", "smith"], profiles).valid, true);
+  assert.equal(validateArtisanTeam(plan, ["smith", "leather"], profiles).valid, true);
+  assert.equal(validateArtisanTeam(plan, ["smith"], profiles).valid, true);
+  assert.equal(validateArtisanTeam(plan, [], profiles).valid, false);
   assert.equal(validateArtisanTeam(plan, ["smith", "carpenter", "smith"], profiles).valid, false);
   assert.equal(plan.ingredientSets[0].groups[1].options[0].materialId, "wood");
 });
@@ -36,9 +38,9 @@ test("artisan cards capitalize requirements and include learned specializations"
   assert.equal(cards[0].specializationSummary, "Hellforging · Radiant Forging");
 });
 
-test("secondary coverage accounts for every required component in a multi-material recipe", () => {
+test("multi-material recipes do not require extra artisans", () => {
   const plan = chooseSecondaryMaterials(buildCraftingRecipeFromBand("weapon-firearm", { targetItem: weapon, tier: 4 }), {});
-  assert.equal(validateArtisanTeam(plan, ["smith", "carpenter"], [smith, carpenter]).valid, false);
+  assert.equal(validateArtisanTeam(plan, ["smith", "carpenter"], [smith, carpenter]).valid, true);
   assert.equal(validateArtisanTeam(plan, ["smith", "carpenter", "leather"], [smith, carpenter, leather]).valid, true);
 });
 

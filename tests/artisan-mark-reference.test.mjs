@@ -13,9 +13,10 @@ import { markConfigurationChoices } from "../scripts/artisan-mark-effects.js";
 test("all 253 Marks have searchable source names and a description in the reference pack", async () => {
   assert.equal(ARTISAN_MARK_JOURNAL_SOURCES.length, 253);
   const serialized = (await readFile(new URL("../packs/artisan-marks.db", import.meta.url), "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(serialized, ARTISAN_MARK_JOURNAL_SOURCES);
-  assert.equal(new Set(serialized.map(entry => entry._id)).size, 253);
-  for (const [index, entry] of serialized.entries()) {
+  assert.deepEqual(serialized.slice(0, 253), ARTISAN_MARK_JOURNAL_SOURCES);
+  assert.equal(new Set(serialized.map(entry => entry._id)).size, 254);
+  assert.equal(serialized[253].pages.length, 254);
+  for (const [index, entry] of serialized.slice(0, 253).entries()) {
     const mark = ARTISAN_MARK_DEFINITIONS[index];
     assert.match(entry._id, /^[A-Za-z0-9]{16}$/);
     assert.ok(entry.name.includes(mark.name));

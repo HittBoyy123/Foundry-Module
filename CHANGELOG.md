@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.22.0 — Team crafting and crafting handbook (2026-09-07)
+
+- All supported recipes can be crafted solo. Material expertise unlocks eligible Marks rather than blocking base-item creation; component specialists are optional.
+- Each distinct assigned artisan contributes Work Block progress (up to six), while each commits the same calendar downtime. Added team-size and successful-check time estimates; existing progress is not retroactively changed.
+- Added a central Crafting Handbook journal with the crafting, gathering, disassembly and recovery workflow and all 253 Mark reference pages.
+- Added item/consumable/structure/project category metadata and explicit exclusions for structure-only and consumable-only Marks.
+- Added source-defined activation metadata and an owned-item Make & Marks button to create native wielder Actions without duplicates. These are rules/chat actions, not automated targeting, resource expenditure or damage; unspecified action costs remain unresolved.
+
 ## 0.21.0 — Artisan Mark references and GM item creation (2026-09-07)
 
 - Artisan requirement slots now show eligible profession names instead of material names.

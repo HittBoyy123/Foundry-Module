@@ -156,7 +156,7 @@
         <div class="cmt-workbench-section-title"><h3>Artisans involved</h3><span>Up to six artisans</span></div>
         <div class="cmt-artisan-slots">
           {{#each artisanSlots}}
-            <article class="cmt-artisan-slot {{#unless qualified}}is-invalid{{/unless}}" data-cmt-artisan-slot="{{index}}">
+            <article class="cmt-artisan-slot" data-cmt-artisan-slot="{{index}}">
               <header><strong>{{role}}</strong><small>{{#if required}}Required{{else}}Optional{{/if}}</small></header>
               <span class="cmt-slot-requirement">{{requirement}}</span>
               {{#if actorUuid}}
@@ -184,6 +184,7 @@
       <div class="cmt-workbench-capacity">
         {{#each markCapacity.segments}}<i class="{{#if used}}is-used{{/if}}"></i>{{/each}}
         <strong>{{markCapacity.remaining}} / {{markCapacity.maximum}} Capacity remaining · {{markLabourDays}} artisan-days</strong>
+        <p>{{teamSize}} artisan(s) · about {{estimatedDays}} days on successful checks. All artisans commit that downtime. Solo crafting is supported; specialists unlock eligible Marks.</p>
       </div>
 
       {{#if preview}}
@@ -247,6 +248,7 @@
           </div>
           <div class="cmt-workbench-project-stats">
             <span><strong>{{currentProgress}} / {{requiredProgress}}</strong> {{localize "CMT.Workbench.Progress"}}</span>
+            <span>{{teamSize}} artisan(s) · {{estimatedDays}} successful work days remaining</span>
             <span><strong>{{downtimeSpent}}</strong> {{localize "CMT.Workbench.ArtisanDays"}}</span>
             <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>
             <span><strong>{{markCount}}</strong> Artisan Marks</span>

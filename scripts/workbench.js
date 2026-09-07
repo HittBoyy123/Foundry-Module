@@ -5,6 +5,7 @@ import { getCraftingResourceData } from "./crafting-categories.js";
 import { evaluateCraftingRecipe } from "./crafting-recipes.js";
 import {
   advanceCraftingProject,
+  projectArtisanCount,
   buildConsumptionPlan,
   completeCraftingProject,
   createCraftingProject,
@@ -366,6 +367,8 @@ async function workbenchContext(application) {
       progressPercent: Math.round((project.currentProgress / project.requiredProgress) * 100),
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
       contributorSummary: project.contributors.map((entry) => entry.name).join(", "),
+      teamSize: projectArtisanCount(project),
+      estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress) / projectArtisanCount(project)),
       markCount: project.artisanMarks.length,
       canWork: craftingEnabled && canEdit && ["reserved", "active"].includes(project.status),
       canComplete: craftingEnabled && canEdit && project.status === "ready",
@@ -471,6 +474,8 @@ async function workbenchContext(application) {
       })),
     },
     markLabourDays: calculateMarkLabourDays(markPlan.assignments, tier),
+    teamSize: Math.max(1, new Set(profiles.map(profile => profile.actorUuid)).size),
+    estimatedDays: Math.ceil(requiredProgress / Math.max(1, new Set(profiles.map(profile => profile.actorUuid)).size)),
     draft: {
       name: application.workbenchState.projectName || (baseItem ? `${materialLabel(application.workbenchState.materialId, tier)} ${baseItem.name}` : ""),
       requiredProgress,

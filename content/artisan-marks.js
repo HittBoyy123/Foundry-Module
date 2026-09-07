@@ -1,3 +1,4 @@
+import { markCategories, MARK_ACTIVATIONS } from "./mark-applicability.js";
 export const ARTISAN_MARK_SCHEMA_VERSION = 1;
 
 export const ARTISAN_MARK_GRADE_RULES = Object.freeze({
@@ -3266,13 +3267,15 @@ function makeDefinition([id, professionId, specializationId, name, grade, effect
     specializationId,
     specialisation: feature?.specialization ?? "",
     source,
+    categories: Object.freeze(markCategories(id, validItemGroups(effectSummary, professionId))),
+    activation: MARK_ACTIVATIONS[id] ?? null,
     grade,
     capacityCost: gradeRules.capacityCost,
     minimumTier: gradeRules.minimumAnchorTier,
     anchorSlotTypes: Object.freeze([...(profession?.anchorSlotTypes ?? ["core"])]),
     minimumAnchorTier: gradeRules.minimumAnchorTier,
     requiresCoreTierAnchors: /beyond Core|above Core|Core-exceeding|Over-Potency/i.test(effectSummary),
-    validItemGroups: Object.freeze(validItemGroups(effectSummary, professionId)),
+    validItemGroups: Object.freeze(markCategories(id, validItemGroups(effectSummary, professionId)).includes("item") ? validItemGroups(effectSummary, professionId) : []),
     requiredMaterialIds: Object.freeze([...(profession?.materialIds ?? [])]),
     materialUnits: gradeRules.materialUnits,
     materialTierOffset: gradeRules.materialTierOffset,

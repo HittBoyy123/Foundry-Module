@@ -22,6 +22,8 @@ export const ARTISAN_MARK_JOURNAL_SOURCES = Object.freeze(ARTISAN_MARK_DEFINITIO
         "<p><strong>Source:</strong> " + escape(source) + "</p>" +
         "<p>" + escape(mark.effectSummary) + "</p>" +
         "<table><tbody>" +
+        "<tr><th>Applies to</th><td>" + list(mark.categories) + "</td></tr>" +
+        "<tr><th>Activation</th><td>" + (mark.activation ? escape(mark.activation.type + (mark.activation.value ? " " + mark.activation.value : "")) : "Passive or source-defined; unspecified action costs require GM adjudication") + "</td></tr>" +
         "<tr><th>Grade</th><td>" + escape(mark.grade) + "</td></tr>" +
         "<tr><th>Capacity</th><td>" + mark.capacityCost + "</td></tr>" +
         "<tr><th>Minimum Core Tier</th><td>" + mark.minimumTier + "</td></tr>" +

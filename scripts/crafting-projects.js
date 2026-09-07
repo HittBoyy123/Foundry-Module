@@ -77,6 +77,7 @@ function normalizeWorkBlock(source, index) {
   return {
     id: id(source?.id, `work-${index + 1}`),
     days: integer(source?.days, 1, 1, 5),
+    artisanCount: integer(source?.artisanCount, 1, 1, 6),
     degree: ["criticalFailure", "failure", "success", "criticalSuccess"].includes(source?.degree)
       ? source.degree
       : "success",
@@ -138,6 +139,12 @@ export function progressForWorkBlock(days, degree) {
     case "criticalFailure": return 0;
     default: throw new Error("Choose a valid degree of success.");
   }
+}
+
+/** Each distinct assigned artisan commits the same calendar downtime. */
+export function projectArtisanCount(project) {
+  return Math.max(1, Math.min(6, new Set((project.contributors ?? [])
+    .map(entry => entry.actorUuid).filter(Boolean)).size));
 }
 
 export function normalizeCraftingProject(source) {
@@ -395,11 +402,13 @@ export function advanceCraftingProject(source, {
     throw new Error("This project cannot receive another Work Block.");
   }
   const committedDays = integer(days, 1, 1, 5);
-  const progress = progressForWorkBlock(committedDays, degree);
+  const artisanCount = projectArtisanCount(project);
+  const progress = progressForWorkBlock(committedDays, degree) * artisanCount;
   const before = project.currentProgress;
   const after = Math.min(project.requiredProgress, before + progress);
   const block = normalizeWorkBlock({
     days: committedDays,
+    artisanCount,
     degree,
     progress: after - before,
     rollTotal,
@@ -413,7 +422,7 @@ export function advanceCraftingProject(source, {
   project.workBlocks.push(block);
   project.status = after >= project.requiredProgress ? "ready" : "active";
   project.stage = after >= project.requiredProgress ? "finalisation" : "assembly";
-  project = audit(project, "work-block", `${committedDays}-day Work Block: ${progress} Progress.`, user, { block });
+  project = audit(project, "work-block", `${committedDays}-day Work Block with ${artisanCount} artisan(s): ${after - before} Progress. Each artisan commits ${committedDays} downtime day(s).`, user, { block });
   return project;
 }
 

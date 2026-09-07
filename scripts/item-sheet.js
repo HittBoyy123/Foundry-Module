@@ -1,4 +1,5 @@
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
+import { insertMarkActionButton } from "./mark-actions.js";
 import {
   calculateItemEffects,
   getTierPresentation,
@@ -348,6 +349,7 @@ export function injectItemSheet(application, html, getConfig) {
   const craftingItemType = getCraftingItemType(item);
   if (!itemTypeIsSupported(config, craftingItemType)) return;
   insertControls(application, item, root, config, craftingItemType);
+  insertMarkActionButton(item, root);
 }
 
 export function registerItemSheetHooks(getConfig) {

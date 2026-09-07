@@ -7,6 +7,7 @@ import { CRAFTING_ITEM_SOURCES } from "../content/crafting-items.js";
 import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 import { PROFESSION_ITEM_SOURCES } from "../content/professions.js";
 import { ARTISAN_MARK_JOURNAL_SOURCES } from "../content/artisan-mark-journals.js";
+import { CRAFTING_GUIDE } from "../content/crafting-guide.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = path.join(projectRoot, "packs");
@@ -15,7 +16,7 @@ const packs = Object.freeze({
   "crafting-items.db": CRAFTING_ITEM_SOURCES,
   "crafting-resources.db": CRAFTING_RESOURCE_SOURCES,
   "professions.db": PROFESSION_ITEM_SOURCES,
-  "artisan-marks.db": ARTISAN_MARK_JOURNAL_SOURCES,
+  "artisan-marks.db": [...ARTISAN_MARK_JOURNAL_SOURCES, CRAFTING_GUIDE],
 });
 
 await mkdir(outputDirectory, { recursive: true });

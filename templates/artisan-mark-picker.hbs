@@ -45,7 +45,8 @@
                         <i class="fa-solid {{#if selected}}fa-circle-check{{else}}fa-plus{{/if}}" aria-hidden="true"></i>
                       </button>
                     </header>
-                    <p>{{effectSummary}}</p>
+        <p>{{effectSummary}}</p>
+        <small>Applies to: {{#each categories}}{{this}} {{/each}}{{#if activation}} · Activation: {{activation.type}} {{activation.value}}{{/if}}</small>
                     {{#if synergyTags.length}}<small>Synergy tags: {{#each synergyTags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</small>{{/if}}
                     <small>{{materialSummary}}</small>
                     <small>{{automationLabel}}</small>

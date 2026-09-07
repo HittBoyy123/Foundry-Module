@@ -20,7 +20,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
     return {
       index,
       role: index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
-      required: index === 0 || (index === 1 && Boolean(secondary)),
+      required: index === 0,
       materialIds,
       requirement: group ? PROFESSION_DEFINITIONS.filter(profession => profession.materialIds.some(id => materialIds.includes(id)))
         .map(profession => profession.name).join(" / ") || "Qualified Artisan" : "Any Profession",
@@ -36,19 +36,10 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
 
 export function validateArtisanTeam(recipe, slotUuids, profiles) {
   const slots = buildArtisanSlots(recipe, slotUuids, profiles);
-  const reasons = slots.filter((slot) => slot.required && (!slot.actorUuid || !slot.qualified))
-    .map((slot) => `${slot.role} requires an artisan qualified in ${slot.requirement}.`);
+  const reasons = slots[0].actorUuid ? [] : ["Choose a lead artisan. Material specialists unlock Marks but are not required to craft the base item."];
   const uuids = slotUuids.filter(Boolean);
   if (uuids.length > 6 || new Set(uuids).size !== uuids.length) {
     reasons.push("Use up to six different artisans.");
-  }
-  for (const group of recipe?.ingredientSets?.[0]?.groups ?? []) {
-    if (group.id === "core") continue;
-    const covered = profiles.some((profile) => slotUuids.includes(profile.actorUuid)
-      && profile.professions.some((profession) => group.options.some((option) => (
-        profession.materialIds.includes(option.materialId)
-      ))));
-    if (!covered) reasons.push(`${group.label} requires a qualified component artisan.`);
   }
   return { valid: reasons.length === 0, reasons, slots };
 }

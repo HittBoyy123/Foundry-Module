@@ -1,5 +1,13 @@
 # Wrathmaker
 
+### Crafting together and the rules handbook
+
+Every supported recipe can be crafted solo. The six artisan slots are optional beyond the lead; material specialists unlock their own eligible Marks. Each distinct assigned artisan contributes progress on a Work Block, up to six, and each commits the same downtime. The displayed time estimate assumes successful checks. Existing project progress is preserved.
+
+Find **Wrathmaker — Crafting Handbook** in the **Wrathmaker Artisan Marks** compendium. It includes the crafting, gathering and disassembly workflow plus all 253 Mark reference pages. Structure-only and consumable-only Marks are excluded from the equipment picker.
+
+For Marks with an explicitly stated action cost, an owned item's **Make & Marks → Add Mark Actions to Wielder** creates native action entries. Repeated clicks do not duplicate entries. These buttons post the rules; they do not automatically spend uses, apply damage or select targets. Remove the action if its source item is lost or transferred. Unspecified action costs and GM-approved effects still require adjudication.
+
 A Foundry VTT module for custom Pathfinder 2e house rules. It adds character professions, material and tier controls to PF2e weapons, armor, and crafted spell focuses, tiered crafting resources and resource gathering, custom Apex ability-boost items, campaign Hero and Nephilim Points, escalating multi-side flanking penalties, and shared vehicle-aware Hexploration travel. A GM-facing control panel manages the configurable systems during play.
 
 ## Compatibility
