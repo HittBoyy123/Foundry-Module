@@ -67,7 +67,10 @@ function normalizeComponent(source, index) {
 
 function normalizeMark(source, index) {
   const current = getArtisanMarkDefinition(source?.definitionId ?? source?.id);
-  if (current?.revision) source = { ...source, name: current.name, effectSummary: current.effectSummary, stackGroup: current.stackGroup };
+  if (current?.revision) source = {
+    ...source, name: current.name, effectSummary: current.effectSummary, stackGroup: current.stackGroup,
+    effects: (source?.effects ?? []).every(effect => effect.kind === "rules-text") ? current.effects : source.effects,
+  };
   const grade = Object.hasOwn(ARTISAN_MARK_GRADES, source?.grade) ? source.grade : "minor";
   const gradeDefinition = ARTISAN_MARK_GRADES[grade];
   const status = MARK_STATUSES.has(source?.status) ? source.status : "planned";

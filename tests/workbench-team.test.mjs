@@ -69,7 +69,8 @@ test("selected elemental choices survive item normalization and generate weapon-
   const item = { id: "sword", type: "weapon", actor: {}, isEquipped: true, flags: { [MODULE]: { crafting: state } }, system: {} };
   const rules = buildArtisanMarkRules(item);
   assert.equal(rules[0].damageType, "cold");
-  assert.equal(rules[0].diceNumber, 2);
+  assert.equal(rules[0].diceNumber, 4);
+  assert.equal(rules[0].dieSize, "d8");
   assert.deepEqual(rules[0].selector, ["sword-damage"]);
   item.isEquipped = false;
   assert.deepEqual(buildArtisanMarkRules(item), []);
@@ -82,25 +83,25 @@ test("durability prepares once without cumulative HP or source changes", () => {
     flags: { [MODULE]: { crafting: { core: { tier: 4 }, artisanMarks: [{ definitionId, status: "completed" }] } } } };
   applyMarkItemStats(item);
   applyMarkItemStats(item);
-  assert.equal(item.system.hp.max, 48);
-  assert.equal(item.system.hp.value, 38);
-  assert.equal(item.system.hardness, 7);
+  assert.equal(item.system.hp.max, 120);
+  assert.equal(item.system.hp.value, 110);
+  assert.equal(item.system.hardness, 13);
 });
 
 test("Blood Temper remains conditional and Core-tier HP bonuses are numerical", () => {
   const item = { id: "blade", flags: { [MODULE]: { crafting: { core: { tier: 5 } } } }, system: {} };
   const blood = rulesForArtisanMark({ id: "blacksmithing-specialty-1-blood-temper" }, item)[0];
-  assert.equal(blood.value, 4);
+  assert.equal(blood.value, 20);
   assert.deepEqual(blood.predicate, [{ lte: ["hp-percent", 50] }]);
-  assert.equal(rulesForArtisanMark({ id: "stonemason-specialty-3-mountain-plate" }, item)[0].value, 5);
+  assert.equal(rulesForArtisanMark({ id: "stonemason-specialty-3-mountain-plate" }, item)[0].value, 15);
 });
 
-test("equivalent non-stacking effects share a group and Crown Prism requires a T5 anchor", () => {
+test("revised AC effects stack and Crown Prism still requires a T5 anchor", () => {
   const silk = getArtisanMarkDefinition("weaving-specialty-2-silken-steel");
   const war = getArtisanMarkDefinition("tailoring-specialty-1-war-skin");
   const anchor = { id: "core", minimumTier: 4 };
-  assert.notEqual(buildArtisanMarkAssignment(silk, { name: "Artisan" }, anchor, 4).stackGroup,
-    buildArtisanMarkAssignment(war, { name: "Artisan" }, anchor, 4).stackGroup);
+  assert.equal(buildArtisanMarkAssignment(silk, { name: "Artisan" }, anchor, 4).stackGroup, "");
+  assert.equal(buildArtisanMarkAssignment(war, { name: "Artisan" }, anchor, 4).stackGroup, "");
   const crown = getArtisanMarkDefinition("glassmaking-specialty-1-crown-prism");
   const result = evaluateArtisanMarkChoice(crown, {
     itemGroup: "spellFocus", coreTier: 4,

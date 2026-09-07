@@ -1,4 +1,6 @@
 import { MODULE_ID } from "./constants.js";
+import { powerRules, MARK_ITEM_POWER } from "../content/mark-power.js";
+import { catalogueRules } from "./mark-catalogue-effects.js";
 import { getCoreTierProgression } from "./crafting-model.js";
 import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
 
@@ -9,6 +11,7 @@ const skillChoices = ["acrobatics", "arcana", "athletics", "crafting", "deceptio
 const energyChoices = ["acid", "cold", "electricity", "fire"];
 
 export function artisanMarkStackGroup(mark) {
+  if (getArtisanMarkDefinition(mark.definitionId ?? mark.id)?.revision >= 2) return "";
   if (/Max[ -]HP/i.test(mark.effectSummary)) return "max-hp-artisan-mark";
   if (/over-potency/i.test(mark.stackGroup)) return "over-potency";
   if (/ac-over-core/i.test(mark.stackGroup)) return "ac-over-core";
@@ -50,7 +53,8 @@ export function markConfigurationChoices(id) {
 const DURABILITY = {
   "blacksmithing-universal-tempered-construction": [0.1, 1],
   "blacksmithing-universal-fortified-frame": [0.2, 2],
-  "carpentry-universal-seasoned-construction": [0.1, 0],
+  "carpentry-universal-seasoned-construction": [1, 0],
+  "weaving-specialty-2-warcloth-finish": [1, 0],
   "stonemason-universal-stonebound": [0.1, 1],
 };
 const appliedSystems = new WeakSet();
@@ -59,28 +63,44 @@ export function applyMarkItemStats(item) {
   if (!item.system || appliedSystems.has(item.system)) return;
   const marks = item.flags?.[MODULE_ID]?.crafting?.artisanMarks ?? [];
   const baseHP = Number(item.system.hp?.max) || 0;
+  const baseRange = Number(item.system.range) || 0;
   let extraHP = 0;
+  let extraRange = 0;
   for (const mark of marks.filter((entry) => entry.status === "completed")) {
     const id = mark.definitionId;
+    const definition = getArtisanMarkDefinition(id);
+    if (!definition || !markAppliesToItem(definition, item.type, item)) continue;
     const tier = Number(item.flags?.[MODULE_ID]?.crafting?.core?.tier) || 1;
-    const durability = DURABILITY[id];
+    const power = MARK_ITEM_POWER[id];
+    if (power && power.validItemGroups.includes(item.type)) {
+      extraHP += Math.floor(baseHP * (power.hpMultiplier(tier) - 1));
+      if (Number.isFinite(item.system.hardness)) item.system.hardness += power.hardness(tier);
+    }
+    const durability = power ? null : DURABILITY[id];
     if (durability && item.type !== "weapon") {
       const multiplier = id === "leatherwork-universal-reinforced-hide" && tier >= 5 ? 2 : 1;
       extraHP += Math.floor(baseHP * durability[0] * multiplier);
       if (Number.isFinite(item.system.hardness)) item.system.hardness += durability[1] * multiplier;
     }
-    if (id === "pottery-specialty-1-ceramic-plate" && item.type === "armor") {
-      extraHP += 15 * tier;
-      if (Number.isFinite(item.system.hardness)) item.system.hardness += 2;
+    if (id === "pottery-specialty-1-ceramic-plate" && ["armor", "shield"].includes(item.type)) {
+      extraHP += 40 * tier;
+      if (Number.isFinite(item.system.hardness)) item.system.hardness += 5 * tier;
     }
     if (id === "carpentry-specialty-1-longshot-construction" && item.type === "weapon" && item.system.range > 0) {
-      item.system.range = Math.floor(item.system.range * 1.5);
+      extraRange += baseRange;
+    }
+    if (id === "glassmaking-specialty-1-focusing-lens" && item.type === "weapon" && baseRange > 0) {
+      extraRange += Math.floor(baseRange * 0.5);
+    }
+    if (id === "leatherwork-universal-flexible-construction" && item.type === "armor") {
+      item.system.speedPenalty = Math.min(0, (Number(item.system.speedPenalty) || 0) + 10);
     }
     if (id === "weaving-specialty-2-flexible-weave" && item.type === "armor") {
-      item.system.speedPenalty = Math.min(0, (Number(item.system.speedPenalty) || 0) + 5);
-      if (Number.isFinite(item.system.dexCap)) item.system.dexCap += 1;
+      item.system.speedPenalty = Math.min(0, (Number(item.system.speedPenalty) || 0) + 15);
+      if (Number.isFinite(item.system.dexCap)) item.system.dexCap += 3;
     }
   }
+  if (extraRange) item.system.range = baseRange + extraRange;
   if (extraHP && item.system.hp) {
     item.system.hp.max += extraHP;
     item.system.hp.value = Math.min(item.system.hp.max, item.system.hp.value + extraHP);
@@ -93,11 +113,15 @@ export function applyMarkItemStats(item) {
 export function rulesForArtisanMark(mark, item) {
   const id = mark.definitionId ?? mark.id;
   const tier = Number(item.flags?.[MODULE_ID]?.crafting?.core?.tier) || 1;
+  const powered = powerRules(id, tier, item.id);
+  if (powered) return powered;
   const attack = `${item.id}-attack`, damage = `${item.id}-damage`;
   const dice = (Number(item.system?.damage?.dice) || 1) + getCoreTierProgression(tier).weaponDice;
   const choice = mark.configuration?.choice;
   const permitted = markConfigurationChoices(id);
   if (permitted.length && !permitted.includes(choice)) return [];
+  const reviewed = catalogueRules(id, item, tier, choice, dice);
+  if (reviewed) return reviewed;
   switch (id) {
     case "leatherwork-universal-reinforced-hide": return [resist("acid", tier)];
     case "weaving-universal-reinforced-weave": return [flat("athletics", 2, { predicate: ["action:escape"] }), flat("acrobatics", 2, { predicate: ["action:escape"] })];
@@ -167,10 +191,11 @@ export function buildArtisanMarkRules(item, itemGroup = item.type) {
 }
 
 export function markAutomationLabel(mark) {
+  if (mark.categories?.some(category => ["structure", "project"].includes(category))) return "Project/structure rules — apply manually; no character bonuses are granted.";
   const id = mark.definitionId ?? mark.id;
   const item = { id: "preview", type: "weapon", system: { damage: { dice: 1 } }, flags: {} };
   const sample = { ...mark, configuration: { choice: markConfigurationChoices(id)[0] } };
-  if (DURABILITY[id] || ["pottery-specialty-1-ceramic-plate", "carpentry-specialty-1-longshot-construction", "weaving-specialty-2-flexible-weave", "blacksmithing-specialty-1-blood-temper"].includes(id)
+  if (DURABILITY[id] || ["pottery-specialty-1-ceramic-plate", "carpentry-specialty-1-longshot-construction", "glassmaking-specialty-1-focusing-lens", "leatherwork-universal-flexible-construction", "weaving-specialty-2-flexible-weave", "blacksmithing-specialty-1-blood-temper"].includes(id)
     || rulesForArtisanMark(sample, item).length) return "Includes numerical automation; other benefits follow the rules text.";
   return "Rules text — resolve this Mark's activation or special benefit during play.";
 }

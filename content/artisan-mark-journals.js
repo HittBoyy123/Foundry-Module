@@ -21,6 +21,7 @@ export const ARTISAN_MARK_JOURNAL_SOURCES = Object.freeze(ARTISAN_MARK_DEFINITIO
         "<h2>" + escape(mark.name) + "</h2>" +
         "<p><strong>Source:</strong> " + escape(source) + "</p>" +
         "<p>" + escape(mark.effectSummary) + "</p>" +
+        "<p><em>High-power campaign revision. Flat Artisan bonuses stack. Structure and project benefits are descriptive; activations, recipients and limited uses require manual resolution unless the Workbench explicitly lists numerical automation. Additional temporary HP is tracked separately from class temporary HP.</em></p>" +
         "<table><tbody>" +
         "<tr><th>Applies to</th><td>" + list(mark.categories) + "</td></tr>" +
         "<tr><th>Activation</th><td>" + (mark.activation ? escape(mark.activation.type + (mark.activation.value ? " " + mark.activation.value : "")) : "Passive or source-defined; unspecified action costs require GM adjudication") + "</td></tr>" +

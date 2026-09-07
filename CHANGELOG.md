@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.25.0 — Full high-power Artisan Mark review (2026-09-07)
+
+- Individually reviewed all 253 Marks across 11 professions and 33 specialisations: 55 universal Marks and 198 specialisation Marks. No catalogue entries are omitted. Updated the Mark compendium and profession guide descriptions while preserving stable IDs, grades, costs and maker provenance.
+- Added strong non-blacksmith martial paths, including Glassmaking base damage dice and beam-split attacks, expanded Over-Striking and Over-Potency capped at +2 per Mark, stronger social/exploration bonuses, high maximum-HP and shield upgrades, and concrete structure/project benefits.
+- Updated numerical adapters for supported passive effects and 61 native activation readouts. Revised range, ceramic durability and armor mobility preparation; base-dice additions use item-scoped PF2e DamageAlteration. Activations, auras, resource reductions and unimplemented special riders remain explicitly manual, not silently applied.
+- Fortified Frame reaches ×4 pre-Mark item HP at Tier 6. Additional durability bonuses use the same base rather than multiplying one another; item damage deficits remain intact during preparation.
+- Revised flat bonuses remain untyped and stackable. Maximum HP is not temporary HP or a healing activation. Existing PF2e resistance handling remains highest-source rather than additive.
+- Replaced several recurring temporary-HP effects with maximum HP. The few retained 10-point Artisan temporary-HP buffers are described as separate, manually tracked pools so class temporary HP is not overwritten. No automatic temporary-HP pooling or replenishment is introduced.
+
 ## 0.24.0 — Mark actions, revised Marks and compact guides (2026-09-07)
 
 - First differentiation pass revises 18 overlapping equipment Marks with matching numerical adapters: distinct acid/fire/cold defences, escape and social utility, airborne-target damage, initiative optics, precision finishers and specialised Superior defences. Stable IDs and maker provenance are retained; normalized descriptions use the current revision.

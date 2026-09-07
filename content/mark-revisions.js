@@ -1,5 +1,7 @@
 /** Stable IDs preserve provenance. Revision text and automation are authored together. */
-export const MARK_REVISIONS = Object.freeze({
+import { MARK_POWER, MARK_ITEM_POWER } from "./mark-power.js";
+import { CATALOGUE_REVISIONS } from "./mark-catalogue-pass.js";
+const PREVIOUS_REVISIONS = Object.freeze({
   "leatherwork-universal-reinforced-hide": {
     name: "Tanner's Acid Ward", validItemGroups: ["armor"],
     effectSummary: "Worn armor grants acid resistance equal to Core Tier. The hide is treated to shed corrosive secretions; this does not grant item HP or Hardness.",
@@ -91,3 +93,4 @@ export const MARK_REVISIONS = Object.freeze({
     rationale: "A deliberate save-versus-attack casting choice instead of a duplicate potency focus.",
   },
 });
+export const MARK_REVISIONS = Object.freeze({ ...PREVIOUS_REVISIONS, ...CATALOGUE_REVISIONS, ...MARK_POWER, ...MARK_ITEM_POWER });
