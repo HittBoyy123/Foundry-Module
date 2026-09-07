@@ -3,6 +3,7 @@ import { evaluateCraftingRecipe, normalizeCraftingRecipe } from "./crafting-reci
 import { defaultProjectProgress } from "./recipe-catalog.js";
 import { MODULE_ID } from "./constants.js";
 import { normalizeCraftingState } from "./crafting-model.js";
+import { assertSingleFreeMark } from "../content/artisan-marks.js";
 
 export const CRAFTING_PROJECT_SCHEMA_VERSION = 2;
 export const CRAFTING_WORKBENCH_SCHEMA_VERSION = 2;
@@ -226,6 +227,7 @@ function audit(project, action, message, user = {}, details = {}) {
 }
 
 export function createCraftingProject(source, user = {}) {
+  assertSingleFreeMark(source.artisanMarks ?? []);
   let project = normalizeCraftingProject({
     ...source,
     status: "draft",
@@ -237,6 +239,7 @@ export function createCraftingProject(source, user = {}) {
     audit: [],
     createdBy: user.id ?? source.createdBy,
   });
+  assertSingleFreeMark(project.artisanMarks);
   project = audit(project, "created", "Project plan created.", user);
   return project;
 }
@@ -434,6 +437,7 @@ export function validateProjectReservations(source, inventoryItems = []) {
 }
 
 export function buildConsumptionPlan(source, inventoryItems = []) {
+  assertSingleFreeMark(source.artisanMarks ?? []);
   const project = normalizeCraftingProject(source);
   if (project.status !== "ready" || project.currentProgress < project.requiredProgress) {
     throw new Error("Finish the required downtime before completing this project.");
@@ -459,6 +463,7 @@ export function buildConsumptionPlan(source, inventoryItems = []) {
 }
 
 export function completeCraftingProject(source, { finalItemUuid = "", finalItemSource = null, user = {} } = {}) {
+  assertSingleFreeMark(source.artisanMarks ?? []);
   let project = normalizeCraftingProject(source);
   if (project.status !== "ready") throw new Error("This project is not ready to complete.");
   project.status = "completed";

@@ -55,7 +55,19 @@
   {{#if tabs.disassemble}}
     <section class="cmt-workbench-panel cmt-workbench-projects">
       <div class="cmt-workbench-section-title"><h3>Disassemble Items</h3><span>90% material return</span></div>
-      <p>Place a completed Workbench item in the Party Stash. Recover 90% of each consumed material, rounded down. Marks are destroyed; disassembled items cannot be recovered.</p>
+      <div class="cmt-workbench-drop" data-cmt-disassembly-drop>Drop a Wrathmaker item from a character sheet or the Party Stash here. GMs can also drop world items.</div>
+      <p>90% material return, rounded down. The original item and its Marks are destroyed only after confirmation.</p>
+      {{#if disassemblyError}}<p class="cmt-workbench-notice is-warning">{{disassemblyError}}</p><button type="button" data-cmt-disassembly-clear>Clear Item</button>{{/if}}
+      {{#if droppedDisassembly}}
+        <article class="cmt-panel">
+          <h4>{{droppedDisassembly.itemName}}</h4>
+          <p>From: {{droppedDisassembly.sourceName}}</p>
+          <p>{{#if droppedDisassembly.basis}}{{droppedDisassembly.basis}}{{else}}Recorded crafting materials{{/if}}</p>
+          <ul>{{#each droppedDisassembly.returns}}<li>{{name}} — Tier {{tier}}: {{consumed}} units → <strong>{{quantity}} returned</strong></li>{{/each}}</ul>
+          <div class="cmt-workbench-actions"><button type="button" data-cmt-disassembly-clear>Clear Item</button><button type="button" data-cmt-disassembly-confirm {{#unless droppedDisassembly.canDisassemble}}disabled{{/unless}}>Disassemble…</button></div>
+        </article>
+      {{/if}}
+      <h4>Completed items already in the Party Stash</h4>
       {{#each disassemblyItems}}
         <article class="cmt-panel">
           <h4>{{itemName}}</h4>
@@ -65,7 +77,7 @@
             <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Disassemble…
           </button></div>
         </article>
-      {{else}}<p>No eligible recorded items in the Party Stash. Single-item projects only; unstack and unequip the item first.</p>{{/each}}
+      {{else}}<p>No recorded outputs in the Party Stash. You can still drop a formatted GM-created item above. Unstack and unequip the item first.</p>{{/each}}
     </section>
   {{/if}}
 
@@ -159,7 +171,7 @@
                 <div class="cmt-slot-actions"><button type="button" data-cmt-open-marks="{{actorUuid}}">Choose Marks</button>
                 <button type="button" data-cmt-slot-remove="{{index}}" title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
                 <div class="cmt-mark-badges">
-                  {{#each marks}}<button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} · {{capacityCost}}</button>{{/each}}
+                  {{#each marks}}<button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} · {{capacityCost}}<small>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</small></button>{{/each}}
                 </div>
               {{else}}
                 <div class="cmt-slot-empty"><i class="fa-solid fa-user-plus"></i><span>Drop artisan</span></div>
@@ -245,7 +257,7 @@
               <summary>Artisan Marks</summary>
               <ul>
                 {{#each artisanMarks}}
-                  <li><button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} — {{maker.name}}</button><strong>{{capacityCost}} Capacity</strong></li>
+                  <li><button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} — {{maker.name}}<small>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</small></button><strong>{{capacityCost}} Capacity</strong></li>
                 {{/each}}
               </ul>
             </details>

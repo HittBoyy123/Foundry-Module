@@ -31,8 +31,8 @@ test("artisan cards capitalize requirements and include learned specializations"
   const cards = buildArtisanSlots(plan, ["smith", "leather"], [
     { ...smith, specializations: [{ name: "Hellforging" }, { name: "Radiant Forging" }] }, leather,
   ]);
-  assert.equal(cards[0].requirement, "Metal");
-  assert.equal(cards[1].requirement, "Leather / Hide");
+  assert.equal(cards[0].requirement, "Blacksmithing");
+  assert.equal(cards[1].requirement, "Leatherwork");
   assert.equal(cards[0].specializationSummary, "Hellforging · Radiant Forging");
 });
 

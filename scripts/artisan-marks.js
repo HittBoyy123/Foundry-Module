@@ -89,6 +89,8 @@ export function evaluateArtisanMarkChoice(markSource, {
   selectedDefinitionIds = [],
   selectedStackGroups = [],
   targetItem = null,
+  ignoreCapacity = false,
+  ignoreFreeMarkLimit = false,
 } = {}) {
   const mark = getArtisanMarkDefinition(markSource?.definitionId ?? markSource?.id) ?? clone(markSource);
   const maximum = getCoreTierProgression(coreTier).capacity;
@@ -112,7 +114,10 @@ export function evaluateArtisanMarkChoice(markSource, {
     reason = "This Mark is already supplied by another contributor.";
   } else if (artisanMarkStackGroup(mark) && selectedStackGroups.includes(artisanMarkStackGroup(mark))) {
     reason = `Another selected Mark already uses the ${artisanMarkStackGroup(mark).replaceAll("-", " ")} stacking group.`;
-  } else if (capacityUsed + mark.capacityCost > maximum) {
+  } else if (!ignoreFreeMarkLimit && mark.capacityCost === 0 &&
+    selectedDefinitionIds.some(id => getArtisanMarkDefinition(id)?.capacityCost === 0)) {
+    reason = "An item can have only one zero-Capacity Artisan Mark.";
+  } else if (!ignoreCapacity && capacityUsed + mark.capacityCost > maximum) {
     reason = `${mark.name} needs ${mark.capacityCost} Capacity; only ${Math.max(0, maximum - capacityUsed)} remains.`;
   }
   return {

@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.js";
+import { assertSingleFreeMark } from "../content/artisan-marks.js";
 import { getRulesConfig } from "./config-store.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
 import { evaluateCraftingRecipe } from "./crafting-recipes.js";
@@ -24,7 +25,7 @@ import { normalizeDegreeOfSuccess } from "./gathering-model.js";
 import { renderWorkbenchGathering, bindWorkbenchGathering } from "./gathering.js";
 import { validateArtisanTeam, chooseSecondaryMaterials, materialDisplayName } from "./workbench-team.js";
 import { recoverProjectItem } from "./project-recovery.js";
-import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem } from "./disassembly.js";
+import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem, droppedDisassemblyContext } from "./disassembly.js";
 import { markAppliesToItem, markConfigurationChoices, markAutomationLabel } from "./artisan-mark-effects.js";
 import {
   augmentRecipeWithArtisanMarks,
@@ -386,8 +387,22 @@ async function workbenchContext(application) {
   application.workbenchConfig = config;
   const gatheringHtml = application.workbenchState.tab === "gather" ? await renderWorkbenchGathering(application) : "";
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
+  let droppedDisassembly = null;
+  let disassemblyError = "";
+  if (application.workbenchState.disassemblyItemUuid) {
+    try {
+      const item = await resolveBaseItem(application.workbenchState.disassemblyItemUuid);
+      const owner = item?.actor ?? item?.parent;
+      if (!item || (owner ? owner.canUserModify?.(game.user, "update") !== true : !game.user.isGM)) {
+        throw new Error("You cannot dismantle this source item.");
+      }
+      const context = droppedDisassemblyContext(workbench, item, config);
+      droppedDisassembly = { ...context.plan, sourceName: owner?.name ?? "World Items", canDisassemble: canEdit };
+    } catch (error) { disassemblyError = error.message; }
+  }
   return {
     party,
+    droppedDisassembly, disassemblyError,
     disassemblyItems: workbench.projects.filter(project => project.status === "completed" && !project.disassembledAt)
       .map(project => {
         const item = findDisassemblyItem(party, project);
@@ -703,6 +718,7 @@ function buildCompletedItemSource(current, baseItem, config = getRulesConfig()) 
       },
     ],
   };
+  assertSingleFreeMark(crafting.artisanMarks);
   source.flags[MODULE_ID] = normalizeItemFlags({
     ...priorFlags,
     material: current.coreMaterialId,
@@ -809,7 +825,7 @@ async function runCompletionWithLock(party, projectId, auditUser) {
   }
 }
 
-function requestGMProjectCompletion(party, projectId, disassemblySignature = null) {
+function requestGMProjectCompletion(party, projectId, disassemblySignature = null, itemUuid = null) {
   const gm = activePrimaryGM();
   if (!gm) return Promise.reject(new Error(localize("CMT.Workbench.NoActiveGM")));
   const requestId = foundry.utils.randomID();
@@ -822,6 +838,7 @@ function requestGMProjectCompletion(party, projectId, disassemblySignature = nul
     game.socket.emit(WORKBENCH_SOCKET, {
       type: disassemblySignature ? "disassemble-request" : "complete-request",
       disassemblySignature,
+      itemUuid,
       requestId,
       gmId: gm.id,
       userId: game.user.id,
@@ -860,7 +877,7 @@ async function handleCompletionRequest(payload) {
       throw new Error(localize("CMT.Workbench.CompletionNotAllowed"));
     }
     response.result = payload.type === "disassemble-request"
-      ? await runDisassembly(party, payload.projectId, payload.disassemblySignature)
+      ? await runDisassembly(party, payload.projectId, payload.disassemblySignature, payload.itemUuid, requestingUser)
       : await runCompletionWithLock(party, payload.projectId, {
         id: requestingUser.id,
         name: requestingUser.name,
@@ -914,32 +931,37 @@ async function completeProject(application, projectId) {
   ));
 }
 
-async function runDisassembly(party, projectId, expectedSignature) {
+async function runDisassembly(party, projectId, expectedSignature, itemUuid = null, requestingUser = game.user) {
   return disassembleProjectItem(party, projectId, {
     user: game.user, locks: completionLocks, loadWorkbench: projectState, requireEnabled: requireWorkbench,
     expectedSignature,
+    itemUuid, requestingUser, resolveItem: resolveBaseItem, config: getRulesConfig(),
     saveWorkbench: (actor, state, options = {}) => options.rollback
       ? actor.setFlag(MODULE_ID, "workbench", normalizeCraftingWorkbench(state))
       : saveWorkbench(actor, state),
   });
 }
 
-async function confirmDisassembly(application, projectId) {
+async function confirmDisassembly(application, projectId, itemUuid = null) {
   requireWorkbench();
   const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
   if (!canEditParty(party)) throw new Error("You cannot modify this Party Stash.");
   const project = projectState(party).projects.find(entry => entry.id === projectId);
-  const plan = buildDisassemblyPlan(project, findDisassemblyItem(party, project));
+  const sourceItem = itemUuid ? await resolveBaseItem(itemUuid) : findDisassemblyItem(party, project);
+  const plan = itemUuid ? droppedDisassemblyContext(projectState(party), sourceItem, getRulesConfig()).plan : buildDisassemblyPlan(project, sourceItem);
+  const owner = sourceItem?.actor ?? sourceItem?.parent;
+  if (itemUuid && (owner ? owner.canUserModify?.(game.user, "update") !== true : !game.user.isGM)) throw new Error("You cannot dismantle this source item.");
   const list = plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.consumed} → ${row.quantity}</li>`).join("");
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: "Disassemble Item" }, modal: true,
-    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)}</strong> and return these materials to the Party Stash?</p><ul>${list}</ul><p>90% return, rounded down per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
+    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>90% return, rounded down per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
   });
   if (!confirmed) return;
   requireWorkbench();
   const primaryGM = activePrimaryGM();
-  if (game.user.isGM && primaryGM?.id === game.user.id) await runDisassembly(party, projectId, plan.signature);
-  else await requestGMProjectCompletion(party, projectId, plan.signature);
+  if (game.user.isGM && primaryGM?.id === game.user.id) await runDisassembly(party, projectId, plan.signature, itemUuid);
+  else await requestGMProjectCompletion(party, projectId, plan.signature, itemUuid);
+  application.workbenchState.disassemblyItemUuid = "";
   ui.notifications.info("Item disassembled. Returned materials are in the Party Stash.");
 }
 
@@ -998,6 +1020,7 @@ export function createWorkbenchApplication() {
         showArchived: false,
         expandedProjectIds: [],
         selectedMarks: [],
+        disassemblyItemUuid: "",
         projectName: "",
         requiredProgress: 0,
         scrollTop: 0,
@@ -1022,6 +1045,29 @@ export function createWorkbenchApplication() {
       const root = rootElement(this.element);
       if (!root) return;
       if (this.workbenchState.tab === "gather") bindWorkbenchGathering(this, root);
+      const disassemblyDrop = root.querySelector("[data-cmt-disassembly-drop]");
+      disassemblyDrop?.addEventListener("dragover", event => event.preventDefault());
+      disassemblyDrop?.addEventListener("drop", async event => {
+        event.preventDefault();
+        try {
+          requireWorkbench();
+          const data = JSON.parse(event.dataTransfer.getData("text/plain"));
+          const item = await resolveBaseItem(data.uuid);
+          if (item?.documentName !== "Item" || item.pack) throw new Error("Drop a world or inventory item, not a compendium entry.");
+          this.workbenchState.disassemblyItemUuid = item.uuid;
+          await this.render({ force: true });
+        } catch (error) { ui.notifications.error(error.message); }
+      });
+      root.querySelector("[data-cmt-disassembly-clear]")?.addEventListener("click", async () => {
+        this.workbenchState.disassemblyItemUuid = "";
+        await this.render({ force: true });
+      });
+      root.querySelector("[data-cmt-disassembly-confirm]")?.addEventListener("click", async () => {
+        try {
+          await confirmDisassembly(this, null, this.workbenchState.disassemblyItemUuid);
+          await this.render({ force: true });
+        } catch (error) { ui.notifications.error(error.message, { permanent: true }); }
+      });
       for (const button of root.querySelectorAll("[data-cmt-disassemble]")) {
         button.addEventListener("click", async () => {
           try {
@@ -1075,6 +1121,7 @@ export function createWorkbenchApplication() {
             ? Number(field.value)
             : field.value;
           if (stateKey === "partyId") {
+            this.workbenchState.disassemblyItemUuid = "";
             this.workbenchState.artisanSlots = Array(6).fill("");
             this.workbenchState.contributorUuids = [];
             this.workbenchState.leadArtisanUuid = "";
@@ -1314,7 +1361,7 @@ function bindMarkDetails(root, marks) {
     badge.addEventListener("dblclick", () => {
       new foundry.applications.api.DialogV2({
         window: { title: mark.name },
-        content: `<p>${escapeHtml(mark.effectSummary)}</p><p>${escapeHtml(mark.grade)} · ${mark.capacityCost} Capacity</p>`,
+        content: `<p>${escapeHtml(mark.profession)} — ${escapeHtml(mark.specialisation || "Universal")}</p><p>${escapeHtml(mark.effectSummary)}</p><p>${escapeHtml(mark.grade)} · ${mark.capacityCost} Capacity</p><p>Synergy tags: ${escapeHtml((mark.synergyTags ?? []).join(", ") || "None")}</p>`,
         buttons: [{ action: "close", label: "Close", default: true }],
       }).render({ force: true });
     });

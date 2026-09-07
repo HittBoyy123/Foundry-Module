@@ -1,0 +1,47 @@
+<div class="cmt-workbench-body">
+  <header class="cmt-workbench-header"><div>
+    <h2>GM Item Creator</h2>
+    <p>Create a world item. No materials, projects, or downtime are spent.</p>
+  </div></header>
+  <section class="cmt-workbench-panel">
+    <div class="cmt-workbench-section-title"><h3>Base Item &amp; Materials</h3></div>
+    <div class="cmt-workbench-drop" data-base-drop>
+      {{#if base}}<strong>{{base.name}}</strong><span>Drop another base item to replace it.</span>{{else}}Drop a PF2e weapon, armor, shield, or Spell Focus here.{{/if}}
+    </div>
+    <div class="cmt-workbench-form-grid">
+      <label>Item name<input type="text" name="itemName" value="{{draft.name}}"></label>
+      <label>Artisan name (default for new Marks)<input type="text" name="maker" value="{{draft.maker}}" placeholder="Any name; no Actor needed"></label>
+      {{#if plan}}
+        <label>Core Material<select data-core="materialId">{{#each materials}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        <label>Core Tier<select data-core="tier">{{#each tiers}}<option value="{{value}}" {{#if selected}}selected{{/if}}>Tier {{value}} — {{label}}</option>{{/each}}</select></label>
+        {{#each components}}
+          <label>{{label}}<select data-component="{{id}}" data-part="materialId">{{#each materials}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+          <label>{{label}} Tier<select data-component="{{id}}" data-part="tier">{{#each tiers}}<option value="{{value}}" {{#if selected}}selected{{/if}}>Tier {{value}}</option>{{/each}}</select></label>
+        {{/each}}
+      {{/if}}
+    </div>
+  </section>
+  {{#if error}}<p class="cmt-workbench-notice is-warning">{{error}}</p>{{/if}}
+  {{#if base}}
+    <section class="cmt-workbench-panel">
+      <div class="cmt-workbench-section-title"><h3>Artisan Marks</h3><span>{{plan.capacity.used}} / {{plan.capacity.maximum}} Capacity</span></div>
+      {{#if plan.capacity.overCapacity}}<p class="cmt-workbench-notice is-warning">Over Capacity. Creation requires a GM override confirmation.</p>{{/if}}
+      {{#each marks}}
+        <article class="cmt-panel">
+          <h4>{{name}}</h4><small>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</small><p>{{effectSummary}}</p>
+          <label>Made by <input type="text" data-maker="{{index}}" value="{{makerName}}"></label>
+          <button type="button" data-remove="{{index}}">Remove Mark</button>
+        </article>
+      {{/each}}
+      {{#if plan}}
+        <div class="cmt-workbench-form-grid">
+          <label>Compatible Mark<select data-add-mark><option value="">Choose a Mark</option>{{#each plan.available}}<option value="{{mark.id}}">{{mark.profession}} / {{#if mark.specialisation}}{{mark.specialisation}}{{else}}Universal{{/if}} — {{mark.name}} ({{mark.capacityCost}} Capacity)</option>{{/each}}</select></label>
+          <label>Anchor<select data-anchor></select></label>
+          <label>Effect choice<select data-choice hidden></select></label>
+        </div>
+        <div class="cmt-workbench-actions"><button type="button" data-add>Add Mark</button></div>
+      {{/if}}
+    </section>
+    <div class="cmt-workbench-actions"><button type="button" data-create {{#unless plan}}disabled{{/unless}}>Create World Item</button></div>
+  {{/if}}
+</div>

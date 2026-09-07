@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MODULE_ID } from "../scripts/constants.js";
-import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem } from "../scripts/disassembly.js";
+import { MODULE_ID, cloneDefaultRulesConfig } from "../scripts/constants.js";
+import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem, droppedDisassemblyContext } from "../scripts/disassembly.js";
+import { buildGMItemSource } from "../scripts/gm-item-model.js";
 import { createCraftingProject, normalizeCraftingWorkbench, recordProjectRecovery } from "../scripts/crafting-projects.js";
 import { buildCraftingRecipeFromBand } from "../scripts/recipe-catalog.js";
 import { recoverProjectItem } from "../scripts/project-recovery.js";
@@ -136,4 +137,74 @@ test("mixed tiers and colored scale variants remain distinct", () => {
   const plan = buildDisassemblyPlan(f.state().projects[0], f.item);
   assert.deepEqual(plan.returns.slice(2).map(row => [row.materialId, row.tier, row.variantId, row.quantity]),
     [["metal", 3, "", 9], ["dragon-scale", 2, "red", 10]]);
+});
+
+function droppedFixture() {
+  const f = fixture();
+  const config = cloneDefaultRulesConfig();
+  const source = buildGMItemSource(
+    { name: "Longsword", type: "weapon", system: { category: "martial", group: "sword", quantity: 1 } },
+    { name: "GM Steel Sword", materialId: "metal", tier: 2, marks: [] }, config, { isGM: true });
+  const owner = { name: "Player Character", canUserModify: () => true };
+  let live = { ...source, id: "custom", uuid: "Actor.hero.Item.custom", actor: owner, delete: async () => { live = null; } };
+  f.party.items = [];
+  const context = droppedDisassemblyContext(f.state(), live, config);
+  Object.assign(f.options, {
+    itemUuid: live.uuid, resolveItem: async () => live, config,
+    requestingUser: { id: "player", isGM: false }, expectedSignature: context.plan.signature,
+  });
+  return { ...f, context, owner, live: () => live };
+}
+
+test("GM-created inventory items derive recipe stock and are removed from the actual character", async () => {
+  const f = droppedFixture();
+  assert.equal(f.context.existing, false);
+  assert.match(f.context.plan.basis, /Standard Wrathmaker recipe/);
+  await disassembleProjectItem(f.party, null, f.options);
+  assert.equal(f.live(), null);
+  assert.ok(f.party.items.length > 0);
+  const recorded = f.state().projects.find(project => project.id === f.context.project.id);
+  assert.ok(recorded.disassembledAt);
+  assert.throws(() => recordProjectRecovery(recorded, {}), /cannot be recovered/);
+  await assert.rejects(disassembleProjectItem(f.party, null, f.options), /no longer available/);
+});
+
+test("dropped-item ownership is enforced independently of Party Stash ownership", async () => {
+  const f = droppedFixture();
+  f.owner.canUserModify = () => false;
+  await assert.rejects(disassembleProjectItem(f.party, null, f.options), /permission/);
+  assert.ok(f.live());
+  assert.equal(f.party.items.length, 0);
+});
+
+test("a failed character item deletion removes returns and the temporary disassembly record", async () => {
+  const f = droppedFixture();
+  f.live().delete = async () => { throw Error("delete refused"); };
+  await assert.rejects(disassembleProjectItem(f.party, null, f.options), /delete refused/);
+  assert.ok(f.live());
+  assert.equal(f.party.items.length, 0);
+  assert.equal(f.state().projects.some(project => project.id === f.context.project.id), false);
+});
+
+test("world items are GM-only; compendium templates and unformatted items are rejected", async () => {
+  const f = droppedFixture();
+  delete f.live().actor;
+  await assert.rejects(disassembleProjectItem(f.party, null, f.options), /permission/);
+  f.options.requestingUser = f.options.user;
+  await disassembleProjectItem(f.party, null, f.options);
+  assert.equal(f.live(), null);
+  assert.throws(() => droppedDisassemblyContext(f.state(), { pack: "example" }, f.options.config), /Import/);
+  assert.throws(() => droppedDisassemblyContext(f.state(), { flags: {} }, f.options.config), /Wrathmaker material/);
+});
+
+test("tracked gear still uses its original ledger after moving to a character", () => {
+  const f = fixture();
+  f.item.uuid = "Actor.hero.Item.moved";
+  f.item.flags = { [MODULE_ID]: { material: "metal", tier: 2, crafting: { provenance: [{ projectId: f.id }] } } };
+  const context = droppedDisassemblyContext(f.state(), f.item, cloneDefaultRulesConfig());
+  assert.equal(context.existing, true);
+  assert.equal(context.plan.returns[0].quantity, 9);
+  f.state().projects[0].disassembledAt = Date.now();
+  assert.throws(() => droppedDisassemblyContext(f.state(), f.item, cloneDefaultRulesConfig()), /already been disassembled/);
+  assert.throws(() => droppedDisassemblyContext({ projects: [] }, f.item, cloneDefaultRulesConfig()), /original crafting project/);
 });

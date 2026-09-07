@@ -1,3 +1,5 @@
+import { PROFESSION_DEFINITIONS } from "../content/professions.js";
+
 export function materialDisplayName(id) {
   return ({ leather: "Leather / Hide", herbs: "Herbs / Mushrooms", "mana-crystal": "Mana Crystals" })[id]
     ?? String(id).replaceAll("-", " ").replace(/\b\w/g, letter => letter.toUpperCase());
@@ -20,7 +22,8 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
       role: index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
       required: index === 0 || (index === 1 && Boolean(secondary)),
       materialIds,
-      requirement: group ? materialIds.map(materialDisplayName).join(" / ") : "Any Profession",
+      requirement: group ? PROFESSION_DEFINITIONS.filter(profession => profession.materialIds.some(id => materialIds.includes(id)))
+        .map(profession => profession.name).join(" / ") || "Qualified Artisan" : "Any Profession",
       actorUuid: profile?.actorUuid ?? "",
       name: profile?.name ?? "",
       img: profile?.img ?? "icons/svg/mystery-man.svg",

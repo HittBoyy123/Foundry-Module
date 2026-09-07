@@ -3298,6 +3298,12 @@ export function getArtisanMarkDefinition(id) {
   return definition ? clone(definition) : null;
 }
 
+export function assertSingleFreeMark(marks) {
+  const free = marks.filter(mark => mark.status !== "suppressed" &&
+    (getArtisanMarkDefinition(mark.definitionId ?? mark.id)?.capacityCost ?? mark.capacityCost) === 0);
+  if (free.length > 1) throw new Error("An item can have only one zero-Capacity Artisan Mark.");
+}
+
 export function listArtisanMarks({
   professionIds = [],
   specializations = [],

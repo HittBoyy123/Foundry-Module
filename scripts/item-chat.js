@@ -45,15 +45,15 @@ export async function injectItemChatMarks(message, html, getConfig) {
     // Both Foundry chat rendering hooks can run on the same card.
     if (!summary || card.querySelector("[data-cmt-chat-marks]")) continue;
     const row = document.createElement("section");
-    row.className = "cmt-chat-make-marks";
+    row.className = "tags cmt-chat-make-marks";
     row.dataset.cmtChatMarks = "true";
     row.setAttribute("aria-label", label("CMT.ItemSheet.MakeAndMarks", "Make & Marks"));
     const core = document.createElement("span");
-    core.className = "cmt-chat-core";
+    core.className = "tag cmt-chat-core";
     const type = { weapon: "Weapon", armor: "Armor", shield: "Shield", spellFocus: "Spell Focus" }[summary.itemType] ?? "Item";
     core.textContent = `${summary.material} ${type} · T${summary.tier}`;
     const marks = document.createElement("span");
-    marks.className = "cmt-chat-mark-count";
+    marks.className = "tag cmt-chat-mark-count";
     marks.tabIndex = 0;
     marks.textContent = game.i18n.format("CMT.ItemSheet.ArtisanMarksCount", { count: summary.marks.length });
     const tooltip = document.createElement("div");
@@ -67,6 +67,15 @@ export async function injectItemChatMarks(message, html, getConfig) {
     marks.dataset.tooltipClass = "pf2e cmt-chat-mark-tooltip";
     marks.setAttribute("aria-label", [marks.textContent, ...summary.marks.map(mark => `${mark.name} — ${mark.maker || "Unknown maker"}`)].join(". "));
     row.append(core, marks);
+    const nativeTag = card.querySelector(".tags .tag");
+    if (nativeTag) {
+      const style = getComputedStyle(nativeTag);
+      for (const chip of [core, marks]) {
+        for (const key of ["fontFamily", "fontSize", "fontWeight", "lineHeight", "padding", "borderRadius", "textTransform"]) {
+          chip.style[key] = style[key];
+        }
+      }
+    }
     description.before(row);
   }
 }

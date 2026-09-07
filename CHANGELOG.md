@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.21.0 — Artisan Mark references and GM item creation (2026-09-07)
+
+- Artisan requirement slots now show eligible profession names instead of material names.
+- New items allow only one zero-Capacity Mark across all artisans, including the GM creator; Capacity overrides do not bypass this rule. Existing finished gear is preserved.
+- Added profession/specialisation source labels to Mark pickers, selected Mark badges, and GM creation choices.
+- Added all 253 Mark reference journals to a searchable Wrathmaker Artisan Marks compendium under Pathfinder 2E Wrathmaker, with source, descriptions, Capacity, and Anchor requirements.
+
+- Added drag-and-drop disassembly from character inventories, the Party Stash, and GM world items. Recorded items use their project ledger; unrecorded Wrathmaker-formatted items use a clearly labelled standard-recipe estimate. Source ownership is rechecked by the active GM, the original item is removed only after confirmation, and returns go to the selected Party Stash.
+
+- Matched item-chat Core and Artisan Mark badges to native PF2e trait sizing, removing the tinted container and reddish borders.
+- Added a GM-only world item creator in module settings and the Items Directory, independent of the Workbench switch. It accepts typed artisan names, creates items without costs or projects, enforces Mark compatibility, tier, Anchor, and stacking rules, and requires explicit confirmation to exceed Capacity.
+
 ## 0.20.0 — Workbench controls, recovery, and disassembly (2026-09-06)
 
 - Added a Disassemble Workbench tab with a confirmed 90% return of recorded consumed materials, rounded down per material/tier/variant. Single completed outputs in the Party Stash are processed by the active GM with transaction locking, fresh-preview checks, rollback, and a permanent disassembly record that blocks repeat salvage and item recovery.

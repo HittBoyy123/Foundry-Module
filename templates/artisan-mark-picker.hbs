@@ -1,4 +1,5 @@
 <div class="cmt-workbench-body">
+<p>One zero-Capacity Mark per item. All other Marks use Capacity normally.</p>
 <div class="cmt-workbench-section-title"><h3>Artisan Marks</h3><span>{{markCapacity.used}} / {{markCapacity.maximum}} Capacity</span></div>
           {{#each markTrays}}
             <article class="cmt-workbench-mark-tray">
@@ -31,6 +32,7 @@
                     <header>
                       <div>
                         <strong>{{name}}</strong>
+                        <span>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</span>
                         <span>{{gradeLabel}} · {{capacityCost}} Capacity</span>
                       </div>
                       <button
@@ -44,6 +46,7 @@
                       </button>
                     </header>
                     <p>{{effectSummary}}</p>
+                    {{#if synergyTags.length}}<small>Synergy tags: {{#each synergyTags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</small>{{/if}}
                     <small>{{materialSummary}}</small>
                     <small>{{automationLabel}}</small>
                     {{#if selected}}
@@ -69,7 +72,7 @@
                   <summary>{{unavailableMarks.length}} unavailable Marks</summary>
                   <ul>
                     {{#each unavailableMarks}}
-                      <li><strong>{{name}}</strong><span>{{reason}}</span></li>
+                      <li><strong>{{name}}</strong><span>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</span><span>{{reason}}</span></li>
                     {{/each}}
                   </ul>
                 </details>
