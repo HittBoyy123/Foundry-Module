@@ -39,7 +39,7 @@ test("all revised numerical adapters remain finite at all tiers and manual effec
     for (const rule of buildArtisanMarkRules(item, item.type)) {
       if (["FlatModifier", "Resistance", "DamageAlteration"].includes(rule.key)) assert.ok(Number.isFinite(rule.value), `${mark.id}: ${rule.key}`);
       if (rule.key === "DamageDice") assert.ok(Number.isInteger(rule.diceNumber) && rule.diceNumber > 0);
-      if (rule.key === "FlatModifier") assert.equal(rule.type, "untyped");
+      if (rule.key === "FlatModifier") assert.equal(rule.type, "artisan");
       assert.notEqual(rule.key, "TempHP");
     }
     if (mark.categories.some(c => ["structure", "project"].includes(c))) {
@@ -50,7 +50,7 @@ test("all revised numerical adapters remain finite at all tiers and manual effec
 });
 test("every declared activation produces its revised native action entry without auto-spending uses", () => {
   const active = marks.filter(m => m.activation);
-  assert.equal(active.length, 61);
+  assert.equal(active.length, 72);
   for (const mark of active) {
     const item = itemFor(mark, 6);
     const [action] = markActionSources(item);

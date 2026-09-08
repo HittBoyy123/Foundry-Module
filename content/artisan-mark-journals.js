@@ -23,9 +23,9 @@ export const ARTISAN_MARK_JOURNAL_SOURCES = Object.freeze(ARTISAN_MARK_DEFINITIO
         "<p>" + escape(mark.effectSummary) + "</p>" +
         "<p><em>High-power campaign revision. Flat Artisan bonuses stack. Structure and project benefits are descriptive; activations, recipients and limited uses require manual resolution unless the Workbench explicitly lists numerical automation. Additional temporary HP is tracked separately from class temporary HP.</em></p>" +
         "<table><tbody>" +
-        "<tr><th>Applies to</th><td>" + list(mark.categories) + "</td></tr>" +
-        "<tr><th>Activation</th><td>" + (mark.activation ? escape(mark.activation.type + (mark.activation.value ? " " + mark.activation.value : "")) : "Passive or source-defined; unspecified action costs require GM adjudication") + "</td></tr>" +
-        "<tr><th>Grade</th><td>" + escape(mark.grade) + "</td></tr>" +
+        "<tr><th>Applies to</th><td>" + list(mark.itemTraitLabels) + "</td></tr>" +
+        "<tr><th>Activation</th><td>" + escape(mark.activationLabel) + "</td></tr>" +
+        "<tr><th>Grade</th><td>" + escape(mark.gradeLabel) + "</td></tr>" +
         "<tr><th>Capacity</th><td>" + mark.capacityCost + "</td></tr>" +
         "<tr><th>Minimum Core Tier</th><td>" + mark.minimumTier + "</td></tr>" +
         "<tr><th>Minimum Anchor Tier</th><td>" + mark.minimumAnchorTier + (mark.requiresCoreTierAnchors ? "; Core-tier Anchor required" : "") + "</td></tr>" +

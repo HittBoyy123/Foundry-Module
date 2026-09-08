@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { powerRules, MARK_ITEM_POWER } from "../content/mark-power.js";
 import { catalogueRules } from "./mark-catalogue-effects.js";
+import { asArtisanBonus } from "./artisan-bonus.js";
 import { getCoreTierProgression } from "./crafting-model.js";
 import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
 
@@ -20,6 +21,13 @@ export function artisanMarkStackGroup(mark) {
 
 export function markAppliesToItem(mark, itemGroup, item = null) {
   const id = mark.definitionId ?? mark.id;
+  const traits = mark.itemTraits;
+  if (traits) {
+    if (traits.some(trait => ["structure", "project"].includes(trait))) return false;
+    if (!traits.includes("universal") && !traits.includes(itemGroup)) return false;
+    if (traits.includes("ranged") && item && !Number(item.system?.range)) return false;
+    if (traits.includes("dragonScale") && item && !item.flags?.[MODULE_ID]?.dragonScale?.color) return false;
+  }
   const groups = {
     "blacksmithing-specialty-1-blood-temper": ["weapon"],
     "blacksmithing-specialty-2-aegis-of-dawn": ["armor"],
@@ -43,6 +51,7 @@ export function markAppliesToItem(mark, itemGroup, item = null) {
 }
 
 export function markConfigurationChoices(id) {
+  if (id === "bookmaking-specialty-1-archmage-codex") return ["acid", "cold", "electricity", "fire", "sonic"];
   if (["enchanting-specialty-2-elemental-essence", "weaving-specialty-1-manaweave"].includes(id)) return energyChoices;
   if (id === "enchanting-specialty-1-focused-empowerment") return [...skillChoices, "initiative"];
   if (id === "enchanting-specialty-1-minor-empowerment") return skillChoices;
@@ -111,6 +120,11 @@ export function applyMarkItemStats(item) {
 
 /** Explicit adapters only: source rules are never inferred from arbitrary prose. */
 export function rulesForArtisanMark(mark, item) {
+  const name = getArtisanMarkDefinition(mark.definitionId ?? mark.id)?.name ?? mark.name;
+  return rawRulesForArtisanMark(mark, item).map(rule => asArtisanBonus(rule, name));
+}
+
+function rawRulesForArtisanMark(mark, item) {
   const id = mark.definitionId ?? mark.id;
   const tier = Number(item.flags?.[MODULE_ID]?.crafting?.core?.tier) || 1;
   const powered = powerRules(id, tier, item.id);
@@ -176,7 +190,7 @@ export function buildArtisanMarkRules(item, itemGroup = item.type) {
     if (!definition || !markAppliesToItem(definition, itemGroup, item)) return [];
     const conditionOption = `wrathmaker:mark-condition:${item.id}:${mark.definitionId}`;
     const rules = rulesForArtisanMark(mark, item).map((rule) => ({
-      ...rule, label: mark.name, slug: mark.definitionId,
+      ...rule, label: rule.label ?? mark.name, slug: rule.slug ?? mark.definitionId,
       ...(rule.predicate ? { predicate: rule.predicate.map((term) => term === "wrathmaker:mark-condition" ? conditionOption : term) } : {}),
     }));
     const predicates = rules.flatMap((rule) => rule.predicate ?? []);

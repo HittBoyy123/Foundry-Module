@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MARK_POWER, MARK_ITEM_POWER, powerRules } from "../content/mark-power.js";
+import { artisanRulesText } from "../scripts/artisan-bonus.js";
 import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
 import { applyMarkItemStats, buildArtisanMarkRules } from "../scripts/artisan-mark-effects.js";
 const MODULE = "pf2e-crafting-material-tiers";
@@ -13,14 +14,14 @@ test("all power revisions remain discoverable with matching eligibility and fini
   for (const [id, profile] of Object.entries({ ...MARK_POWER, ...MARK_ITEM_POWER })) {
     const definition = getArtisanMarkDefinition(id);
     assert.ok(definition, id);
-    assert.equal(definition.effectSummary, profile.effectSummary);
+    assert.equal(definition.effectSummary, artisanRulesText(profile.effectSummary));
     assert.deepEqual(definition.validItemGroups, profile.validItemGroups);
     assert.equal(definition.stackGroup, "");
     for (let tier = 1; tier <= 6; tier++) {
       for (const rule of powerRules(id, tier, "gear") ?? []) {
         assert.ok(Number.isFinite(rule.value ?? rule.diceNumber), id);
         assert.ok(!rule.selector?.includes("hp-temp"));
-        if (rule.key === "FlatModifier") assert.equal(rule.type, "untyped");
+        if (rule.key === "FlatModifier") assert.equal(rule.type, "artisan");
       }
     }
   }
@@ -30,7 +31,7 @@ test("maximum HP sources stack without adding healing or temporary HP instructio
   const rules = buildArtisanMarkRules(item);
   const hp = rules.filter(r => r.selector?.includes("hp"));
   assert.deepEqual(hp.map(r => r.value), [72, 108]);
-  assert.ok(hp.every(r => r.type === "untyped"));
+  assert.ok(hp.every(r => r.type === "artisan"));
   assert.equal(item.system.hp.value, 70);
   item.isEquipped = false;
   assert.deepEqual(buildArtisanMarkRules(item), []);

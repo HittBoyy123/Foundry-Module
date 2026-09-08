@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.26.0 — Artisan Bonuses, Mark categories and expanded activations (2026-09-08)
+
+- Added activations to eleven more Marks across weapons, armor, shields and focuses (72 activation-bearing Marks total). Passive benefits remain; named activations specify costs, triggers, frequency and resolution.
+- Archmage Codex now selects Acid, Cold, Electricity, Fire or Sonic for matching-trait spell damage. Its passive 2 spell-sized dice (3 at Tier 6) and two-action Ascendant Thesis replacement of (Core Tier + 2) spell-sized dice use mutually exclusive, item-scoped toggles. Initial damage, activation use and one-minute expiry require manual control; the action readout shows the selected element.
+- Capitalised grade, applicability and activation display labels in guides, Mark references, the picker and detail pop-outs without changing stored identifiers.
+
+- Added explicit item-applicability traits to every Mark, displayed in the picker and reference compendium. Shield, Armor, Weapon, Spell Focus and Universal categories filter against the selected item; ranged-weapon and dragon-scale requirements further narrow the list. Profession-universal Marks are not automatically item-universal.
+
+- Mark-generated flat modifiers now use Wrathmaker's Artisan category and display the Mark name with Artisan Bonus (or Artisan Penalty). Mark descriptions, action readouts and compendiums no longer describe these as untyped bonuses.
+- Artisan modifiers stack with circumstance, item, status and other Artisan modifiers. PF2e's closed modifier schema is handled at the integration boundary using an additive untyped carrier; native modifiers and global PF2e bonus labels are not changed.
+- Values, conditions, capacity and the +2 per-Mark Over-Potency cap are unchanged.
+
 ## 0.25.0 — Full high-power Artisan Mark review (2026-09-07)
 
 - Individually reviewed all 253 Marks across 11 professions and 33 specialisations: 55 universal Marks and 198 specialisation Marks. No catalogue entries are omitted. Updated the Mark compendium and profession guide descriptions while preserving stable IDs, grades, costs and maker provenance.

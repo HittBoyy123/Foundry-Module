@@ -1,5 +1,6 @@
 import { MODULE_ID } from "./constants.js";
 import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
+import { markConfigurationChoices } from "./artisan-mark-effects.js";
 const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
 export function markActionSources(item) {
@@ -7,13 +8,16 @@ export function markActionSources(item) {
   return (item.flags?.[MODULE_ID]?.crafting?.artisanMarks ?? []).filter(mark => mark.status === "completed").flatMap(mark => {
     const definition = getArtisanMarkDefinition(mark.definitionId);
     if (!definition?.activation || !definition.categories.some(category => ["item", "consumable"].includes(category))) return [];
+    const choices = markConfigurationChoices(definition.id);
+    const choice = choices.includes(mark.configuration?.choice) ? mark.configuration.choice : "";
+    const choiceText = choices.length ? `<p><strong>Effect choice:</strong> ${escape(choice ? choice[0].toUpperCase() + choice.slice(1) : "Not selected — configure this Mark before use")}</p>` : "";
     return [{
       name: `${definition.name} (${item.name})`, type: "action", img: item.img,
       flags: { [MODULE_ID]: { markAction: { itemId: item.id, definitionId: definition.id, managed: true } } },
       system: {
         actionType: { value: definition.activation.type }, actions: { value: definition.activation.value },
         category: "interaction", traits: { value: [] }, rules: [],
-        description: { value: `<p><strong>${escape(definition.profession)} — ${escape(definition.specialisation || "Universal")}</strong></p><p>${escape(definition.effectSummary)}</p><p>${escape(definition.activation.note || "")}</p><p>Requires ${escape(item.name)} to be available and wielded or worn as appropriate. Resolve targets, usage limits and effects from the rules text; this button does not spend uses or apply damage automatically.</p>` },
+        description: { value: `<p><strong>${escape(definition.profession)} — ${escape(definition.specialisation || "Universal")}</strong></p><p><strong>Activation:</strong> ${escape(definition.activationLabel)}</p>${choiceText}<p>${escape(definition.effectSummary)}</p><p>${escape(definition.activation.note || "")}</p><p>Requires ${escape(item.name)} to be available and wielded or worn as appropriate. Resolve targets, usage limits and effects from the rules text; this button does not spend uses or apply damage automatically.</p>` },
       },
     }];
   });

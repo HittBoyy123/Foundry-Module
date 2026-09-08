@@ -20,7 +20,7 @@ test("all 253 Marks have distinct revised descriptions and the power profiles ha
       const item = { id: "gear", type: revision.validItemGroups[0], system: {}, flags: { [moduleId]: { crafting: { core: { tier } } } } };
       const rules = rulesForArtisanMark({ definitionId: id }, item);
       assert.ok(rules.length > 0, id);
-      for (const rule of rules.filter(rule => rule.key === "FlatModifier")) assert.equal(rule.type, "untyped", id);
+      for (const rule of rules.filter(rule => rule.key === "FlatModifier")) assert.equal(rule.type, "artisan", id);
     }
   }
 });

@@ -1,6 +1,8 @@
 /** Stable IDs preserve provenance. Revision text and automation are authored together. */
 import { MARK_POWER, MARK_ITEM_POWER } from "./mark-power.js";
 import { CATALOGUE_REVISIONS } from "./mark-catalogue-pass.js";
+import { artisanRulesText } from "../scripts/artisan-bonus.js";
+import { MARK_ACTIVATION_EXPANSIONS } from "./mark-activation-expansion.js";
 const PREVIOUS_REVISIONS = Object.freeze({
   "leatherwork-universal-reinforced-hide": {
     name: "Tanner's Acid Ward", validItemGroups: ["armor"],
@@ -93,4 +95,14 @@ const PREVIOUS_REVISIONS = Object.freeze({
     rationale: "A deliberate save-versus-attack casting choice instead of a duplicate potency focus.",
   },
 });
-export const MARK_REVISIONS = Object.freeze({ ...PREVIOUS_REVISIONS, ...CATALOGUE_REVISIONS, ...MARK_POWER, ...MARK_ITEM_POWER });
+export const MARK_REVISIONS = Object.freeze(Object.fromEntries(
+  Object.entries({ ...PREVIOUS_REVISIONS, ...CATALOGUE_REVISIONS, ...MARK_POWER, ...MARK_ITEM_POWER })
+    .map(([id, revision]) => {
+      const expansion = MARK_ACTIVATION_EXPANSIONS[id];
+      return [id, {
+        ...revision,
+        ...(expansion ? { activation: expansion.activation } : {}),
+        effectSummary: artisanRulesText(expansion?.effectSummary ?? (revision.effectSummary + (expansion?.append ? " " + expansion.append : ""))),
+      }];
+    }),
+));

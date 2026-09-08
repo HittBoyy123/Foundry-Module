@@ -36,6 +36,18 @@ export function catalogueRules(id, item, tier, choice, weaponDice) {
   const subject = SUBJECT_CHECKS[id];
   if (subject) return [flat(subject[0], t + 2, [condition, ...subject.slice(1)])];
   switch (id) {
+    case "bookmaking-specialty-1-archmage-codex": {
+      const initial = `wrathmaker:initial-spell-damage:${item.id}`;
+      const active = `wrathmaker:ascendant-thesis:${item.id}`;
+        // PF2e inherits the matching damage component's die size when omitted.
+        const base = { key: "DamageDice", selector: ["spell-damage"], damageType: choice };
+      return [
+        { key: "RollOption", domain: "all", option: initial, toggleable: true, value: false, label: "Archmage Codex: Initial Spell Damage" },
+        { key: "RollOption", domain: "all", option: active, toggleable: true, value: false, label: "Archmage Codex: Ascendant Thesis (1 minute; manual expiry)" },
+        { ...base, slug: id + "-passive", diceNumber: t >= 6 ? 3 : 2, predicate: [`item:trait:${choice}`, initial, { not: active }] },
+        { ...base, slug: id + "-ascendant", diceNumber: t + 2, predicate: [`item:trait:${choice}`, initial, active] },
+      ];
+    }
     case "blacksmithing-universal-perfect-balance": return [flat("athletics", t + 2, [`action:${choice}`, condition])];
     case "blacksmithing-universal-reinforced-edge": return [flat(damage, weaponDice * (t >= 5 ? 5 : 3), ["wrathmaker:target-object"])];
     case "blacksmithing-specialty-1-ember-temper": return [{ ...flat(damage, 4 * t), critical: true, damageType: "fire" }];

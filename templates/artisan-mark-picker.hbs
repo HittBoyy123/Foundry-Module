@@ -46,7 +46,7 @@
                       </button>
                     </header>
         <p>{{effectSummary}}</p>
-        <small>Applies to: {{#each categories}}{{this}} {{/each}}{{#if activation}} · Activation: {{activation.type}} {{activation.value}}{{/if}}</small>
+        <small>Applies to: {{#each itemTraitLabels}}{{this}}{{#unless @last}} · {{/unless}}{{/each}}{{#if activation}} · Activation: {{activationLabel}}{{/if}}</small>
                     {{#if synergyTags.length}}<small>Synergy tags: {{#each synergyTags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</small>{{/if}}
                     <small>{{materialSummary}}</small>
                     <small>{{automationLabel}}</small>

@@ -1,4 +1,4 @@
-import { markCategories, MARK_ACTIVATIONS } from "./mark-applicability.js";
+import { markCategories, MARK_ACTIVATIONS, markItemTraits, MARK_ITEM_TRAIT_LABELS } from "./mark-applicability.js";
 import { MARK_REVISIONS } from "./mark-revisions.js";
 export const ARTISAN_MARK_SCHEMA_VERSION = 1;
 
@@ -3262,6 +3262,9 @@ function makeDefinition([id, professionId, specializationId, name, grade, effect
   const feature = SPECIALISATION_FEATURES.find((entry) => (
     entry.professionId === professionId && entry.specializationId === specializationId
   ));
+  const categories = revision?.categories ?? markCategories(id, revision?.validItemGroups ?? validItemGroups(effectSummary, professionId));
+  const groups = revision?.validItemGroups ?? (categories.includes("item") ? validItemGroups(effectSummary, professionId) : []);
+  const itemTraits = markItemTraits(id, groups, categories);
   return Object.freeze({
     schemaVersion: ARTISAN_MARK_SCHEMA_VERSION,
     id,
@@ -3273,15 +3276,23 @@ function makeDefinition([id, professionId, specializationId, name, grade, effect
     specializationId,
     specialisation: feature?.specialization ?? "",
     source,
-    categories: Object.freeze(revision?.categories ?? markCategories(id, revision?.validItemGroups ?? validItemGroups(effectSummary, professionId))),
+    categories: Object.freeze(categories),
+    itemTraits: Object.freeze(itemTraits),
+    itemTraitLabels: Object.freeze(itemTraits.map(trait => MARK_ITEM_TRAIT_LABELS[trait] ?? trait)),
     activation: revision && Object.hasOwn(revision, "activation") ? revision.activation : MARK_ACTIVATIONS[id] ?? null,
     grade,
+    gradeLabel: gradeRules.label,
+    categoryLabels: Object.freeze(categories.map(category => MARK_ITEM_TRAIT_LABELS[category] ?? category[0].toUpperCase() + category.slice(1))),
+    activationLabel: (() => {
+      const activation = revision && Object.hasOwn(revision, "activation") ? revision.activation : MARK_ACTIVATIONS[id];
+      return !activation ? "Passive" : activation.type === "action" ? `${activation.value} ${activation.value === 1 ? "Action" : "Actions"}` : activation.type === "free" ? "Free Action" : "Reaction";
+    })(),
     capacityCost: gradeRules.capacityCost,
     minimumTier: gradeRules.minimumAnchorTier,
     anchorSlotTypes: Object.freeze([...(profession?.anchorSlotTypes ?? ["core"])]),
     minimumAnchorTier: gradeRules.minimumAnchorTier,
     requiresCoreTierAnchors: /beyond Core|above Core|Core-exceeding|Over-Potency/i.test(effectSummary),
-    validItemGroups: Object.freeze(revision?.validItemGroups ?? (markCategories(id, validItemGroups(effectSummary, professionId)).includes("item") ? validItemGroups(effectSummary, professionId) : [])),
+    validItemGroups: Object.freeze(groups),
     requiredMaterialIds: Object.freeze([...(profession?.materialIds ?? [])]),
     materialUnits: gradeRules.materialUnits,
     materialTierOffset: gradeRules.materialTierOffset,

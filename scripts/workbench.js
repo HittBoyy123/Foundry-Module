@@ -1366,7 +1366,7 @@ function bindMarkDetails(root, marks) {
     badge.addEventListener("dblclick", () => {
       new foundry.applications.api.DialogV2({
         window: { title: mark.name },
-        content: `<p>${escapeHtml(mark.profession)} — ${escapeHtml(mark.specialisation || "Universal")}</p><p>${escapeHtml(mark.effectSummary)}</p><p>${escapeHtml(mark.grade)} · ${mark.capacityCost} Capacity</p><p>Synergy tags: ${escapeHtml((mark.synergyTags ?? []).join(", ") || "None")}</p>`,
+        content: `<p>${escapeHtml(mark.profession)} — ${escapeHtml(mark.specialisation || "Universal")}</p><p>${escapeHtml(mark.effectSummary)}</p><p>${escapeHtml(mark.gradeLabel ?? (mark.grade[0].toUpperCase() + mark.grade.slice(1)))} · ${mark.capacityCost} Capacity · ${escapeHtml(mark.activationLabel || "Passive")}</p><p>Synergy tags: ${escapeHtml((mark.synergyTags ?? []).join(", ") || "None")}</p>`,
         buttons: [{ action: "close", label: "Close", default: true }],
       }).render({ force: true });
     });

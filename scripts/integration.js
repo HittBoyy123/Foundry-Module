@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
 import { applyMarkItemStats, buildArtisanMarkRules } from "./artisan-mark-effects.js";
+import { toPF2eArtisanRule } from "./artisan-bonus.js";
 
 const PATCH_MARKER = Symbol.for(`${MODULE_ID}.prepareRuleElements`);
 const adjustedPrices = new WeakSet();
@@ -169,7 +170,7 @@ export function installRuleElementBridge(getConfig) {
     if (!Array.isArray(storedRules)) return original.apply(this, args);
     const originalLength = storedRules.length;
     try {
-      storedRules.push(...generatedRules);
+      storedRules.push(...generatedRules.map(toPF2eArtisanRule));
       return original.apply(this, args);
     } catch (error) {
       if (!warnedAboutBridge) {

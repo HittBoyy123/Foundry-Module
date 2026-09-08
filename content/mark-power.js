@@ -1,5 +1,5 @@
 /** Explicit campaign-power revisions. Values are shared by prose and automation. */
-const bonus = (selector, perTier, predicate = []) => ({ key: "FlatModifier", selector: [selector], perTier, type: "untyped", predicate });
+const bonus = (selector, perTier, predicate = []) => ({ key: "FlatModifier", selector: [selector], perTier, type: "artisan", predicate });
 const resistance = (type, perTier) => ({ key: "Resistance", type, perTier });
 const entry = (name, groups, text, rules) => ({ name, validItemGroups: groups, effectSummary: text, rules, stackGroup: "", rationale: "Wrathmaker high-power campaign revision; stackable bonuses, no temporary HP." });
 export const MARK_POWER = Object.freeze({

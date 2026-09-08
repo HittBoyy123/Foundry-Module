@@ -1,3 +1,29 @@
+export const MARK_ITEM_TRAIT_LABELS = Object.freeze({
+  universal: "Universal", weapon: "Weapon", armor: "Armor", shield: "Shield",
+  spellFocus: "Spell Focus", consumable: "Consumable", structure: "Structure",
+  project: "Project", ranged: "Ranged Weapon", dragonScale: "Dragon Scale",
+});
+const RANGED_MARKS = new Set([
+  "carpentry-universal-reinforced-limb", "carpentry-specialty-1-true-fletching",
+  "carpentry-specialty-1-specialist-ammo-chamber", "carpentry-specialty-1-longshot-construction",
+  "carpentry-specialty-1-rapid-mechanism", "carpentry-specialty-1-perfected-tension",
+  "carpentry-specialty-1-warbow-overdraw", "glassmaking-universal-precision-focus",
+  "glassmaking-specialty-1-focusing-lens", "glassmaking-specialty-1-beam-splitter",
+]);
+const DRAGON_MARKS = new Set([
+  "leatherwork-specialty-1-draconic-resistance", "leatherwork-specialty-1-scale-dominion",
+  "leatherwork-specialty-1-draconic-constitution", "leatherwork-specialty-1-wyrms-fury",
+  "leatherwork-specialty-1-dragonheart-awakening",
+]);
+/** Item applicability is separate from a Mark being universal to its profession. */
+export function markItemTraits(id, groups, categories) {
+  if (!categories.includes("item")) return [...categories];
+  const universal = ["weapon", "armor", "shield", "spellFocus"].every(group => groups.includes(group));
+  return [...(universal ? ["universal"] : groups),
+    ...(RANGED_MARKS.has(id) ? ["ranged"] : []),
+    ...(DRAGON_MARKS.has(id) ? ["dragonScale"] : [])];
+}
+
 // Explicit overrides: a reference to damaging structures must not hide a weapon Mark.
 const STRUCTURE_MARKS = new Set([
   "carpentry-specialty-2-reinforced-frame", "carpentry-specialty-2-modular-construction",

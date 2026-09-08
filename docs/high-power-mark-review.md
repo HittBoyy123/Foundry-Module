@@ -13,7 +13,7 @@ All 253 existing Marks have been reviewed: 11 professions, each with five univer
 
 ## Shared adjudication
 
-Flat Artisan modifiers are untyped and stack with different Marks. Existing one-zero-Capacity-Mark and total Capacity rules remain. Resistance still uses PF2e's highest applicable source; it is not summed. Durability percentages add against the same pre-Mark base rather than multiplying one another. Mark healing and resource recovery cannot create recursive recovery loops.
+Flat Mark modifiers use the **Artisan Bonus** category and stack with circumstance, item, status and different Marks. Negative modifiers are labelled Artisan Penalty. The module translates this category to PF2e's additive internal carrier only at the engine boundary; other untyped modifiers are untouched. Existing one-zero-Capacity-Mark and total Capacity rules remain. Resistance still uses PF2e's highest applicable source; it is not summed. Durability percentages add against the same pre-Mark base rather than multiplying one another. Mark healing and resource recovery cannot create recursive recovery loops.
 
 For an activation referring to the higher class or spell DC, choose the user's highest available one at activation. NPCs without either need a GM-assigned DC recorded before use. A once-per-encounter ability refreshes for a genuine new encounter, not by repeatedly starting combat or re-equipping. Otherwise use the stated daily or charge limit.
 
