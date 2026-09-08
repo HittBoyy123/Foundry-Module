@@ -33,7 +33,8 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.equal(resource.schemaVersion, CRAFTING_RESOURCE_SCHEMA_VERSION);
     assert.equal(resource.tier >= 1 && resource.tier <= 6, true);
     assert.equal(resource.unitsPerItem >= 1, true);
-    assert.deepEqual(item.system.price.value, { gp: TIER_PRICES_GP[resource.tier - 1] });
+    const expectedPrice = TIER_PRICES_GP[resource.tier - 1] * (resource.materialId === "dragon-scale" ? 1.5 : 1);
+    assert.deepEqual(item.system.price.value, { gp: expectedPrice });
     assert.equal(item.system.bulk.value, 0.2);
     assert.equal(item.system.bulk.heldOrStowed, 0.2);
     assert.equal(item.system.bulk.value * 5, 1);
@@ -41,7 +42,7 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.equal(item.system.stackGroup, null);
     assert.equal(item.system.price.per, 1);
     assert.equal(item.system.price.sizeSensitive, false);
-    assert.equal(resource.pricePerUnitGp, TIER_PRICES_GP[resource.tier - 1]);
+    assert.equal(resource.pricePerUnitGp, expectedPrice);
     assert.equal(resource.bundleSize, 1);
     assert.equal(item.system.level.value, TIER_LEVELS[resource.tier - 1]);
     assert.match(item.system.description.value, new RegExp(`crafting DC is <strong>${TIER_DCS[resource.tier - 1]}</strong>`, "iu"));

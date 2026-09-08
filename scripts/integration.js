@@ -132,6 +132,13 @@ export function applyPreparedItemPresentation(item, config) {
 }
 
 export function registerPreparedItemHooks(getConfig) {
+  for (const event of ["preUpdateItem", "preDeleteItem"]) Hooks.on(event, (item, changes, options) => {
+    const operation = event === "preDeleteItem" ? changes : options;
+    if (item.flags?.[MODULE_ID]?.upgradeProject && !operation?.wrathmakerUpgrade) {
+      ui.notifications.warn("This item is reserved for an upgrade. Complete or cancel the project first.");
+      return false;
+    }
+  });
   Hooks.on("prepareItemData", (item) => {
     try {
       applyPreparedItemPresentation(item, getConfig());

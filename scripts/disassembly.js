@@ -13,7 +13,7 @@ export function droppedDisassemblyContext(workbench, item, config) {
   const flags = item.flags?.[MODULE_ID];
   if (!flags?.material || !flags?.tier) throw new Error("This item does not have Wrathmaker material and Tier data.");
   const ids = (flags.crafting?.provenance ?? []).map(entry => entry.projectId).filter(Boolean);
-  const existing = workbench.projects.find(project => project.finalItemUuid === item.uuid || ids.includes(project.id));
+  const existing = workbench.projects.find(project => !project.supersededBy && (project.finalItemUuid === item.uuid || ids.includes(project.id)));
   if (existing) return { project: existing, existing: true, plan: buildDisassemblyPlan(existing, item) };
   if (ids.length) throw new Error("Select the party holding this item's original crafting project. Its history must be checked before disassembly.");
   const components = Object.fromEntries((flags.crafting?.components ?? []).filter(entry => entry.structural).map(entry => [
@@ -51,6 +51,8 @@ export function findDisassemblyItem(party, project) {
 
 /** Only recorded, single-item outputs qualify. Never infer stock from price or item level. */
 export function buildDisassemblyPlan(project, item) {
+  if (project?.supersededBy) throw new Error("Use the latest upgrade project to dismantle this item.");
+  if (item?.flags?.[MODULE_ID]?.upgradeProject) throw new Error("Complete or cancel the upgrade before dismantling.");
   if (!project || project.status !== "completed" || !project.consumptionConfirmed || project.disassembledAt) {
     throw new Error("Choose a completed project that has not already been disassembled.");
   }

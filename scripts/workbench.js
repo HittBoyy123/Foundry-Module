@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.js";
+import { validateUpgradeItem, retainedUpgradeMarks, buildUpgradePlan, upgradeSnapshot, selectUpgradeComponentTiers, retainedMaterialHistory } from "./upgrades.js";
 import { assertSingleFreeMark } from "../content/artisan-marks.js";
 import { getRulesConfig } from "./config-store.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
@@ -183,7 +184,9 @@ function reconcileMarkAssignments(application, profiles, recipe, itemGroup, core
   const requested = Array.isArray(application.workbenchState.selectedMarks)
     ? application.workbenchState.selectedMarks
     : [];
-  const assignments = [];
+  const retained = application.workbenchState.tab === "upgrade"
+    ? retainedUpgradeMarks(targetItem, recipe, itemGroup, coreTier, application.workbenchState.rearrangement) : [];
+  const assignments = [...retained];
   for (const choice of requested) {
     const profile = profiles.find((entry) => entry.actorUuid === choice.actorUuid);
     const mark = profile?.marks.find((entry) => entry.id === choice.definitionId);
@@ -206,7 +209,7 @@ function reconcileMarkAssignments(application, profiles, recipe, itemGroup, core
     assignment.configuration = { choice: choices.includes(choice.configuration?.choice) ? choice.configuration.choice : choices[0] ?? "" };
     assignments.push(assignment);
   }
-  application.workbenchState.selectedMarks = assignments.map((assignment) => ({
+  application.workbenchState.selectedMarks = assignments.filter(a => !retained.includes(a)).map((assignment) => ({
     definitionId: assignment.definitionId,
     actorUuid: assignment.maker.actorUuid,
     anchorSlotId: assignment.anchorSlotIds[0],
@@ -323,6 +326,7 @@ async function workbenchContext(application) {
   let recipe = null;
   let baseRecipe = null;
   let evaluation = null;
+  let upgradeError = "";
   let markPlan = { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], tier) };
   let requiredProgress = Math.max(1, Math.trunc(Number(application.workbenchState.requiredProgress) || 0));
   if (baseItem && selectedBand) {
@@ -333,16 +337,26 @@ async function workbenchContext(application) {
         coreMaterialId: application.workbenchState.materialId,
       });
       chooseSecondaryMaterials(baseRecipe, application.workbenchState.secondaryMaterials ??= {});
+      if (application.workbenchState.tab === "upgrade") selectUpgradeComponentTiers(baseRecipe, application.workbenchState.componentTiers);
       markPlan = reconcileMarkAssignments(application, profiles, baseRecipe, selectedBand.group, tier, baseItem);
-      recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments);
+      const newMarks = application.workbenchState.tab === "upgrade"
+        ? markPlan.assignments.filter(m => m.status !== "completed") : markPlan.assignments;
+      recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments.map(m =>
+        m.status === "completed" ? { ...m, materialUnits: 0 } : m));
       if (!application.workbenchState.requiredProgress) {
         requiredProgress = defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, tier);
+      }
+      if (application.workbenchState.tab === "upgrade") {
+        const plan = buildUpgradePlan(baseItem, recipe, newMarks, application.workbenchState.upgradeDragon);
+        recipe = plan.recipe;
+        requiredProgress = plan.requiredProgress;
       }
       evaluation = evaluateCraftingRecipe(recipe, {
         targetItem: baseItem,
         inventoryItems: virtualUnreservedInventory(party, workbench.projects),
       });
     } catch (error) {
+      upgradeError = error.message;
       console.warn(`${MODULE_ID} | Workbench recipe preview failed.`, error);
     }
   }
@@ -375,7 +389,7 @@ async function workbenchContext(application) {
       canManage: canEdit,
       expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
       canArchive: canEdit && ["completed", "cancelled"].includes(project.status),
-      canRecover: game.user.isGM && canEdit && project.status === "completed" && !project.disassembledAt,
+      canRecover: game.user.isGM && canEdit && project.status === "completed" && !project.disassembledAt && !project.supersededBy,
       canCancel: canEdit && !["completed", "cancelled"].includes(project.status),
     }));
 
@@ -405,7 +419,14 @@ async function workbenchContext(application) {
   }
   return {
     party,
-    droppedDisassembly, disassemblyError,
+    droppedDisassembly, disassemblyError, upgradeError,
+    upgradeDragonAvailable: baseItem?.type === "armor",
+    upgradeDragonColors: Object.entries(config.materials["dragon-scale"].colors).map(([id, color]) => ({
+      id, label: color.label, selected: application.workbenchState.upgradeDragon?.color === id,
+    })),
+    upgradeDragonTier: application.workbenchState.upgradeDragon?.tier ?? tier,
+    upgradeAnchors: baseRecipe ? buildRecipeAnchorSlots(baseRecipe) : [],
+    retainedMarks: application.workbenchState.tab === "upgrade" ? baseItem?.flags?.[MODULE_ID]?.crafting?.artisanMarks ?? [] : [],
     disassemblyItems: workbench.projects.filter(project => project.status === "completed" && !project.disassembledAt)
       .map(project => {
         const item = findDisassemblyItem(party, project);
@@ -417,6 +438,7 @@ async function workbenchContext(application) {
     teamReasons: baseRecipe ? team.reasons : [],
     artisanSlots: team.slots.map((slot) => ({ ...slot, marks: markPlan.assignments.filter((mark) => mark.maker.actorUuid === slot.actorUuid) })),
     secondaryMaterials: (selectedBand?.secondaries ?? []).filter((entry) => !entry.optional).map((entry) => ({
+      upgradeTier: application.workbenchState.componentTiers?.[entry.id] ?? Math.max(1, tier - 2),
       id: entry.id, label: entry.label, options: entry.materialIds.map((id) => ({ id, label: config.materials?.[id]?.label ?? id, selected: application.workbenchState.secondaryMaterials?.[entry.id] === id })),
     })),
     showArchived: application.workbenchState.showArchived === true,
@@ -426,7 +448,8 @@ async function workbenchContext(application) {
     worldDate: currentWorldDate(),
     parties: parties.map((entry) => ({ id: entry.id, name: entry.name, selected: entry.id === party?.id })),
     tabs: {
-      craft: application.workbenchState.tab === "craft",
+      craft: ["craft", "upgrade"].includes(application.workbenchState.tab),
+      upgrade: application.workbenchState.tab === "upgrade",
       gather: application.workbenchState.tab === "gather",
       projects: application.workbenchState.tab === "projects",
       disassemble: application.workbenchState.tab === "disassemble",
@@ -514,6 +537,7 @@ async function createAndReserve(application) {
     coreMaterialId: application.workbenchState.materialId,
   });
   chooseSecondaryMaterials(baseRecipe, application.workbenchState.secondaryMaterials ??= {});
+  if (application.workbenchState.tab === "upgrade") selectUpgradeComponentTiers(baseRecipe, application.workbenchState.componentTiers);
   const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles);
   if (!team.valid) throw new Error(team.reasons.join(" "));
   const markPlan = reconcileMarkAssignments(
@@ -524,9 +548,26 @@ async function createAndReserve(application) {
     application.workbenchState.tier,
     baseItem,
   );
-  const recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments);
+  const upgrading = application.workbenchState.tab === "upgrade";
+  const newMarks = upgrading ? markPlan.assignments.filter(m => m.status !== "completed") : markPlan.assignments;
+  let recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments.map(m =>
+    upgrading && m.status === "completed" ? { ...m, materialUnits: 0 } : m));
   const workbench = projectState(party);
+  let upgrade = null;
+  if (upgrading) {
+    validateUpgradeItem(baseItem, partyActors().flatMap(p => projectState(p).projects));
+    upgrade = buildUpgradePlan(baseItem, recipe, newMarks, application.workbenchState.upgradeDragon);
+    recipe = upgrade.recipe;
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: "Confirm Upgrade" },
+      content: "<p>Replace " + upgrade.replaced.map(escapeHtml).join(", ") +
+        ". Old materials are lost. Replacement materials and component work cost 25% less; new Marks cost full price. The original item is updated on completion.</p>",
+      modal: true,
+    });
+    if (!confirmed) return;
+  }
   let project = createCraftingProject({
+    upgrade,
     name: application.workbenchState.projectName || `${materialLabel(application.workbenchState.materialId, application.workbenchState.tier)} ${baseItem.name}`,
     partyUuid: party.uuid,
     baseItemUuid: baseItem.uuid,
@@ -552,7 +593,7 @@ async function createAndReserve(application) {
       })),
     })),
     artisanMarks: markPlan.assignments,
-    requiredProgress: application.workbenchState.requiredProgress
+    requiredProgress: upgrade?.requiredProgress || application.workbenchState.requiredProgress
       || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier),
   }, userAuditIdentity());
   project = reserveCraftingProject(project, {
@@ -560,7 +601,14 @@ async function createAndReserve(application) {
     otherProjects: workbench.projects,
     user: userAuditIdentity(),
   });
-  await saveWorkbench(party, replaceProject(workbench, project));
+  if (upgrade && !await baseItem.update({ ["flags." + MODULE_ID + ".upgradeProject"]: project.id }))
+    throw new Error("The item could not be reserved for upgrading.");
+  try {
+    await saveWorkbench(party, replaceProject(workbench, project));
+  } catch (error) {
+    if (upgrade) await baseItem.update({ ["flags." + MODULE_ID + ".-=upgradeProject"]: null }, { wrathmakerUpgrade: true });
+    throw error;
+  }
   application.workbenchState.tab = "projects";
   application.workbenchState.projectName = "";
   application.workbenchState.selectedMarks = [];
@@ -627,7 +675,7 @@ function cloneItemSource(document) {
   return source;
 }
 
-function buildCompletedItemSource(current, baseItem, config = getRulesConfig()) {
+export function buildCompletedItemSource(current, baseItem, config = getRulesConfig()) {
   const source = cloneItemSource(baseItem);
   source.system ??= {};
   source.system.quantity = current.recipe.result.quantity;
@@ -659,7 +707,7 @@ function buildCompletedItemSource(current, baseItem, config = getRulesConfig()) 
     const tiers = current.reservations
       .filter((reservation) => reservation.groupId === anchorId)
       .map((reservation) => reservation.tier);
-    return tiers.length ? Math.min(...tiers) : 1;
+    return tiers.length ? Math.min(...tiers) : priorFlags.crafting?.components?.find(c => (c.slotType || c.id) === anchorId)?.tier ?? 1;
   };
   const completedMarks = current.artisanMarks.map((mark) => ({
     ...mark,
@@ -730,6 +778,21 @@ function buildCompletedItemSource(current, baseItem, config = getRulesConfig()) 
     tier: current.coreTier,
     crafting,
   }, config);
+  if (current.upgrade) {
+    const result = source.flags[MODULE_ID].crafting;
+    if (!current.upgrade.replaced.includes("core")) result.core = priorFlags.crafting.core;
+    result.components = [
+      ...(priorFlags.crafting.components ?? []).filter(c => !current.upgrade.replaced.includes(c.slotType || c.id)),
+      ...componentGroups.values(),
+    ];
+    source.name = baseItem.name;
+    if (current.upgrade.dragonScale?.color) source.flags[MODULE_ID].dragonScale = {
+      ...current.upgrade.dragonScale,
+      unitsCommitted: current.reservations.filter(r => r.groupId === "dragon-scale").reduce((n, r) => n + r.units, 0)
+        || priorFlags.dragonScale?.unitsCommitted || 0,
+    };
+    delete source.flags[MODULE_ID].upgradeProject;
+  }
   return source;
 }
 
@@ -741,7 +804,12 @@ async function completeProjectTransaction(party, projectId, auditUser) {
   const freshPlan = buildConsumptionPlan(current, party.items);
   const baseItem = await resolveBaseItem(current.baseItemUuid);
   if (!baseItem) throw new Error(localize("CMT.Workbench.BaseItemMissing"));
+  if (current.upgrade && upgradeSnapshot(baseItem) !== current.upgrade.originalSnapshot)
+    throw new Error("The original item changed. Cancel this upgrade and review a fresh project.");
   const source = buildCompletedItemSource(current, baseItem);
+  const originalSource = current.upgrade ? baseItem.toObject() : null;
+  if (current.upgrade && !baseItem.testUserPermission(game.users?.get(auditUser.id) ?? game.user, "OWNER"))
+    throw new Error("The requesting player no longer owns the upgrade item.");
 
   const consumeUpdates = freshPlan.map((entry) => ({ _id: entry.itemId, "system.quantity": entry.afterQuantity }));
   const rollbackUpdates = freshPlan.map((entry) => ({ _id: entry.itemId, "system.quantity": entry.beforeQuantity }));
@@ -749,17 +817,32 @@ async function completeProjectTransaction(party, projectId, auditUser) {
   requireWorkbench();
   try {
     await party.updateEmbeddedDocuments("Item", consumeUpdates);
-    [created] = await party.createEmbeddedDocuments("Item", [source]);
+    if (current.upgrade) {
+      const updated = await baseItem.update({ ...source, ["flags." + MODULE_ID + ".-=upgradeProject"]: null }, { wrathmakerUpgrade: true });
+      if (!updated) throw new Error("The item update was rejected; no materials should be consumed.");
+      created = baseItem;
+    } else [created] = await party.createEmbeddedDocuments("Item", [source]);
     if (!created?.uuid) throw new Error("Foundry did not create the completed item.");
     const completed = completeCraftingProject(current, {
       finalItemUuid: created?.uuid ?? "",
       finalItemSource: source,
       user: auditUser,
     });
-    await saveWorkbench(party, replaceProject(workbench, completed));
+    if (current.upgrade) completed.reservations.push(...retainedMaterialHistory(
+      { flags: originalSource.flags }, current.upgrade.replaced));
+    const next = replaceProject(workbench, completed);
+    if (current.upgrade) {
+      for (const previous of next.projects) {
+        if (previous.id !== current.id && (previous.finalItemUuid === baseItem.uuid ||
+          originalSource.flags?.[MODULE_ID]?.crafting?.provenance?.some(p => p.projectId === previous.id)))
+          previous.supersededBy = current.id;
+      }
+    }
+    await saveWorkbench(party, next);
   } catch (error) {
     try {
-      if (created) await party.deleteEmbeddedDocuments("Item", [created.id]);
+      if (current.upgrade) await baseItem.update(originalSource, { wrathmakerUpgrade: true, diff: false, recursive: false });
+      else if (created) await party.deleteEmbeddedDocuments("Item", [created.id]);
       await party.updateEmbeddedDocuments("Item", rollbackUpdates);
     } catch (rollbackError) {
       console.error(`${MODULE_ID} | Workbench completion rollback failed.`, rollbackError);
@@ -929,6 +1012,10 @@ async function completeProject(application, projectId) {
   const result = game.user.isGM && primaryGM?.id === game.user.id
     ? await runCompletionWithLock(party, projectId, userAuditIdentity())
     : await requestGMProjectCompletion(party, projectId);
+  if (project.upgrade) {
+    ui.notifications.info("Upgrade completed. The original item has been updated in its existing inventory.");
+    return;
+  }
   ui.notifications.info(format(
     "CMT.Workbench.ProjectCompleted",
     { project: result.projectName ?? project.name },
@@ -983,7 +1070,21 @@ async function cancelProject(application, projectId) {
   });
   if (!confirmed) return;
   const cancelled = releaseCraftingProject(project, userAuditIdentity());
-  await saveWorkbench(party, replaceProject(workbench, cancelled));
+  let unlockedItem = null;
+  if (project.upgrade) {
+    const item = await resolveBaseItem(project.baseItemUuid);
+    if (item) {
+      if (!await item.update({ ["flags." + MODULE_ID + ".-=upgradeProject"]: null }, { wrathmakerUpgrade: true }))
+        throw new Error("The item could not be unlocked. Ask its owner or the GM to cancel.");
+      unlockedItem = item;
+    }
+  }
+  try {
+    await saveWorkbench(party, replaceProject(workbench, cancelled));
+  } catch (error) {
+    if (unlockedItem) await unlockedItem.update({ ["flags." + MODULE_ID + ".upgradeProject"]: project.id }, { wrathmakerUpgrade: true });
+    throw error;
+  }
   ui.notifications.info(format("CMT.Workbench.ProjectCancelled", { project: project.name }, `${project.name} was cancelled.`));
 }
 
@@ -1088,6 +1189,27 @@ export function createWorkbenchApplication() {
           await this.render({ force: true });
         });
       }
+      for (const input of root.querySelectorAll("[data-cmt-upgrade-tier]")) {
+        input.addEventListener("change", async () => {
+          this.workbenchState.componentTiers ??= {};
+          this.workbenchState.componentTiers[input.dataset.cmtUpgradeTier] = Number(input.value);
+          await this.render({ force: true });
+        });
+      }
+      root.querySelector("[data-cmt-reanchor]")?.addEventListener("click", async () => {
+        this.workbenchState.rearrangement = {
+          definitionId: root.querySelector("[data-cmt-reanchor-mark]").value,
+          anchorId: root.querySelector("[data-cmt-reanchor-anchor]").value,
+        };
+        await this.render({ force: true });
+      });
+      for (const field of root.querySelectorAll("[data-cmt-upgrade-dragon]")) field.addEventListener("change", async () => {
+        this.workbenchState.upgradeDragon = {
+          color: root.querySelector('[data-cmt-upgrade-dragon="color"]').value,
+          tier: Number(root.querySelector('[data-cmt-upgrade-dragon="tier"]').value),
+        };
+        await this.render({ force: true });
+      });
       for (const button of root.querySelectorAll("[data-cmt-open-marks]")) {
         button.addEventListener("click", () => openArtisanMarkPicker(this, button.dataset.cmtOpenMarks));
       }
@@ -1131,6 +1253,9 @@ export function createWorkbenchApplication() {
             this.workbenchState.contributorUuids = [];
             this.workbenchState.leadArtisanUuid = "";
             this.workbenchState.selectedMarks = [];
+            this.workbenchState.rearrangement = null;
+            this.workbenchState.componentTiers = {};
+            this.workbenchState.upgradeDragon = null;
             this.workbenchState.baseItemUuid = "";
           }
           if (["partyId", "bandId", "materialId", "tier"].includes(stateKey)) {
@@ -1153,6 +1278,16 @@ export function createWorkbenchApplication() {
           const uuid = data.uuid ?? (data.type === "Item" && data.id ? `Item.${data.id}` : "");
           const item = await resolveBaseItem(uuid);
           if (!item || compatibleRecipeBands(item).length === 0) throw new Error(localize("CMT.Workbench.InvalidBase"));
+          if (this.workbenchState.tab === "upgrade") {
+            validateUpgradeItem(item, partyActors().flatMap(p => projectState(p).projects));
+            this.workbenchState.rearrangement = null;
+            this.workbenchState.componentTiers = {};
+            this.workbenchState.materialId = item.flags[MODULE_ID].crafting.core.materialId;
+            this.workbenchState.tier = item.flags[MODULE_ID].crafting.core.tier;
+            this.workbenchState.secondaryMaterials = Object.fromEntries((item.flags[MODULE_ID].crafting.components ?? [])
+              .filter(c => c.structural).map(c => [c.slotType || c.id, c.materialId]));
+            this.workbenchState.selectedMarks = [];
+          }
           this.workbenchState.baseItemUuid = item.uuid;
           this.workbenchState.bandId = "";
           this.workbenchState.projectName = "";

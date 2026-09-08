@@ -26,6 +26,7 @@
   </header>
 
   <nav class="cmt-workbench-tabs" aria-label="{{localize "CMT.Workbench.Heading"}}">
+    <button type="button" data-cmt-workbench-tab="upgrade" class="{{#if tabs.upgrade}}active{{/if}}">Upgrade</button>
     <button type="button" data-cmt-workbench-tab="craft" class="{{#if tabs.craft}}active{{/if}}">
       <i class="fa-solid fa-hammer" aria-hidden="true"></i> {{localize "CMT.Workbench.Craft"}}
     </button>
@@ -82,6 +83,20 @@
   {{/if}}
 
   {{#if tabs.craft}}
+    {{#if tabs.upgrade}}
+      <p class="cmt-workbench-notice">Upgrade an existing item: 25% fewer replacement materials (rounded up), 25% less component work. Existing Marks stay free; new Marks cost full price. Replaced materials are lost. The item is locked until completion or cancellation.</p>
+      {{#if upgradeError}}<p class="cmt-workbench-notice is-warning">{{upgradeError}}</p>{{/if}}
+      {{#if upgradeDragonAvailable}}
+        <label>Dragon Scales <select data-cmt-upgrade-dragon="color"><option value="">Keep existing enhancement</option>{{#each upgradeDragonColors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        <label>Scale Tier <input type="number" min="1" max="6" value="{{upgradeDragonTier}}" data-cmt-upgrade-dragon="tier"></label>
+      {{/if}}
+      {{#if retainedMarks}}
+        <p>Existing Marks (retained with original makers): {{#each retainedMarks}}{{name}}; {{/each}}</p>
+        <label>One free Mark rearrangement <select data-cmt-reanchor-mark>{{#each retainedMarks}}<option value="{{definitionId}}">{{name}}</option>{{/each}}</select></label>
+        <label>New compatible anchor <select data-cmt-reanchor-anchor>{{#each upgradeAnchors}}<option value="{{id}}">{{label}}</option>{{/each}}</select></label>
+        <button type="button" data-cmt-reanchor>Preview Rearrangement</button>
+      {{/if}}
+    {{/if}}
     <section class="cmt-workbench-panel cmt-workbench-craft">
       <div class="cmt-workbench-section-title">
         <h3>{{localize "CMT.Workbench.NewProject"}}</h3>
@@ -150,6 +165,7 @@
           <label><span>{{label}} material</span><select data-cmt-secondary="{{id}}">
             {{#each options}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
           </select></label>
+          {{#if ../tabs.upgrade}}<label>{{label}} Tier <input type="number" min="1" max="6" value="{{upgradeTier}}" data-cmt-upgrade-tier="{{id}}"></label>{{/if}}
         {{/each}}
       </div>
       <section class="cmt-workbench-contributors">

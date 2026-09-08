@@ -13,6 +13,7 @@ export async function recoverProjectItem(party, projectId, {
     const project = workbench.projects.find(entry => entry.id === projectId);
     if (!project || project.status !== "completed") throw new Error("Only completed projects can recover an item.");
     if (project.disassembledAt) throw new Error("Disassembled items cannot be recovered.");
+    if (project.supersededBy) throw new Error("Recover the latest upgrade project, not an older item version.");
     if (await findExisting(project)) throw new Error("The finished item still exists. Check the Party Stash or the character carrying it.");
     const source = structuredClone(project.finalItemSource ?? await buildLegacySource(project));
     if (!source?.type || !source.system) throw new Error("The item cannot be rebuilt: its saved output and original base item are unavailable.");

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.27.0 — Upgrade Workbench (2026-09-08)
+
+- Added an Upgrade tab for existing, unstacked Wrathmaker items. Replace Core or secondary materials, choose secondary tiers, and replace dragon-scale enhancements.
+- Replaced components cost 25% fewer resources, rounded up per requirement, and 25% less component work. Unchanged components and retained Marks are not charged again; newly selected Marks use normal costs and work.
+- Retains maker records, validates Mark compatibility and capacity, and offers one free compatible anchor rearrangement per upgrade.
+- Uses project reservations and teamwork downtime. Completion consumes replacements and updates the original item in place; cancellation releases reservations. Stow and uninvest the item first; reserved items are locked against edits and deletion.
+- Records the newest item version for recovery and disassembly, preventing older project versions from being recovered after upgrading.
+- Dragon-scale resource defaults now cost 1.5 times the ordinary tier value. Mana crystals/gems retain ordinary resource pricing with no 10-times multiplier; Stone is unchanged.
+- Added upgrade instructions to the player guide. Existing manually priced world resource items are not overwritten.
+
 ## 0.26.0 — Artisan Bonuses, Mark categories and expanded activations (2026-09-08)
 
 - Added activations to eleven more Marks across weapons, armor, shields and focuses (72 activation-bearing Marks total). Passive benefits remain; named activations specify costs, triggers, frequency and resolution.

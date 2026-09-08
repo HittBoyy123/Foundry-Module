@@ -169,6 +169,8 @@ export function normalizeCraftingProject(source) {
     name: text(source.name, recipe.name),
     partyUuid: text(source.partyUuid),
     baseItemUuid: text(source.baseItemUuid),
+    upgrade: source.upgrade && typeof source.upgrade === "object" ? clone(source.upgrade) : null,
+    supersededBy: text(source.supersededBy),
     baseItemName: text(source.baseItemName, recipe.name),
     baseItemImg: text(source.baseItemImg, "icons/svg/item-bag.svg"),
     recipeBandId: text(source.recipeBandId),

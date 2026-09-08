@@ -126,7 +126,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
   const rarity = material.tierRarities?.[tier] ?? DEFAULT_RULES_CONFIG.tierRarities[tier];
   const otherTags = ["wrathmaker-resource", `material-${materialId}`, `material-tier-${tier}`];
   const craftingDC = calculateCraftingDC(tier);
-  const priceGp = RESOURCE_UNIT_PRICES_GP[tier];
+  const priceGp = RESOURCE_UNIT_PRICES_GP[tier] * (materialId === "dragon-scale" ? 1.5 : 1);
   if (variantId) otherTags.push(`material-variant-${variantId}`);
 
   return Object.freeze({
