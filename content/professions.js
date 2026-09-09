@@ -347,15 +347,15 @@ export const PROFESSION_DEFINITIONS = Object.freeze([
   ...profession,
   checkBonus: 2,
   checkBonusType: "circumstance",
+  bonusFeatUuid: "",
+  bonusFeatName: "",
   specialties: SPECIALTIES_BY_PROFESSION[profession.id],
 })));
 
 const PROFESSION_CHECK_SELECTORS = Object.freeze(["arcana", "crafting", "nature", "survival"]);
 
 function professionDescription(profession) {
-  const bonusFeat = profession.bonusFeatUuid
-    ? `<li><strong>Additional feat:</strong> ${profession.bonusFeatName}</li>`
-    : "<li><strong>Additional feat:</strong> To be determined</li>";
+  const bonusFeat = "";
   const specialties = profession.specialties
     .map((specialty) => `<li><strong>${specialty.label}:</strong> ${specialty.description}</li>`)
     .join("");

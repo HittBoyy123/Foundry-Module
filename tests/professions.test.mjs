@@ -225,11 +225,11 @@ test("profession plans distinguish a starting profession from level 4, 10, and 1
 });
 
 test("the five determined professions reference the correct current PF2e feats", () => {
-  assert.equal(getProfessionData(professionItem("blacksmithing")).bonusFeatUuid, PF2E_PROFESSION_FEAT_UUIDS.quickRepair);
-  assert.equal(getProfessionData(professionItem("alchemy")).bonusFeatUuid, PF2E_PROFESSION_FEAT_UUIDS.alchemicalCrafting);
-  assert.equal(getProfessionData(professionItem("enchanting")).bonusFeatUuid, PF2E_PROFESSION_FEAT_UUIDS.magicalCrafting);
-  assert.equal(getProfessionData(professionItem("leatherwork")).bonusFeatUuid, PF2E_PROFESSION_FEAT_UUIDS.experiencedTracker);
-  assert.equal(getProfessionData(professionItem("carpentry")).bonusFeatUuid, PF2E_PROFESSION_FEAT_UUIDS.heftyHauler);
+  assert.equal(getProfessionData(professionItem("blacksmithing")).bonusFeatUuid, "" );
+  assert.equal(getProfessionData(professionItem("alchemy")).bonusFeatUuid, "" );
+  assert.equal(getProfessionData(professionItem("enchanting")).bonusFeatUuid, "" );
+  assert.equal(getProfessionData(professionItem("leatherwork")).bonusFeatUuid, "" );
+  assert.equal(getProfessionData(professionItem("carpentry")).bonusFeatUuid, "" );
   assert.equal(getProfessionData(professionItem("stonemason")).bonusFeatUuid, "");
 });
 
@@ -316,7 +316,6 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     const grants = items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant);
     assert.deepEqual(grants.map((item) => item.flags[MODULE_ID].professionGrant.kind).sort(), [
       "additional-lore",
-      "bonus-feat",
       "lore",
       "specialty-crafting",
     ]);
@@ -328,7 +327,7 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     const specialty = grants.find((item) => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting");
     assert.equal(specialty.system.rules[0].selection, "blacksmithing");
     assert.deepEqual(specialty.flags.pf2e.grantedBy, { id: profession.id, onDelete: "detach" });
-    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 3);
+    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 2);
     assert.equal(Object.values(profession.flags.pf2e.itemGrants).every((grant) => grant.nested === true), true);
 
     actor.level = 16;
@@ -420,7 +419,7 @@ test("a level 10 character can combine a starting profession, a new profession, 
       .map((item) => item.name)
       .sort();
     assert.deepEqual(loreNames, ["Alchemy", "Blacksmithing", "Blacksmithing: Hellforging"]);
-    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 9);
+    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 7);
   } finally {
     globalThis.game = originalGame;
     globalThis.fromUuid = originalFromUuid;

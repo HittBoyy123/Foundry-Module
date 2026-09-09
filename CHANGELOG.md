@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.28.0 — Kingmaker Gathering (2026-09-09)
+
+- Kingmaker is now a required module (minimum 2.2.1). Gathering reads the occupied Stolen Lands hex through Kingmaker's runtime API, not the currently inspected HUD hex.
+- Terrain controls base resources; visible commodity deposits and discovered relevant features can add resources. Hidden features are not exposed. Zone level and average party character level jointly cap resource tiers.
+- Gathering fails closed when the module, map, position or zone data is unavailable. Open Workbench gathering views refresh after token, actor or setting changes; availability is checked again before rewards.
+- Kingmaker integration is based on the installed 2.2.1 API and automated fixtures; 2.3.2 and live Foundry behaviour still require verification. No licensed map catalogue is bundled.
+
+- Reduced teamwork to ×1 work rate for 1–2 artisans, ×1.25 for 3–5, and ×1.5 for six. Crafting and upgrade estimates use the same bands; fractional progress carries forward.
+- Professions no longer grant their extra named bonus feat. Synchronisation removes only module-owned bonus-feat grants, preserving independently acquired feats, Lore, Additional Lore and Specialty Crafting.
+
 ## 0.27.0 — Upgrade Workbench (2026-09-08)
 
 - Added an Upgrade tab for existing, unstacked Wrathmaker items. Replace Core or secondary materials, choose secondary tiers, and replace dragon-scale enhancements.

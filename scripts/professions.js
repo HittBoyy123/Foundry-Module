@@ -184,8 +184,8 @@ export function normalizeProfessionData(value) {
       .filter(Boolean),
     checkBonus: Number.isFinite(Number(value?.checkBonus)) ? Number(value.checkBonus) : definition.checkBonus,
     checkBonusType: String(value?.checkBonusType ?? definition.checkBonusType).trim() || "circumstance",
-    bonusFeatUuid: String(value?.bonusFeatUuid ?? definition.bonusFeatUuid).trim(),
-    bonusFeatName: String(value?.bonusFeatName ?? definition.bonusFeatName).trim() || "To be determined",
+    bonusFeatUuid: "",
+    bonusFeatName: "",
     specialties: clone(definition.specialties),
   };
 }
@@ -576,9 +576,6 @@ function expectedStandardGrantKinds(actor, profession) {
     PROFESSION_GRANT_KINDS.additionalLore,
     PROFESSION_GRANT_KINDS.specialtyCrafting,
   ];
-  if (profession.bonusFeatUuid && !hasExternalBonusFeat(actor, profession)) {
-    kinds.push(PROFESSION_GRANT_KINDS.bonusFeat);
-  }
   return kinds;
 }
 

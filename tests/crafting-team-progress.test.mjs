@@ -12,12 +12,26 @@ test("team work multiplies progress, not calendar days, and retains an audit cou
   const project = createCraftingProject({ recipe, requiredProgress: 20, contributors: Array.from({ length: 6 }, (_, i) => ({ actorUuid: `Actor.${i}` })) });
   project.reservations = [{ itemId: "stock", quantity: 1, units: 1 }];
   const result = advanceCraftingProject(project, { days: 1, degree: "success" });
-  assert.equal(result.currentProgress, 6);
+  assert.equal(result.currentProgress, 1);
+  assert.equal(result.teamworkRemainder, 0.5);
   assert.equal(result.downtimeSpent, 1);
   assert.equal(result.workBlocks[0].artisanCount, 6);
   assert.equal(advanceCraftingProject(project, { days: 1, degree: "criticalFailure" }).currentProgress, 0);
   assert.equal(projectArtisanCount({ contributors: [{ actorUuid: "a" }, { actorUuid: "a" }] }), 1);
   assert.equal(projectArtisanCount({}), 1);
+});
+
+test("team thresholds are modest and fractional work survives separate blocks", () => {
+  for (const [count, expected] of [[1,4],[2,4],[3,5],[4,5],[5,5],[6,6]]) {
+    const recipe = buildCraftingRecipeFromBand("weapon-sword", { targetItem: { type: "weapon", system: { category: "martial" } }, tier: 2 });
+    const project = createCraftingProject({ recipe, requiredProgress: 30,
+      contributors: Array.from({ length: count }, (_, i) => ({ actorUuid: "Actor." + i })) });
+    project.reservations = [{ itemId: "stock", quantity: 1, units: 1 }];
+    let split = project;
+    for (let day = 0; day < 4; day++) split = advanceCraftingProject(split, { days: 1 });
+    assert.equal(split.currentProgress, expected);
+    assert.equal(advanceCraftingProject(project, { days: 4 }).currentProgress, expected);
+  }
 });
 
 test("structure and consumable marks do not appear on weapons; anti-structure weapons remain eligible", () => {

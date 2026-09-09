@@ -11,10 +11,13 @@
   {{/unless}}
 
   {{#if region.active}}
+    {{#if region.blocked}}<p class="cmt-gathering-notice is-warning">{{region.reason}}</p>{{/if}}
     <section class="cmt-gathering-region">
       <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
       <div>
         <strong>{{region.name}}</strong>
+        {{#unless region.blocked}}<span>Terrain: {{region.terrain}} · Party level: {{region.averageLevel}} · Exploration: {{region.exploration}}</span>{{/unless}}
+        {{#if region.tags}}<span>Known features: {{#each region.tags}}{{this}} {{/each}}</span>{{/if}}
         <span>{{region.levelLabel}} · {{region.tierLabel}} {{localize "CMT.Gathering.RegionMaximum"}}</span>
       </div>
     </section>

@@ -108,7 +108,7 @@ test("gathering exposes a PF2e-styled player workflow and safe inventory awards"
   assert.match(application, /config\.gathering\?\.environmentId/);
   assert.match(application, /taskSource\.tier > region\.maxTier/);
   assert.match(application, /resolveGatheringRecipient/);
-  assert.match(application, /resolveGatheringRegion/);
+  assert.match(application, /resolveKingmakerGathering/);
   assert.match(template, /name="actorId"/);
   assert.match(template, /name="environmentId"/);
   assert.match(template, /name="taskId"/);

@@ -19,7 +19,7 @@ import {
   normalizeGatheringTask,
   resolveGatheringOutcome,
 } from "./gathering-model.js";
-import { resolveGatheringRegion } from "./gathering-regions.js";
+import { resolveKingmakerGathering, kingmakerTaskAllowed, kingmakerEnvironment } from "./kingmaker-gathering.js";
 import { getActorProfession, professionCheckRollOptions } from "./professions.js";
 
 let GatheringApplication = null;
@@ -62,13 +62,9 @@ function currentScene() {
 }
 
 function gatheringRegion(actor, config) {
-  return resolveGatheringRegion({
-    actor,
-    scene: currentScene(),
-    useSceneRegion: config.gathering?.useSceneRegion !== false,
-    fallbackEnvironmentId: config.gathering?.environmentId ?? "forest",
-    fallbackMaxTier: config.gathering?.maxTier ?? 1,
-  });
+  return resolveKingmakerGathering({ actor, party: game.actors?.party,
+    canvas: globalThis.canvas, kingmaker: globalThis.kingmaker,
+    localize: key => game.i18n.localize(key) });
 }
 
 function gatheringRecipient(actor, config) {
@@ -144,9 +140,11 @@ async function attemptGathering(application, formData, event) {
   const recipientResolution = gatheringRecipient(actor, config);
   if (recipientResolution.missingParty) throw new Error(localize("CMT.Gathering.PartyMissing"));
   const recipient = recipientResolution.recipient;
-  const environmentSource = GATHERING_ENVIRONMENT_SOURCES.find((entry) => entry.id === formData.environmentId);
+  const environmentBase = GATHERING_ENVIRONMENT_SOURCES.find((entry) => entry.id === formData.environmentId);
+  const environmentSource = environmentBase ? kingmakerEnvironment(environmentBase, region, GATHERING_TASK_SOURCES) : null;
   const taskSource = GATHERING_TASK_SOURCES.find((entry) => entry.id === formData.taskId);
   if (!environmentSource || !taskSource) throw new Error(localize("CMT.Gathering.SelectTask"));
+  if (!kingmakerTaskAllowed(region, taskSource)) throw new Error(region.reason || "This resource is unavailable in the occupied hex.");
   const availableEnvironmentIds = region.active
     ? region.environmentIds
     : [config.gathering?.environmentId];
@@ -186,6 +184,9 @@ async function attemptGathering(application, formData, event) {
     ],
   });
   if (!roll) return null;
+  const liveRegion = gatheringRegion(actor, config);
+  if (liveRegion.id !== region.id || !kingmakerTaskAllowed(liveRegion, taskSource))
+    throw new Error("The occupied hex or resource availability changed during the roll. Gather again from the current location.");
   const degree = normalizeDegreeOfSuccess(roll.degreeOfSuccess ?? roll.options?.degreeOfSuccess);
   const resolution = resolveGatheringOutcome(evaluation.task, degree, evaluation.resource);
   const resource = evaluation.resource;
@@ -220,7 +221,7 @@ function applicationContext(application) {
   const recipientResolution = gatheringRecipient(actor, config);
   const enabledTasks = GATHERING_TASK_SOURCES.filter((task) => (
     config.materials?.[task.materialId]?.enabled !== false
-    && task.tier <= region.maxTier
+    && kingmakerTaskAllowed(region, task)
   ));
   const visibleEnvironmentSources = region.active
     ? GATHERING_ENVIRONMENT_SOURCES.filter((environment) => region.environmentIds.includes(environment.id))
@@ -228,7 +229,7 @@ function applicationContext(application) {
     ? GATHERING_ENVIRONMENT_SOURCES
     : GATHERING_ENVIRONMENT_SOURCES.filter((environment) => environment.id === config.gathering?.environmentId);
   const environments = visibleEnvironmentSources
-    .map((source) => normalizeGatheringEnvironment(source))
+    .map((source) => normalizeGatheringEnvironment(kingmakerEnvironment(source, region, enabledTasks)))
     .filter((environment) => environment.enabled && listTasksForEnvironment(environment, enabledTasks).length > 0);
 
   application.gatheringState.environmentId = environments.some((entry) => entry.id === application.gatheringState.environmentId)

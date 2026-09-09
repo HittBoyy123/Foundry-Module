@@ -7,6 +7,7 @@ import { evaluateCraftingRecipe } from "./crafting-recipes.js";
 import {
   advanceCraftingProject,
   projectArtisanCount,
+  artisanWorkRate,
   buildConsumptionPlan,
   completeCraftingProject,
   createCraftingProject,
@@ -382,7 +383,7 @@ async function workbenchContext(application) {
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
       contributorSummary: project.contributors.map((entry) => entry.name).join(", "),
       teamSize: projectArtisanCount(project),
-      estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress) / projectArtisanCount(project)),
+      estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress - project.teamworkRemainder) / artisanWorkRate(projectArtisanCount(project))),
       markCount: project.artisanMarks.length,
       canWork: craftingEnabled && canEdit && ["reserved", "active"].includes(project.status),
       canComplete: craftingEnabled && canEdit && project.status === "ready",
@@ -498,7 +499,7 @@ async function workbenchContext(application) {
     },
     markLabourDays: calculateMarkLabourDays(markPlan.assignments, tier),
     teamSize: Math.max(1, new Set(profiles.map(profile => profile.actorUuid)).size),
-    estimatedDays: Math.ceil(requiredProgress / Math.max(1, new Set(profiles.map(profile => profile.actorUuid)).size)),
+    estimatedDays: Math.ceil(requiredProgress / artisanWorkRate(new Set(profiles.map(profile => profile.actorUuid)).size)),
     draft: {
       name: application.workbenchState.projectName || (baseItem ? `${materialLabel(application.workbenchState.materialId, tier)} ${baseItem.name}` : ""),
       requiredProgress,
@@ -1423,6 +1424,17 @@ export function createWorkbenchApplication() {
 export function registerWorkbench() {
   WorkbenchApplication = createWorkbenchApplication();
   Hooks.once("ready", installWorkbenchSocket);
+  let gatheringRefresh;
+  for (const event of ["updateToken", "createToken", "deleteToken", "canvasReady", "updateActor", "updateSetting"]) {
+    Hooks.on(event, () => {
+      clearTimeout(gatheringRefresh);
+      gatheringRefresh = setTimeout(() => {
+        for (const application of openWorkbenches) {
+          if (application.workbenchState.tab === "gather") application.render({ force: true });
+        }
+      }, 150);
+    });
+  }
   Hooks.on("wrathmakerRulesConfigChanged", () => {
     for (const application of openWorkbenches) {
       if (application.rendered) void application.render({ force: true });

@@ -147,6 +147,10 @@ export function projectArtisanCount(project) {
     .map(entry => entry.actorUuid).filter(Boolean)).size));
 }
 
+export function artisanWorkRate(count) {
+  return count >= 6 ? 1.5 : count >= 3 ? 1.25 : 1;
+}
+
 export function normalizeCraftingProject(source) {
   if (!source || typeof source !== "object") throw new TypeError("A crafting project must be an object.");
   const recipe = normalizeCraftingRecipe(source.recipe);
@@ -188,6 +192,7 @@ export function normalizeCraftingProject(source) {
     reservations: (Array.isArray(source.reservations) ? source.reservations : []).map(normalizeReservation),
     requiredProgress,
     currentProgress,
+    teamworkRemainder: Math.min(0.75, Math.max(0, Number(source.teamworkRemainder) || 0)),
     downtimeSpent: integer(source.downtimeSpent, 0, 0),
     workBlocks: (Array.isArray(source.workBlocks) ? source.workBlocks : []).map(normalizeWorkBlock),
     audit: (Array.isArray(source.audit) ? source.audit : []).map(normalizeAuditEntry),
@@ -405,7 +410,9 @@ export function advanceCraftingProject(source, {
   }
   const committedDays = integer(days, 1, 1, 5);
   const artisanCount = projectArtisanCount(project);
-  const progress = progressForWorkBlock(committedDays, degree) * artisanCount;
+  const earned = progressForWorkBlock(committedDays, degree) * artisanWorkRate(artisanCount) + project.teamworkRemainder;
+  const progress = Math.floor(earned);
+  project.teamworkRemainder = earned - progress;
   const before = project.currentProgress;
   const after = Math.min(project.requiredProgress, before + progress);
   const block = normalizeWorkBlock({
