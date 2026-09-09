@@ -361,10 +361,11 @@ export function reserveCraftingProject(source, { inventoryItems = [], otherProje
   const evaluation = evaluateCraftingRecipe(project.recipe, {
     targetItem: {
       type: project.recipe.categoryId.startsWith("weapon.") ? "weapon"
+        : project.recipe.categoryId.startsWith("consumable.") ? "consumable"
         : project.recipe.categoryId.startsWith("armor.") || project.recipe.categoryId === "shield" ? "armor"
         : "equipment",
       system: {
-        category: project.recipe.categoryId.startsWith("weapon.") || project.recipe.categoryId.startsWith("armor.")
+        category: project.recipe.categoryId.startsWith("weapon.") || project.recipe.categoryId.startsWith("armor.") || project.recipe.categoryId.startsWith("consumable.")
           ? project.recipe.categoryId.split(".")[1]
           : project.recipe.categoryId === "shield" ? "shield" : null,
         traits: { otherTags: project.recipe.categoryId === "spell-focus" ? ["spell-focus"] : [] },

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.31.0 — Magic Recipes & Partial Mark Automation (2026-09-09)
+
+- Added equipment recipe bands for jewellery, garments, leather accessories, books/grimoires and tools. Existing apex equipment is accepted; apex-specific pricing and item-level access safeguards remain outstanding.
+- Magical base items require Mana Crystals unless the recipe already includes a mandatory mana ingredient.
+- Added single-dose potion, oil and elixir recipes using Herbs and Stone-mapped glass stock, plus a Mana Crystal for magical versions. Preserves native item effects and consumption data; supports resource reservations.
+- Updated Workbench supported-item guidance. All 277 automated tests pass; live Foundry verification remains outstanding.
+
+- Added explicit timed self-effect controls for Hellfire Channel, Living Essence, Aetherbound Form, Phase Veil and Shadow Mantle. Includes source-item use tracking, validation and refund on failed creation, plus GM daily-use resets. Manual riders are listed in effect descriptions; activation requirements and action costs require player confirmation.
+- This remains an incomplete automation development pass, not a campaign-readiness certification. Multi-client concurrency, live Foundry effects and remaining catalogue transactions still need verification/implementation.
+
+- Started the full Mark automation audit. Added resolved Core Tier arithmetic in applied-mark text and Workbench choices, plus native damage/save links in activation readouts where required inputs are available.
+- Added native Twin Empowerment skill modifiers and Predatory Essence sense/speed choices. Existing items require their fixed choices to be configured before these effects apply.
+- Activation readouts still do not spend uses, select targets or apply damage automatically. The generated full-catalogue audit records remaining work; this is not a complete automation release.
+
 ## 0.30.0 — Region Tier Controls & Workbench Layout (2026-09-09)
 
 - Added GM-editable Kingmaker region resource tier limits in Wrathmaker Rules. Automatic defaults remain available and the party-level cap still applies.

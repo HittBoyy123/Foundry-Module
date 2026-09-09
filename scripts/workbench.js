@@ -239,6 +239,7 @@ function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier
       return {
         ...mark,
         automationLabel: markAutomationLabel(mark),
+        effectSummary: resolveMarkText(mark.effectSummary, { tier: coreTier }),
         configurationChoices: markConfigurationChoices(mark.id).map((value, index) => ({ value, selected: selected?.configuration?.choice === value || (!selected?.configuration?.choice && index === 0) })),
         gradeLabel: mark.grade[0].toUpperCase() + mark.grade.slice(1),
         selected: Boolean(selected),
@@ -1586,3 +1587,4 @@ function openArtisanMarkPicker(owner, actorUuid) {
   new ArtisanMarkPicker().render({ force: true });
 }
 import { createLiveGatheringRefresh } from "./live-gathering-refresh.js";
+import { resolveMarkText } from "./mark-formulas.js";

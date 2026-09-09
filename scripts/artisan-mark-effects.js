@@ -51,6 +51,10 @@ export function markAppliesToItem(mark, itemGroup, item = null) {
 }
 
 export function markConfigurationChoices(id) {
+  if (id === "enchanting-specialty-2-living-essence") return energyChoices;
+  if (id === "enchanting-specialty-1-twin-empowerment")
+    return skillChoices.flatMap((left, index) => skillChoices.slice(index + 1).map(right => `${left},${right}`));
+  if (id === "enchanting-specialty-2-predatory-essence") return ["darkvision", "scent", "climb", "swim"];
   if (id === "bookmaking-specialty-1-archmage-codex") return ["acid", "cold", "electricity", "fire", "sonic"];
   if (["enchanting-specialty-2-elemental-essence", "weaving-specialty-1-manaweave"].includes(id)) return energyChoices;
   if (id === "enchanting-specialty-1-focused-empowerment") return [...skillChoices, "initiative"];

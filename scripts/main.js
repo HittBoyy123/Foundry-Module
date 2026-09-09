@@ -15,6 +15,7 @@ import { registerNephilimBonds } from "./nephilim-bonds.js";
 import { registerWorkbench } from "./workbench.js";
 import { registerGMItemCreator } from "./gm-item-creator.js";
 import { registerMarkActionHooks } from "./mark-actions.js";
+import { registerTimedMarkControls } from "./mark-activation-runtime.js";
 
 let bridgeInstalled = false;
 let abilityBoostsInstalled = false;
@@ -60,6 +61,7 @@ Hooks.once("init", () => {
   workbenchInstalled = true;
   registerGMItemCreator();
   registerMarkActionHooks();
+  registerTimedMarkControls();
 
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
   abilityBoostsInstalled = installAbilityBoostBridge();

@@ -39,6 +39,12 @@ function recipe(id, label, group, categoryIds, coreUnits, coreMaterialIds, secon
  * entry. A dropped base item supplies its normal PF2e data and category.
  */
 export const CRAFTING_RECIPE_BANDS = Object.freeze([
+  ...["potion", "oil", "elixir"].map(category => recipe(`consumable-${category}`, `${category[0].toUpperCase()}${category.slice(1)} (One Dose)`, "consumable", [`consumable.${category}`], 1, ["herbs"], [secondary("container", "Glass container stock", 1, ["stone"])])),
+  recipe("equipment-jewellery", "Jewellery or Accessory", "equipment", ["equipment"], 2, ["metal", "stone"]),
+  recipe("equipment-garment", "Robe or Cloak", "equipment", ["equipment"], 3, ["herbs"], [secondary("lining", "Lining", 1, ["herbs", "leather"])]),
+  recipe("equipment-leather", "Boots, Gloves or Belt", "equipment", ["equipment"], 2, ["leather", "herbs"], [secondary("fittings", "Fittings", 1, ["metal"])]),
+  recipe("equipment-book", "Book or Grimoire", "equipment", ["equipment"], 4, ["wood"], [secondary("cover", "Cover", 1, ["leather"])]),
+  recipe("equipment-tool", "Tool or Implement", "equipment", ["equipment"], 3, ["metal", "wood", "stone"], [secondary("grip", "Grip", 1, ["leather"])]),
   weapon("axe", "Axe", 3, ["metal"], [secondary("haft", "Haft", 1, ["wood"])]),
   weapon("bow", "Bow", 3, ["wood"], [
     secondary("string", "String", 1, ["herbs", "leather"]),

@@ -65,6 +65,17 @@ export function buildCraftingRecipeFromBand(bandId, {
     });
   }
 
+  // Magical items always pay a catalyst cost, including magical weapon chassis.
+  // Existing mandatory mana ingredients count; optional alternatives do not.
+  const traits = targetItem?.system?.traits?.value ?? [];
+  if (traits.includes("magical")) {
+    const hasMana = groups.some((group) => group.options.every((option) => option.materialId === "mana-crystals"));
+    if (!hasMana) groups.push({
+      id: "magic-catalyst", label: "Mandatory Mana Catalyst",
+      options: [{ materialId: "mana-crystals", tier: coreTier, tierMode: "exact", units: ["weapon", "armor", "shield"].includes(category.group) ? 2 : 1 }],
+    });
+  }
+
   return normalizeCraftingRecipe({
     id: `${slug(band.id)}-${slug(materialId)}-tier-${coreTier}`,
     name: `Tier ${coreTier} ${band.label}`,

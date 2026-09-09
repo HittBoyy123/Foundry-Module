@@ -226,7 +226,7 @@
       "NewProject": "New Crafting Project",
       "Planning": "Planning",
       "DropBase": "Drop a PF2e base item here",
-      "DropBaseHint": "Weapons, armor, shields, and Wrathmaker Spell Focuses are supported.",
+      "DropBaseHint": "Weapons, armor, shields, equipment, spell focuses, potions, oils, and elixirs are supported.",
       "ClearBase": "Remove base item",
       "EligibleItem": "Eligible PF2e item",
       "ProjectName": "Project name",

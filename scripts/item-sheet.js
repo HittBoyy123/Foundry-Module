@@ -1,5 +1,6 @@
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import { insertMarkActionButton } from "./mark-actions.js";
+import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
 import {
   calculateItemEffects,
   getTierPresentation,
@@ -219,11 +220,11 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
       const header = document.createElement("header");
       const name = document.createElement("strong");
       name.textContent = mark.name;
-      name.title = mark.effectSummary;
+      name.title = resolveMarkText(mark.effectSummary, markFormulaContext(item, result.flags.tier));
       const grade = document.createElement("span");
       grade.textContent = `${mark.grade[0].toUpperCase() + mark.grade.slice(1)} · ${mark.capacityCost} Capacity · T${mark.effectiveMarkTier}`;
       const effect = document.createElement("p");
-      effect.textContent = mark.effectSummary;
+      effect.textContent = name.title;
       const provenance = document.createElement("small");
       provenance.textContent = [
         mark.profession,

@@ -5,6 +5,7 @@ export const CRAFTING_CATEGORY_SCHEMA_VERSION = 1;
 export const CRAFTING_RESOURCE_SCHEMA_VERSION = 2;
 
 const CATEGORY_LIST = Object.freeze([
+  ...["potion", "oil", "elixir"].map(category => Object.freeze({ id: `consumable.${category}`, group: "consumable", itemType: "consumable", pf2eCategory: category, label: `${category[0].toUpperCase()}${category.slice(1)} (One Dose)` })),
   Object.freeze({ id: "armor.light", group: "armor", itemType: "armor", pf2eCategory: "light", label: "Light Armor" }),
   Object.freeze({ id: "armor.medium", group: "armor", itemType: "armor", pf2eCategory: "medium", label: "Medium Armor" }),
   Object.freeze({ id: "armor.heavy", group: "armor", itemType: "armor", pf2eCategory: "heavy", label: "Heavy Armor" }),
@@ -13,6 +14,7 @@ const CATEGORY_LIST = Object.freeze([
   Object.freeze({ id: "weapon.advanced", group: "weapon", itemType: "weapon", pf2eCategory: "advanced", label: "Advanced Weapon" }),
   Object.freeze({ id: "shield", group: "shield", itemType: "shield", pf2eCategory: null, label: "Shield" }),
   Object.freeze({ id: "spell-focus", group: "spellFocus", itemType: "equipment", pf2eCategory: null, label: "Spell Focus" }),
+  Object.freeze({ id: "equipment", group: "equipment", itemType: "equipment", pf2eCategory: null, label: "Equipment or Accessory" }),
 ]);
 
 export const CRAFTING_CATEGORIES = Object.freeze(Object.fromEntries(
@@ -35,6 +37,7 @@ function itemOtherTags(item) {
  */
 export function categorizeCraftableItem(item) {
   if (!item || typeof item !== "object") return null;
+  if (item.type === "consumable") return clone(CRAFTING_CATEGORIES[`consumable.${item.system?.category}`] ?? null);
 
   if (item.type === "armor") {
     if (item.system?.category === "shield") return clone(CRAFTING_CATEGORIES.shield);
@@ -50,6 +53,8 @@ export function categorizeCraftableItem(item) {
   if (item.type === "equipment" && itemOtherTags(item).includes("spell-focus")) {
     return clone(CRAFTING_CATEGORIES["spell-focus"]);
   }
+
+  if (item.type === "equipment") return clone(CRAFTING_CATEGORIES.equipment);
 
   return null;
 }

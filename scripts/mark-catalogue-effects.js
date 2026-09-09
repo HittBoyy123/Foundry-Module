@@ -36,6 +36,13 @@ export function catalogueRules(id, item, tier, choice, weaponDice) {
   const subject = SUBJECT_CHECKS[id];
   if (subject) return [flat(subject[0], t + 2, [condition, ...subject.slice(1)])];
   switch (id) {
+    case "enchanting-specialty-1-twin-empowerment":
+      return String(choice ?? "").split(",").filter(Boolean).map(skill => flat(skill, t));
+    case "enchanting-specialty-2-predatory-essence":
+      if (["climb", "swim"].includes(choice)) return [{ key: "BaseSpeed", selector: choice, value: 30 }];
+      if (["darkvision", "scent"].includes(choice)) return [{ key: "Sense", selector: choice,
+        range: choice === "darkvision" ? 60 : 30, acuity: choice === "darkvision" ? "precise" : "imprecise" }];
+      return [];
     case "bookmaking-specialty-1-archmage-codex": {
       const initial = `wrathmaker:initial-spell-damage:${item.id}`;
       const active = `wrathmaker:ascendant-thesis:${item.id}`;
