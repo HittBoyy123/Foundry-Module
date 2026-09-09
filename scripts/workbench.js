@@ -1476,7 +1476,9 @@ export function registerWorkbench() {
       event.stopPropagation();
       openWorkbenchApplication({ partyId: party.id });
     });
-    details.append(button);
+    const name = details.querySelector("h1, .actor-name");
+    if (name) { name.classList.add("cmt-party-workbench-name"); name.append(button); }
+    else details.append(button);
   };
   Hooks.on("renderActorSheet", injectPartyButton);
   Hooks.on("renderActorSheetV2", injectPartyButton);

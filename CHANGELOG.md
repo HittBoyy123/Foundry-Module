@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0 — Region Tier Controls & Workbench Layout (2026-09-09)
+
+- Added GM-editable Kingmaker region resource tier limits in Wrathmaker Rules. Automatic defaults remain available and the party-level cap still applies.
+- Disassembly item headers use Wrathmaker red with light text; the completed-items heading is dark red on light backgrounds.
+- Workbench navigation uses one five-tab row. The party Workbench shortcut is a circular icon beside the party name.
+
 ## 0.29.2 — Live Gathering & Disassembly (2026-09-09)
 
 - Gathering refreshes immediately and throughout token movement, with updates throttled to 75 ms and serialized per window. Region, terrain and available resources are recalculated instead of waiting until movement stops.

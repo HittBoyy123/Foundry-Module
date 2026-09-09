@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { normalizeRulesConfig } from "../scripts/model.js";
+import { cloneDefaultRulesConfig } from "../scripts/constants.js";
 import { HEX_TERRAIN_RESOURCES, resolveKingmakerGathering, kingmakerTaskAllowed, kingmakerEnvironment } from "../scripts/kingmaker-gathering.js";
 function fixture() {
   const actor = { id: "pc", type: "character", level: 4 };
@@ -11,6 +13,18 @@ function fixture() {
   const canvas = { scene: {}, tokens: { placeables: [{ actor: party, center: { x: 10, y: 20 } }] } };
   return { actor, party, hex, kingmaker, canvas };
 }
+
+test("region tier overrides persist and respect the party cap", () => {
+  const config = cloneDefaultRulesConfig();
+  config.gathering.regionTierLimits = { test: 1 };
+  const normalized = normalizeRulesConfig(config);
+  const f = fixture();
+  assert.equal(resolveKingmakerGathering({ ...f, regionTierLimits: normalized.gathering.regionTierLimits }).maxTier, 1);
+  assert.equal(resolveKingmakerGathering({ ...f, regionTierLimits: { test: 6 } }).maxTier, 2);
+  assert.equal(resolveKingmakerGathering({ ...f, regionTierLimits: { another: 1 } }).maxTier, 2);
+  config.gathering.regionTierLimits.test = 7;
+  assert.throws(() => normalizeRulesConfig(config), /between 1 and 6/);
+});
 test("party occupied hex provides terrain and zone; level 4 caps at tier 2", () => {
   const result = resolveKingmakerGathering(fixture());
   assert.equal(result.id, "1002");

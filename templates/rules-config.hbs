@@ -60,6 +60,16 @@
     </div>
   </section>
 
+  <section class="cmt-panel">
+    <h3>Region Resource Tier Limits</h3>
+    <p class="hint">Override each Kingmaker region's resource tier. The party-level limit still applies. Save Rules to apply immediately.</p>
+    {{#each regionTierRows}}
+      <label class="cmt-dashboard-select"><span>{{name}}</span><select name="regionTier.{{index}}">
+        {{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select></label>
+    {{else}}<p>Enable Kingmaker and open this window in a loaded world to edit its regions.</p>{{/each}}
+  </section>
+
   <section class="cmt-professions-section">
     <div class="cmt-section-heading">
       <h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Professions"}}</h3>

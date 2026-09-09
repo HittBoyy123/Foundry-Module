@@ -63,6 +63,7 @@ function currentScene() {
 
 function gatheringRegion(actor, config) {
   return resolveKingmakerGathering({ actor, party: game.actors?.party,
+    regionTierLimits: config.gathering?.regionTierLimits,
     canvas: globalThis.canvas, kingmaker: globalThis.kingmaker,
     localize: key => game.i18n.localize(key) });
 }

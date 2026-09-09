@@ -127,12 +127,27 @@ export function createRulesConfigApplication() {
 
     async _prepareContext(options) {
       const context = await super._prepareContext(options);
-      return { ...context, ...buildDashboardContext(getRulesConfig()) };
+      const config = getRulesConfig();
+      const zones = Object.entries(globalThis.kingmaker?.CONST?.ZONES ?? {});
+      this.regionKeys = zones.map(([key]) => key);
+      return { ...context, ...buildDashboardContext(config), regionTierRows: zones.map(([key, zone], index) => ({
+        index, name: game.i18n.localize(zone.label ?? key),
+        options: [{ value: "", label: "Automatic (region level)", selected: !config.gathering.regionTierLimits?.[key] },
+          ...[1, 2, 3, 4, 5, 6].map(tier => ({ value: tier, label: `Tier ${tier}`, selected: config.gathering.regionTierLimits?.[key] === tier }))],
+      })) };
     }
 
     static async submitDashboard(_event, _form, formData) {
       try {
-        await setRulesConfig(applyDashboardChanges(getRulesConfig(), formData.object));
+        const config = structuredClone(getRulesConfig());
+        config.gathering.regionTierLimits ??= {};
+        for (const [index, key] of (this.regionKeys ?? []).entries()) {
+          const value = formData.object.regionTier?.[index];
+          if (value === undefined) continue;
+          if (value === "") delete config.gathering.regionTierLimits[key];
+          else config.gathering.regionTierLimits[key] = Number(value);
+        }
+        await setRulesConfig(applyDashboardChanges(config, formData.object));
         ui.notifications.info(game.i18n.localize("CMT.Notifications.RulesSaved"));
         await this.render({ force: true });
       } catch (error) {

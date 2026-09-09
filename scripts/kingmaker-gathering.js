@@ -10,7 +10,7 @@ const ENVIRONMENT = { hills: "mountains", water: "wetlands" };
 const values = c => Array.isArray(c) ? c : c?.values ? Array.from(c.values()) : [];
 
 /** Read the licensed module's runtime data, never duplicate its map catalogue. */
-export function resolveKingmakerGathering({ actor, party, canvas, kingmaker, localize = s => s } = {}) {
+export function resolveKingmakerGathering({ actor, party, canvas, kingmaker, regionTierLimits = {}, localize = s => s } = {}) {
   const blocked = reason => ({ active: true, source: "kingmaker", blocked: true, reason,
     name: "Kingmaker gathering unavailable", maxTier: 0, level: null,
     environmentId: "forest", environmentIds: [], materialIds: [], tags: [] });
@@ -54,7 +54,10 @@ export function resolveKingmakerGathering({ actor, party, canvas, kingmaker, loc
     .map(m => Number(m.level ?? m.system?.details?.level?.value)).filter(n => Number.isFinite(n) && n >= 1);
   if (!levels.length) return blocked("The party's character levels could not be determined.");
   const averageLevel = Math.floor(levels.reduce((a,b) => a+b, 0) / levels.length);
-  const maxTier = Math.min(gatheringTierForRegionLevel(Math.max(1, level)), gatheringTierForRegionLevel(averageLevel));
+  const override = regionTierLimits[data.zone];
+  const regionTier = Number.isInteger(override) && override >= 1 && override <= 6
+    ? override : gatheringTierForRegionLevel(Math.max(1, level));
+  const maxTier = Math.min(regionTier, gatheringTierForRegionLevel(averageLevel));
   const environmentId = ENVIRONMENT[data.terrain] ?? data.terrain;
   return { active: true, blocked: false, source: "kingmaker", id: String(hex.key),
     name: localize(zone.label) + " · Hex " + hex.toString(), level, averageLevel,

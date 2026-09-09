@@ -61,17 +61,17 @@
       {{#if disassemblyError}}<p class="cmt-workbench-notice is-warning">{{disassemblyError}}</p><button type="button" data-cmt-disassembly-clear>Clear Item</button>{{/if}}
       {{#if droppedDisassembly}}
         <article class="cmt-panel">
-          <h4>{{droppedDisassembly.itemName}}</h4>
+          <h4 class="cmt-disassembly-item-title">{{droppedDisassembly.itemName}}</h4>
           <p>From: {{droppedDisassembly.sourceName}}</p>
           <p>{{#if droppedDisassembly.basis}}{{droppedDisassembly.basis}}{{else}}Recorded crafting materials{{/if}}</p>
           <ul>{{#each droppedDisassembly.returns}}<li>{{name}} — Tier {{tier}}: {{consumed}} units → <strong>{{quantity}} returned</strong></li>{{/each}}</ul>
           <div class="cmt-workbench-actions"><button type="button" data-cmt-disassembly-clear>Clear Item</button><button type="button" data-cmt-disassembly-confirm {{#unless droppedDisassembly.canDisassemble}}disabled{{/unless}}>Disassemble…</button></div>
         </article>
       {{/if}}
-      <h4>Completed items already in the Party Stash</h4>
+      <h4 class="cmt-disassembly-list-title">Completed items already in the Party Stash</h4>
       {{#each disassemblyItems}}
         <article class="cmt-panel">
-          <h4>{{itemName}}</h4>
+          <h4 class="cmt-disassembly-item-title">{{itemName}}</h4>
           {{#if error}}<p class="cmt-workbench-notice is-warning">{{error}}</p>{{/if}}
           <ul>{{#each returns}}<li>{{name}} — Tier {{tier}}: {{consumed}} used → <strong>{{quantity}} returned</strong></li>{{/each}}</ul>
           <div class="cmt-workbench-actions"><button type="button" data-cmt-disassemble="{{projectId}}" {{#unless canDisassemble}}disabled{{/unless}}>

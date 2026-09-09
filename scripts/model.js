@@ -449,6 +449,11 @@ export function normalizeRulesConfig(input) {
     throw new ConfigValidationError("gathering must be an object.");
   }
   const gathering = {
+    regionTierLimits: Object.fromEntries(Object.entries(parsed.gathering?.regionTierLimits ?? {}).map(([key, value]) => {
+      const tier = finiteNumber(value, `gathering.regionTierLimits.${key}`, { integer: true });
+      if (tier < 1 || tier > 6) throw new ConfigValidationError("Region resource tiers must be between 1 and 6.");
+      return [key, tier];
+    })),
     enabled: parsed.gathering?.enabled !== false,
     environmentId: typeof parsed.gathering?.environmentId === "string"
       && SLUG_PATTERN.test(parsed.gathering.environmentId)

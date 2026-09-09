@@ -140,7 +140,7 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 
 .pf2e-crafting-material-tiers .cmt-workbench-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0;
   border-inline: 1px solid #a58a76;
   background: #f5eee9;
@@ -2725,3 +2725,17 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-rules-handbook table tbody tr:nth-child(even) { background: #faeeee; color: #302b28; }
 .cmt-guide-marks article { border-bottom: 1px solid #d8b5b5; padding: 0.4rem 0; }
 .cmt-guide-marks article p { margin: 0.35rem 0; }
+.pf2e-crafting-material-tiers .cmt-disassembly-list-title { color: #5e0000; }
+.pf2e-crafting-material-tiers .cmt-disassembly-item-title {
+  background: #5e0000; color: #f5eee9; padding: 0.5rem 0.65rem;
+  margin: 0 0 0.6rem; width: 100%; box-sizing: border-box;
+}
+.cmt-party-workbench-name { display: flex; align-items: center; gap: 0.6rem; }
+.cmt-party-workbench-name .cmt-party-workbench-button {
+  flex: 0 0 1.8rem; width: 1.8rem; height: 1.8rem; min-height: 0;
+  border-radius: 50%; border: 2px solid #c9b779; background: #253a2e;
+  color: #eadba5; padding: 0; margin: 0; font-size: 0.85rem;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-tabs { overflow-x: auto; }
+.pf2e-crafting-material-tiers .cmt-workbench-tabs button { min-width: 0; white-space: nowrap; padding-inline: 0.25rem; }
