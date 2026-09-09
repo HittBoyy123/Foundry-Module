@@ -55,9 +55,9 @@
 
   {{#if tabs.disassemble}}
     <section class="cmt-workbench-panel cmt-workbench-projects">
-      <div class="cmt-workbench-section-title"><h3>Disassemble Items</h3><span>90% material return</span></div>
+      <div class="cmt-workbench-section-title"><h3>Disassemble Items</h3><span>50% material return</span></div>
       <div class="cmt-workbench-drop" data-cmt-disassembly-drop>Drop a Wrathmaker item from a character sheet or the Party Stash here. GMs can also drop world items.</div>
-      <p>90% material return, rounded down. The original item and its Marks are destroyed only after confirmation.</p>
+      <p>50% material return, rounded up. The original item and its Marks are destroyed only after confirmation.</p>
       {{#if disassemblyError}}<p class="cmt-workbench-notice is-warning">{{disassemblyError}}</p><button type="button" data-cmt-disassembly-clear>Clear Item</button>{{/if}}
       {{#if droppedDisassembly}}
         <article class="cmt-panel">

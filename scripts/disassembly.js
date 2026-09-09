@@ -5,7 +5,7 @@ import { recordProjectDisassembly, replaceProject, createCraftingProject } from 
 import { gmItemPlan } from "./gm-item-model.js";
 import { augmentRecipeWithArtisanMarks } from "./artisan-marks.js";
 
-export const DISASSEMBLY_RETURN_PERCENT = 90;
+export const DISASSEMBLY_RETURN_PERCENT = 50;
 
 /** Resolve real project history first; otherwise derive a transparent standard-recipe return. */
 export function droppedDisassemblyContext(workbench, item, config) {
@@ -82,7 +82,7 @@ export function buildDisassemblyPlan(project, item) {
       return data.materialId === group.materialId && data.tier === group.tier && data.variantId === group.variantId && data.unitsPerItem === 1;
     });
     if (!source) throw new Error("No matching resource exists for a recorded material; ask the GM to review this project.");
-    return { ...group, name: source.name, quantity: Math.floor(group.consumed * DISASSEMBLY_RETURN_PERCENT / 100) };
+    return { ...group, name: source.name, quantity: Math.ceil(group.consumed * DISASSEMBLY_RETURN_PERCENT / 100) };
   });
   const plan = { projectId: project.id, itemId: item.id, itemUuid: item.uuid, itemName: item.name, returns };
   return { ...plan, signature: JSON.stringify(plan) };

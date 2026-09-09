@@ -40,17 +40,17 @@ function fixture() {
   return { party, item, options, calls, id: state.projects[0].id, state: () => state };
 }
 
-test("90% returns aggregate each material before rounding, including zero returns", () => {
+test("50% returns aggregate each material before rounding up", () => {
   const f = fixture();
   const plan = buildDisassemblyPlan(f.state().projects[0], f.item);
-  assert.deepEqual(plan.returns.map(row => [row.materialId, row.consumed, row.quantity]), [["metal", 10, 9], ["wood", 1, 0]]);
+  assert.deepEqual(plan.returns.map(row => [row.materialId, row.consumed, row.quantity]), [["metal", 10, 5], ["wood", 1, 1]]);
 });
 
 test("disassembly replaces gear with resources once and preserves completion history", async () => {
   const f = fixture();
   await disassembleProjectItem(f.party, f.id, f.options);
-  assert.equal(f.party.items.length, 1);
-  assert.equal(f.party.items[0].system.quantity, 9);
+  assert.equal(f.party.items.length, 2);
+  assert.equal(f.party.items[0].system.quantity, 5);
   assert.equal(f.party.items[0].flags[MODULE_ID].resource.materialId, "metal");
   const project = f.state().projects[0];
   assert.ok(project.disassembledAt);
@@ -58,7 +58,7 @@ test("disassembly replaces gear with resources once and preserves completion his
   assert.equal(project.reservations[0].quantity, 7);
   assert.equal(project.audit.at(-1).action, "item-disassembled");
   await assert.rejects(disassembleProjectItem(f.party, f.id, f.options), /already been disassembled/);
-  assert.equal(f.party.items.length, 1);
+  assert.equal(f.party.items.length, 2);
   assert.throws(() => recordProjectRecovery(project, {}), /cannot be recovered/);
   await assert.rejects(recoverProjectItem(f.party, f.id, f.options), /cannot be recovered/);
 });
@@ -123,7 +123,7 @@ test("transferred output matches its recorded provenance; ambiguous duplicates d
   f.item.uuid = "Actor.party.Item.transferred";
   f.item.flags = { [MODULE_ID]: { crafting: { provenance: [{ projectId: f.id }] } } };
   assert.equal(findDisassemblyItem(f.party, f.state().projects[0]), f.item);
-  assert.equal(buildDisassemblyPlan(f.state().projects[0], f.item).returns[0].quantity, 9);
+  assert.equal(buildDisassemblyPlan(f.state().projects[0], f.item).returns[0].quantity, 5);
   f.party.items.push({ ...f.item, id: "duplicate" });
   assert.equal(findDisassemblyItem(f.party, f.state().projects[0]), null);
 });
@@ -136,7 +136,7 @@ test("mixed tiers and colored scale variants remain distinct", () => {
   );
   const plan = buildDisassemblyPlan(f.state().projects[0], f.item);
   assert.deepEqual(plan.returns.slice(2).map(row => [row.materialId, row.tier, row.variantId, row.quantity]),
-    [["metal", 3, "", 9], ["dragon-scale", 2, "red", 10]]);
+    [["metal", 3, "", 5], ["dragon-scale", 2, "red", 6]]);
 });
 
 function droppedFixture() {
@@ -203,7 +203,7 @@ test("tracked gear still uses its original ledger after moving to a character", 
   f.item.flags = { [MODULE_ID]: { material: "metal", tier: 2, crafting: { provenance: [{ projectId: f.id }] } } };
   const context = droppedDisassemblyContext(f.state(), f.item, cloneDefaultRulesConfig());
   assert.equal(context.existing, true);
-  assert.equal(context.plan.returns[0].quantity, 9);
+  assert.equal(context.plan.returns[0].quantity, 5);
   f.state().projects[0].disassembledAt = Date.now();
   assert.throws(() => droppedDisassemblyContext(f.state(), f.item, cloneDefaultRulesConfig()), /already been disassembled/);
   assert.throws(() => droppedDisassemblyContext({ projects: [] }, f.item, cloneDefaultRulesConfig()), /original crafting project/);

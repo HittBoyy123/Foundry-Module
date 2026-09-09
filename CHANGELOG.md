@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.2 — Live Gathering & Disassembly (2026-09-09)
+
+- Gathering refreshes immediately and throughout token movement, with updates throttled to 75 ms and serialized per window. Region, terrain and available resources are recalculated instead of waiting until movement stops.
+- Disassembly returns 50% of recorded resources, rounded up separately per material, Tier and variant. Updated previews, confirmation text and guides.
+- Automated checks pass; live Foundry movement verification remains outstanding.
+
 ## 0.29.1 — Nephilim Bond Fixes (2026-09-09)
 
 - Fixed first-time Nephilim Bond selection reading flags from a missing item.

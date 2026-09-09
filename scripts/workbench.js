@@ -1047,7 +1047,7 @@ async function confirmDisassembly(application, projectId, itemUuid = null) {
   const list = plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.consumed} → ${row.quantity}</li>`).join("");
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: "Disassemble Item" }, modal: true,
-    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>90% return, rounded down per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
+    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>50% return, rounded up per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
   });
   if (!confirmed) return;
   requireWorkbench();
@@ -1424,18 +1424,11 @@ export function createWorkbenchApplication() {
 export function registerWorkbench() {
   WorkbenchApplication = createWorkbenchApplication();
   Hooks.once("ready", installWorkbenchSocket);
-  let gatheringRefresh;
-  // refreshToken also fires during visual movement; the trailing debounce refreshes
-  // once the token settles, rather than retaining an intermediate animated hex.
+  const refreshGathering = createLiveGatheringRefresh(() => openWorkbenches);
   for (const event of ["refreshToken", "updateToken", "createToken", "deleteToken", "canvasReady", "updateActor", "updateSetting"]) {
     Hooks.on(event, (_document, flags) => {
       if (event === "refreshToken" && !flags?.refreshPosition) return;
-      clearTimeout(gatheringRefresh);
-      gatheringRefresh = setTimeout(() => {
-        for (const application of openWorkbenches) {
-          if (application.workbenchState.tab === "gather") application.render({ force: true });
-        }
-      }, 150);
+      refreshGathering();
     });
   }
   Hooks.on("wrathmakerRulesConfigChanged", () => {
@@ -1590,3 +1583,4 @@ function openArtisanMarkPicker(owner, actorUuid) {
   }
   new ArtisanMarkPicker().render({ force: true });
 }
+import { createLiveGatheringRefresh } from "./live-gathering-refresh.js";

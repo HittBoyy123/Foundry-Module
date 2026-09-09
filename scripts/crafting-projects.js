@@ -512,7 +512,7 @@ export function recordProjectDisassembly(source, returns, user) {
   const project = normalizeCraftingProject(source);
   if (project.status !== "completed" || project.disassembledAt) throw new Error("This project cannot be disassembled again.");
   project.disassembledAt = Date.now();
-  return audit(project, "item-disassembled", "Finished item disassembled; 90% of consumed materials returned, rounded down.", user, { returns });
+  return audit(project, "item-disassembled", "Finished item disassembled; 50% of consumed materials returned, rounded up.", user, { returns });
 }
 
 export function replaceProject(workbench, source) {
