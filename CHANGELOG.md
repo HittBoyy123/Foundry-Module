@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.1 — Nephilim Bond Fixes (2026-09-09)
+
+- Fixed first-time Nephilim Bond selection reading flags from a missing item.
+- Compacted Nephilim Bond into the identity grid beneath Deity and Profession, using native detail labels and controls. Level 15 remains reserved.
+- All six gifts retain Nephilim Gift labels and additive stacking, including the attribute gift.
+
 ## 0.29.0 — Nephilim Bonds & Shield Refinements (2026-09-09)
 
 - Added a Nephilim Bond bar beneath the character portrait/details area, with distinct retained choices at levels 5 and 10. Six gifts automate HP per level, saves, AC, spell attacks/DCs, Strike accuracy and attribute modifiers. Level 15 remains reserved.

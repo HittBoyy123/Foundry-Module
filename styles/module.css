@@ -1,24 +1,17 @@
 .cmt-nephilim-bonds {
   grid-column: 1 / -1;
   width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  margin-top: 8px;
-  padding: 8px;
-  border: 1px solid #b5a394;
-  background: #e7dbcf;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
 }
-.cmt-nephilim-bonds h3 { width: 100%; margin: 0; color: #5e0000; }
-.cmt-nephilim-bonds button {
-  flex: 1 1 180px;
-  height: auto;
-  white-space: normal;
-  color: #403832;
-  background: #f5f0e8;
-  border: 1px solid #b5a394;
-}
+.cmt-nephilim-bonds > .details-label { grid-column: 1 / -1; }
+.cmt-nephilim-bonds .detail { min-width: 0; }
+.cmt-nephilim-bonds .value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmt-inline-field > select {
   margin: 0;
   min-width: 0;

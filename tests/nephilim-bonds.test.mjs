@@ -1,6 +1,31 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { NEPHILIM_BONDS, createBondSource, validateBondSelection } from "../scripts/nephilim-bonds.js";
+import { NEPHILIM_BONDS, createBondSource, validateBondSelection, chooseBond } from "../scripts/nephilim-bonds.js";
+
+test("first bond selection opens without existing flags and creates a gift", async () => {
+  const original = globalThis.foundry;
+  let created;
+  globalThis.foundry = { applications: { api: { DialogV2: { wait: async options => {
+    assert.match(options.content, /Ao&#39;s Toughness/);
+    return { id: "toughness", milestone: 5, choice: "" };
+  } } } } };
+  try {
+    await chooseBond({ level: 5, isOwner: true, items: [], createEmbeddedDocuments: async (_type, sources) => { created = sources; } }, 5);
+    assert.equal(created[0].name, "Ao's Toughness");
+    assert.equal(created[0].system.rules[0].value, 8);
+  } finally { globalThis.foundry = original; }
+});
+
+test("Nephilim Gift modifiers retain independent additive stacking", () => {
+  for (const gift of NEPHILIM_BONDS) {
+    const source = createBondSource({ id: gift.id, milestone: 5, choice: gift.choices?.[0] });
+    for (const rule of source.system.rules) {
+      assert.match(rule.label, /Nephilim Gift/);
+      if (rule.key === "FlatModifier") assert.equal(rule.type, "untyped");
+      else assert.equal(rule.mode, "add");
+    }
+  }
+});
 
 test("bonds unlock at 5 and 10 and cannot repeat across milestones", () => {
   assert.throws(() => validateBondSelection({ id: "skin", milestone: 5 }, [], 4));

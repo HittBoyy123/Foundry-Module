@@ -10,7 +10,7 @@ export const NEPHILIM_BONDS = Object.freeze([
 ]);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const items = actor => Array.from(actor.items?.contents ?? actor.items ?? []);
-const bond = item => item.flags?.[MODULE_ID]?.nephilimBond;
+const bond = item => item?.flags?.[MODULE_ID]?.nephilimBond;
 const level = actor => Number(actor.level ?? actor.system?.details?.level?.value ?? 0);
 
 export function validateBondSelection(selection, existing, actorLevel) {
@@ -37,7 +37,7 @@ export function createBondSource(selection) {
     skin: [flat("ac", 2)], wisdom: [flat(["spell-attack", "spell-dc"], 2)],
     precision: [flat("strike-attack-roll", 2)],
     form: [{ key: "ActiveEffectLike", mode: "add", path: `system.abilities.${selection.choice}.mod`,
-      value: 1, phase: "beforeDerived", predicate }],
+      label: `${definition.name} — Nephilim Gift`, value: 1, phase: "beforeDerived", predicate }],
   }[selection.id];
   return { name: definition.name, type: "feat", img: "icons/magic/light/beam-rays-yellow-blue-large.webp",
     flags: { [MODULE_ID]: { nephilimBond: { id: selection.id, milestone: selection.milestone, choice: selection.choice ?? "" } } },
@@ -46,7 +46,7 @@ export function createBondSource(selection) {
       rules, slug: `nephilim-bond-${selection.id}` } };
 }
 
-async function chooseBond(actor, milestone) {
+export async function chooseBond(actor, milestone) {
   if (!actor.isOwner || level(actor) < milestone) return;
   const current = items(actor).find(i => bond(i)?.milestone === milestone);
   const selected = bond(current);
@@ -61,8 +61,8 @@ async function chooseBond(actor, milestone) {
       <ul>${options.map(b => `<li><strong>${escape(b.name)}</strong>: ${b.description}</li>`).join("")}</ul>`,
     buttons: [{ action: "save", label: "Select Bond", default: true, callback: (_event, button) => {
       const form = button.form;
-      const id = form.elements.bond.value;
-      return { id, milestone, choice: id === "will" ? form.elements.save.value : id === "form" ? form.elements.attribute.value : "" };
+      const id = form.elements.namedItem("bond").value;
+      return { id, milestone, choice: id === "will" ? form.elements.namedItem("save").value : id === "form" ? form.elements.namedItem("attribute").value : "" };
     } }, { action: "cancel", label: "Cancel", callback: () => null }], rejectClose: false,
   });
   if (!result || typeof result !== "object") return;
@@ -78,21 +78,30 @@ export function injectNephilimBondBar(application, html) {
   const actor = application.actor ?? application.document;
   const root = html?.querySelector ? html : html?.[0];
   const details = root?.querySelector('.tab.character .subsection.details');
-  if (actor?.type !== "character" || !details || details.querySelector(".cmt-nephilim-bonds")) return;
-  const section = document.createElement("section");
+  const identity = details?.querySelector(":scope > .abcd");
+  if (actor?.type !== "character" || !identity || details.querySelector(".cmt-nephilim-bonds")) return;
+  const section = document.createElement("div");
   section.className = "cmt-nephilim-bonds";
-  const title = document.createElement("h3"); title.textContent = "Nephilim Bond"; section.append(title);
+  const title = document.createElement("span"); title.className = "details-label";
+  title.textContent = "Nephilim Bond"; section.append(title);
   for (const milestone of [5, 10]) {
     const item = items(actor).find(i => bond(i)?.milestone === milestone);
+    const field = document.createElement("div"); field.className = "detail";
+    const heading = document.createElement("h3");
+    const value = document.createElement("span"); value.className = "value";
+    value.textContent = item?.name ?? `Level ${milestone} · ${level(actor) < milestone ? "Locked" : "Choose Bond"}`;
+    heading.append(value);
     const button = document.createElement("button"); button.type = "button";
-    button.textContent = `Level ${milestone} · ${item?.name ?? (level(actor) < milestone ? "Locked" : "Choose Bond")}`;
+    button.className = "cmt-profession-control";
+    button.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i>';
+    button.title = `Choose Level ${milestone} Nephilim Bond`;
+    button.setAttribute("aria-label", button.title);
     button.disabled = !actor.isOwner || level(actor) < milestone;
     button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation();
       chooseBond(actor, milestone).catch(error => ui.notifications.error(error.message)); });
-    section.append(button);
+    heading.append(button); field.append(heading); section.append(field);
   }
-  const divider = details.querySelector(":scope > hr");
-  if (divider) divider.before(section); else details.append(section);
+  identity.append(section);
 }
 
 export function registerNephilimBonds() {
