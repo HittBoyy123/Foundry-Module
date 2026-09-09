@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.29.0 — Nephilim Bonds & Shield Refinements (2026-09-09)
+
+- Added a Nephilim Bond bar beneath the character portrait/details area, with distinct retained choices at levels 5 and 10. Six gifts automate HP per level, saves, AC, spell attacks/DCs, Strike accuracy and attribute modifiers. Level 15 remains reserved.
+
+- Gathering refreshes after token position animation settles, automatically replacing invalid environment and resource selections for the new hex.
+- Added Gather Resources to daily exploration activity choices.
+- Professions retain their +2 circumstance bonus and Lore but no longer grant Specialty Crafting. Only Wrathmaker-owned obsolete grants are removed.
+- Shield material effects cannot grant AC. Bear Carving grants +2 Artisan AC for raised tower/fortress shields, +1 for other raised non-buckler shields, and no extra AC for bucklers. Normal shield AC is unchanged; the Mark does not grant cover.
+- Automated checks pass; live Foundry verification of the new sheet bar, movement refresh and raised-shield effects remains outstanding.
+
 ## 0.28.0 — Kingmaker Gathering (2026-09-09)
 
 - Kingmaker is now a required module (minimum 2.2.1). Gathering reads the occupied Stolen Lands hex through Kingmaker's runtime API, not the currently inspected HUD hex.

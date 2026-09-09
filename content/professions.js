@@ -362,7 +362,7 @@ function professionDescription(profession) {
 
   return [
     `<p><strong>${profession.name} Profession</strong></p>`,
-    "<p>This is a Wrathmaker profession chosen at 1st level. It supplies the appropriate Specialty Crafting benefit and Additional Lore for the profession.</p>",
+    "<p>This is a Wrathmaker profession chosen at 1st level. It supplies a +2 circumstance bonus to relevant checks and Additional Lore for the profession. It does not grant Specialty Crafting.</p>",
     "<ul>",
     `<li><strong>Profession Lore:</strong> ${profession.loreName}</li>`,
     "<li><strong>Automatic Lore proficiency:</strong> trained at level 1, expert at level 3, master at level 7, and legendary at level 15.</li>",

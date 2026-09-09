@@ -16,6 +16,7 @@ export const ACTIVITY_TYPES = Object.freeze([
   "fortify-camp",
   "map-area",
   "subsist",
+  "gather-resources",
   "other",
 ]);
 

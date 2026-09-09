@@ -1425,8 +1425,11 @@ export function registerWorkbench() {
   WorkbenchApplication = createWorkbenchApplication();
   Hooks.once("ready", installWorkbenchSocket);
   let gatheringRefresh;
-  for (const event of ["updateToken", "createToken", "deleteToken", "canvasReady", "updateActor", "updateSetting"]) {
-    Hooks.on(event, () => {
+  // refreshToken also fires during visual movement; the trailing debounce refreshes
+  // once the token settles, rather than retaining an intermediate animated hex.
+  for (const event of ["refreshToken", "updateToken", "createToken", "deleteToken", "canvasReady", "updateActor", "updateSetting"]) {
+    Hooks.on(event, (_document, flags) => {
+      if (event === "refreshToken" && !flags?.refreshPosition) return;
       clearTimeout(gatheringRefresh);
       gatheringRefresh = setTimeout(() => {
         for (const application of openWorkbenches) {

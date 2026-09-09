@@ -11,6 +11,7 @@ import { installRuleElementBridge, registerPreparedItemHooks } from "./integrati
 import { registerItemSheetHooks } from "./item-sheet.js";
 import { registerItemChatHooks } from "./item-chat.js";
 import { registerProfessionHooks } from "./professions.js";
+import { registerNephilimBonds } from "./nephilim-bonds.js";
 import { registerWorkbench } from "./workbench.js";
 import { registerGMItemCreator } from "./gm-item-creator.js";
 import { registerMarkActionHooks } from "./mark-actions.js";
@@ -71,6 +72,7 @@ Hooks.once("init", () => {
   registerItemSheetHooks(getRulesConfig);
   registerItemChatHooks(getRulesConfig);
   professionsInstalled = registerProfessionHooks();
+  registerNephilimBonds();
 
   const module = game.modules.get(MODULE_ID);
   if (module) module.api = createPublicApi();

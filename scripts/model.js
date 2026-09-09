@@ -814,6 +814,7 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
 
   const previews = material.effects
     .filter((effect) => effect.enabled && (!effect.itemTypes || effect.itemTypes.includes(itemType)))
+    .filter((effect) => itemType !== "shield" || !effect.selectors?.includes("ac"))
     .map((effect) => {
       const value = resolveValue(effect.value, normalizedFlags.tier, tierBonus);
       const context = {

@@ -393,6 +393,7 @@
         "fortify-camp": "Fortify Camp",
         "map-area": "Map the Area",
         "subsist": "Subsist",
+        "gather-resources": "Gather Resources",
         "other": "Other"
       },
       "Warnings": {

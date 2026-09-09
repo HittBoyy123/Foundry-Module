@@ -574,7 +574,6 @@ function expectedStandardGrantKinds(actor, profession) {
   const kinds = [
     PROFESSION_GRANT_KINDS.lore,
     PROFESSION_GRANT_KINDS.additionalLore,
-    PROFESSION_GRANT_KINDS.specialtyCrafting,
   ];
   return kinds;
 }
@@ -805,10 +804,6 @@ export async function synchronizeActorProfession(actor, _options = {}) {
       }
       if (!grantsByKind.has(grantKey({ kind: PROFESSION_GRANT_KINDS.additionalLore, professionId: profession.id }))) {
         const source = await createAdditionalLoreSource(profession);
-        if (source) sources.push(source);
-      }
-      if (!grantsByKind.has(grantKey({ kind: PROFESSION_GRANT_KINDS.specialtyCrafting, professionId: profession.id }))) {
-        const source = await createSpecialtyCraftingSource(profession);
         if (source) sources.push(source);
       }
       if (expectedStandardGrantKinds(actor, profession).includes(PROFESSION_GRANT_KINDS.bonusFeat)

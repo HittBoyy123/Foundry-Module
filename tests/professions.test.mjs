@@ -317,21 +317,23 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     assert.deepEqual(grants.map((item) => item.flags[MODULE_ID].professionGrant.kind).sort(), [
       "additional-lore",
       "lore",
-      "specialty-crafting",
     ]);
     const lore = grants.find((item) => item.type === "lore");
     assert.equal(lore.system.proficient.value, 2);
     assert.equal(lore.name, "Blacksmithing");
     assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 4);
     assert.match(profession.system.description.value, /expert at level 3/i);
-    const specialty = grants.find((item) => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting");
-    assert.equal(specialty.system.rules[0].selection, "blacksmithing");
-    assert.deepEqual(specialty.flags.pf2e.grantedBy, { id: profession.id, onDelete: "detach" });
-    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 2);
+    assert.equal(grants.some(item => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting"), false);
+    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 1);
     assert.equal(Object.values(profession.flags.pf2e.itemGrants).every((grant) => grant.nested === true), true);
 
     actor.level = 16;
+    const obsolete = createEnchantingSpecialtySource(getProfessionData(professionItem("enchanting")));
+    obsolete.id = "OldProfessionSpecialty";
+    items.push(obsolete, { id: "IndependentSpecialty", type: "feat", name: "Specialty Crafting", system: {} });
     assert.equal(await synchronizeActorProfession(actor), true);
+    assert.equal(items.some(item => item.id === "OldProfessionSpecialty"), false);
+    assert.equal(items.some(item => item.id === "IndependentSpecialty"), true);
     assert.equal(lore.system.proficient.value, 4);
   } finally {
     globalThis.game = originalGame;
@@ -419,7 +421,7 @@ test("a level 10 character can combine a starting profession, a new profession, 
       .map((item) => item.name)
       .sort();
     assert.deepEqual(loreNames, ["Alchemy", "Blacksmithing", "Blacksmithing: Hellforging"]);
-    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 7);
+    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 5);
   } finally {
     globalThis.game = originalGame;
     globalThis.fromUuid = originalFromUuid;

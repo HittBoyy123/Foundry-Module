@@ -121,7 +121,24 @@ export function applyMarkItemStats(item) {
 /** Explicit adapters only: source rules are never inferred from arbitrary prose. */
 export function rulesForArtisanMark(mark, item) {
   const name = getArtisanMarkDefinition(mark.definitionId ?? mark.id)?.name ?? mark.name;
-  return rawRulesForArtisanMark(mark, item).map(rule => asArtisanBonus(rule, name));
+  const rules = rawRulesForArtisanMark(mark, item);
+  if (item.type === "shield" && (mark.definitionId ?? mark.id)?.endsWith("-bear-carving"))
+    rules.push(flat("ac", 1));
+  return rules.flatMap(rule => {
+    if (item.type !== "shield" || rule.key !== "FlatModifier" || ![rule.selector].flat().includes("ac"))
+      return [asArtisanBonus(rule, name)];
+    const value = raisedShieldMarkBonus(item);
+    return value ? [asArtisanBonus({ ...rule, value,
+      predicate: [...(rule.predicate ?? []), "self:shield:raised"] }, name)] : [];
+  });
+}
+
+/** Native isRaised also checks that this is the actor's active shield. */
+export function raisedShieldMarkBonus(item) {
+  if (item.type !== "shield" || !item.isRaised || item.isBroken || item.isDestroyed) return 0;
+  const base = item.system?.baseItem ?? "";
+  if (base.includes("buckler")) return 0;
+  return ["tower-shield", "fortress-shield"].includes(base) ? 2 : 1;
 }
 
 function rawRulesForArtisanMark(mark, item) {
