@@ -8,6 +8,8 @@ import { MODULE_ID } from "./constants.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
 import {
   GATHERING_REWARD_DESTINATIONS,
+  gatheringParticipantCount,
+  groupGatheringTask,
   resolveGatheringRecipient,
 } from "./gathering-destination.js";
 import {
@@ -74,7 +76,7 @@ function gatheringRecipient(actor, config) {
   return resolveGatheringRecipient(actor, {
     actors: game.actors,
     activeParty: game.actors?.party ?? null,
-    destination: config.gathering?.rewardDestination,
+    destination: "party-stash",
   });
 }
 
@@ -143,6 +145,8 @@ async function attemptGathering(application, formData, event) {
   const recipientResolution = gatheringRecipient(actor, config);
   if (recipientResolution.missingParty) throw new Error(localize("CMT.Gathering.PartyMissing"));
   const recipient = recipientResolution.recipient;
+  const participantCount = gatheringParticipantCount(recipient);
+  if (!recipient?.canUserModify?.(game.user, "update")) throw new Error(localize("CMT.Gathering.NotEditable"));
   const environmentBase = GATHERING_ENVIRONMENT_SOURCES.find((entry) => entry.id === formData.environmentId);
   const environmentSource = environmentBase ? kingmakerEnvironment(environmentBase, region, GATHERING_TASK_SOURCES) : null;
   const taskSource = GATHERING_TASK_SOURCES.find((entry) => entry.id === formData.taskId);
@@ -160,7 +164,7 @@ async function attemptGathering(application, formData, event) {
 
   const documents = await resourceDocuments();
   const materialEnabled = config.materials?.[taskSource.materialId]?.enabled !== false;
-  const evaluation = evaluateGatheringTask(taskSource, {
+  const evaluation = evaluateGatheringTask(groupGatheringTask(taskSource, participantCount), {
     environment: environmentSource,
     resources: documents,
     materialEnabled,
@@ -220,6 +224,7 @@ function applicationContext(application) {
   const actor = actors.find((entry) => entry.id === application.gatheringState.actorId) ?? null;
   const region = gatheringRegion(actor, config);
   const recipientResolution = gatheringRecipient(actor, config);
+  const participantCount = gatheringParticipantCount(recipientResolution.recipient);
   const enabledTasks = GATHERING_TASK_SOURCES.filter((task) => (
     config.materials?.[task.materialId]?.enabled !== false
     && kingmakerTaskAllowed(region, task)
@@ -259,6 +264,7 @@ function applicationContext(application) {
 
   return {
     skillChoices: skillChoices.map(choice => ({ ...choice, selected: choice.id === application.gatheringState.skillId })),
+    participantCount,
     gatheringEnabled: config.gathering?.enabled !== false,
     actors: actors.map((actor) => ({
       id: actor.id,
@@ -286,8 +292,8 @@ function applicationContext(application) {
       skillLabel: skillChoices.find(choice => choice.id === application.gatheringState.skillId)?.label || task.check.skill.replace(/(^|-)([a-z])/gu, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`),
       dc: evaluation.check.dc,
       level: evaluation.check.level,
-      successQuantity: task.yields.success,
-      criticalSuccessQuantity: task.yields.criticalSuccess,
+      successQuantity: participantCount,
+      criticalSuccessQuantity: participantCount * 2,
     } : null,
     resource: resource ? {
       name: resource.name,
@@ -304,6 +310,7 @@ function applicationContext(application) {
     rewardRecipientName: recipientResolution.recipient?.name ?? "",
     rewardTargetAvailable: !recipientResolution.missingParty,
     canAttempt: config.gathering?.enabled !== false
+      && participantCount > 0
       && actors.length > 0
       && evaluation?.available === true
       && !recipientResolution.missingParty,

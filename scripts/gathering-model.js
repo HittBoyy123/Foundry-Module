@@ -132,7 +132,8 @@ export function normalizeDegreeOfSuccess(value) {
   return DEGREE_IDS.has(normalized) ? normalized : null;
 }
 
-export function gatheringResourceKey({ materialId, tier, variantId = "" } = {}) {
+export function gatheringResourceKey(source = {}) {
+  const { materialId, tier, variantId = "" } = source ?? {};
   const normalizedMaterial = typeof materialId === "string" ? materialId.trim().toLowerCase() : "";
   const normalizedTier = Number(tier);
   const normalizedVariant = typeof variantId === "string" ? variantId.trim().toLowerCase() : "";

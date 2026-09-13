@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.32.1 — Party Gathering Rewards & Bond Names (2026-09-13)
+
+- Fixed gathering rewards failing when the party stash contains ordinary items without material metadata. Matching resources now stack or are created in the party stash.
+- Gathering awards one material per party character on success and two on critical success, using one lead roll. NPCs and duplicate members are excluded. Preview quantities match rewards.
+- Nephilim Bonds on the character sheet now display selected bond names in milestone order, separated by bullets, with chosen saves or attributes in brackets.
+- All 291 automated tests pass. Live Foundry verification remains outstanding.
+
 ## 0.32.0 — Profession Lore & Nephilim Bonds (2026-09-13)
 
 - Relevant learned profession Lore can be selected for gathering and crafting Work Blocks. Uses PF2e's prepared statistic and the existing DC.

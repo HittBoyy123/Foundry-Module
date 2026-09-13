@@ -2740,4 +2740,12 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .pf2e-crafting-material-tiers .cmt-workbench-tabs { overflow-x: auto; }
 .pf2e-crafting-material-tiers .cmt-workbench-tabs button { min-width: 0; white-space: nowrap; padding-inline: 0.25rem; }
 
-.cmt-nephilim-bonds-open { grid-column: 1 / -1; text-align: left; }
+.cmt-nephilim-bonds-open {
+  grid-column: 1 / -1;
+  text-align: left;
+  white-space: normal;
+  height: auto;
+  min-height: 2rem;
+  line-height: 1.4;
+  padding: 4px 8px;
+}

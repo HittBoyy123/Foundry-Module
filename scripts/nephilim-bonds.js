@@ -86,6 +86,23 @@ export function bondMilestones(actor) {
   });
 }
 
+const BOND_CHOICE_LABELS = Object.freeze({
+  fortitude: "Fortitude", reflex: "Reflex", will: "Will",
+  str: "Strength", dex: "Dexterity", con: "Constitution",
+  int: "Intelligence", wis: "Wisdom", cha: "Charisma",
+});
+
+export function bondSummary(actor) {
+  const slots = bondMilestones(actor);
+  const names = slots.filter(slot => slot.selected).map(slot => {
+    const choice = BOND_CHOICE_LABELS[slot.choice] ?? slot.choice;
+    return slot.name + (choice ? ` (${choice})` : "");
+  });
+  if (names.length) return names.join(" • ");
+  const pending = slots.filter(slot => slot.unlocked).length;
+  return pending ? `Choose Nephilim Bonds · ${pending} available` : "Nephilim Bonds";
+}
+
 export async function openNephilimBonds(actor) {
   // Rebuild after a selection so the list reflects current documents and level.
   while (true) {
@@ -126,9 +143,8 @@ export function injectNephilimBondBar(application, html) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "cmt-nephilim-bonds-open";
-  const slots = bondMilestones(actor);
-  const pending = slots.filter(slot => slot.unlocked && !slot.selected).length;
-  button.textContent = pending ? "Nephilim Bonds · " + pending + " available" : "Nephilim Bonds";
+  button.textContent = bondSummary(actor);
+  button.title = button.textContent;
   button.setAttribute("aria-label", "Open Nephilim Bonds");
   button.addEventListener("click", async event => {
     event.preventDefault();
@@ -136,7 +152,11 @@ export function injectNephilimBondBar(application, html) {
     button.disabled = true;
     try { await openNephilimBonds(actor); }
     catch (error) { ui.notifications.error(error.message); }
-    finally { button.disabled = false; }
+    finally {
+      button.textContent = bondSummary(actor);
+      button.title = button.textContent;
+      button.disabled = false;
+    }
   });
   section.append(button);
   identity.append(section);
