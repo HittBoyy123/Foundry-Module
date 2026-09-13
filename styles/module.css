@@ -2346,6 +2346,12 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   justify-content: space-between;
 }
 
+.cmt-gathering-body .cmt-gathering-result > h3,
+.cmt-gathering-chat > dl > div > dt {
+  color: #5e0000;
+  text-shadow: none;
+}
+
 .cmt-gathering-chat dd {
   margin: 0;
 }
@@ -2748,4 +2754,16 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   min-height: 2rem;
   line-height: 1.4;
   padding: 4px 8px;
+}
+
+/* Match PF2e's unallocated ability-boost control across the entire bond field. */
+.cmt-nephilim-bonds-open.has-unallocated-bonds {
+  animation: glow 0.75s infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmt-nephilim-bonds-open.has-unallocated-bonds {
+    animation: none;
+    box-shadow: 0 0 4px 2px #ffb351;
+  }
 }

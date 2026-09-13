@@ -145,7 +145,14 @@ export function injectNephilimBondBar(application, html) {
   button.className = "cmt-nephilim-bonds-open";
   button.textContent = bondSummary(actor);
   button.title = button.textContent;
-  button.setAttribute("aria-label", "Open Nephilim Bonds");
+  const refreshAttention = () => {
+    const pending = bondMilestones(actor).filter(slot => slot.unlocked && !slot.selected).length;
+    button.classList.toggle("has-unallocated-bonds", pending > 0);
+    button.setAttribute("aria-label", pending
+      ? `Open Nephilim Bonds — ${pending} unchosen ${pending === 1 ? "bond" : "bonds"} available`
+      : "Open Nephilim Bonds");
+  };
+  refreshAttention();
   button.addEventListener("click", async event => {
     event.preventDefault();
     event.stopPropagation();
@@ -155,6 +162,7 @@ export function injectNephilimBondBar(application, html) {
     finally {
       button.textContent = bondSummary(actor);
       button.title = button.textContent;
+      refreshAttention();
       button.disabled = false;
     }
   });

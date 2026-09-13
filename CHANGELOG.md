@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.32.2 — Bond Reminders & Gathering Readability (2026-09-13)
+
+- The Nephilim Bonds box pulses with PF2e's orange ability-boost glow while any unlocked milestone remains unchosen. The reminder clears when available choices are filled; reduced-motion users receive a static glow.
+- Gathering result headings and chat Skill/Roll labels now use dark red (#5E0000) without text shadows for readability on light backgrounds.
+- Live Foundry visual verification remains outstanding.
+
 ## 0.32.1 — Party Gathering Rewards & Bond Names (2026-09-13)
 
 - Fixed gathering rewards failing when the party stash contains ordinary items without material metadata. Matching resources now stack or are created in the party stash.
