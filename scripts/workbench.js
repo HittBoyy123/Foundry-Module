@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.js";
+import { professionSkillChoices, resolveProfessionStatistic } from "./profession-checks.js";
 import { validateUpgradeItem, retainedUpgradeMarks, buildUpgradePlan, upgradeSnapshot, selectUpgradeComponentTiers, retainedMaterialHistory } from "./upgrades.js";
 import { assertSingleFreeMark } from "../content/artisan-marks.js";
 import { getRulesConfig } from "./config-store.js";
@@ -624,8 +625,21 @@ async function rollWorkBlock(application, projectId, days, event) {
   const project = workbench.projects.find((entry) => entry.id === projectId);
   if (!project) throw new Error(localize("CMT.Workbench.ProjectMissing"));
   const artisan = await fromUuid(project.leadArtisanUuid);
-  const statistic = artisan?.getStatistic?.("crafting");
-  if (!statistic?.roll) throw new Error(localize("CMT.Workbench.CraftingUnavailable"));
+  const materialIds = [...new Set([project.coreMaterialId,
+    ...project.reservations.map(reservation => reservation.materialId)].filter(Boolean))];
+  const choices = professionSkillChoices(artisan, "crafting", materialIds);
+  let selectedSkill = "crafting";
+  if (choices.length > 1) {
+    selectedSkill = await foundry.applications.api.DialogV2.prompt({
+      window: { title: "Work Block Skill" },
+      content: `<label>Skill <select name="workSkill">${choices.map(choice =>
+        `<option value="${escapeHtml(choice.id)}">${escapeHtml(choice.label)}</option>`).join("")}</select></label>`,
+      ok: { label: "Roll", callback: (_event, button) => button.form.elements.workSkill.value },
+      rejectClose: false,
+    });
+    if (!selectedSkill) return;
+  }
+  const { statistic, label: skillLabel } = resolveProfessionStatistic(artisan, "crafting", materialIds, selectedSkill);
   const dc = project.recipe.check ? evaluateCraftingRecipe(project.recipe, {
     targetItem: await resolveBaseItem(project.baseItemUuid),
     inventoryItems: party.items,
@@ -651,6 +665,7 @@ async function rollWorkBlock(application, projectId, days, event) {
   });
   await saveWorkbench(party, replaceProject(workbench, updated));
   const content = await renderTemplate(`modules/${MODULE_ID}/templates/crafting-work-chat.hbs`, {
+    skillLabel,
     projectName: project.name,
     artisanName: artisan.name,
     days,

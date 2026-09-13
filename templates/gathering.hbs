@@ -42,6 +42,12 @@
         {{/each}}
       </select>
     </label>
+    <label>
+      <span>Skill</span>
+      <select name="skillId">
+        {{#each skillChoices}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </label>
     <label class="cmt-gathering-task-select">
       <span>{{localize "CMT.Gathering.Task"}}</span>
       <select name="taskId">

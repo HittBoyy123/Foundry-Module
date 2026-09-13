@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.32.0 — Profession Lore & Nephilim Bonds (2026-09-13)
+
+- Relevant learned profession Lore can be selected for gathering and crafting Work Blocks. Uses PF2e's prepared statistic and the existing DC.
+- Replaced individual Nephilim sheet milestone controls with one Nephilim Bonds entry and selection pop-out. Supports levels 5, 10, 15 and 20, including earlier unfilled choices; existing selections remain intact.
+- Fixed Kingmaker swamp/lake terrain mapping, standardized gathering tags, and blocked ambiguous party positions. Preserves existing roll predicates.
+- Live Foundry verification remains outstanding. Group gathering yields, automatic activity spending and full per-hex overrides remain future work.
+
 ## 0.31.0 — Magic Recipes & Partial Mark Automation (2026-09-09)
 
 - Added equipment recipe bands for jewellery, garments, leather accessories, books/grimoires and tools. Existing apex equipment is accepted; apex-specific pricing and item-level access safeguards remain outstanding.

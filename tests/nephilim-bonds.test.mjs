@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { NEPHILIM_BONDS, createBondSource, validateBondSelection, chooseBond } from "../scripts/nephilim-bonds.js";
+import { NEPHILIM_BONDS, createBondSource, validateBondSelection, chooseBond, bondMilestones, openNephilimBonds } from "../scripts/nephilim-bonds.js";
 
 test("first bond selection opens without existing flags and creates a gift", async () => {
   const original = globalThis.foundry;
@@ -27,13 +27,15 @@ test("Nephilim Gift modifiers retain independent additive stacking", () => {
   }
 });
 
-test("bonds unlock at 5 and 10 and cannot repeat across milestones", () => {
+test("bonds unlock at 5, 10, 15 and 20 and cannot repeat across milestones", () => {
   assert.throws(() => validateBondSelection({ id: "skin", milestone: 5 }, [], 4));
   assert.throws(() => validateBondSelection({ id: "skin", milestone: 10 }, [], 9));
   assert.equal(validateBondSelection({ id: "skin", milestone: 5 }, [], 5).id, "skin");
   assert.throws(() => validateBondSelection({ id: "will", choice: "reflex", milestone: 10 }, [{ id: "will", choice: "fortitude", milestone: 5 }], 10));
   assert.equal(validateBondSelection({ id: "skin", milestone: 10 }, [{ id: "will", milestone: 5 }], 10).id, "skin");
-  assert.throws(() => validateBondSelection({ id: "skin", milestone: 15 }, [], 20));
+  assert.equal(validateBondSelection({ id: "skin", milestone: 15 }, [], 20).id, "skin");
+  assert.equal(validateBondSelection({ id: "skin", milestone: 20 }, [], 20).id, "skin");
+  assert.throws(() => validateBondSelection({ id: "skin", milestone: 20 }, [], 19));
 });
 test("save and attribute choices are validated", () => {
   for (const id of ["will", "form"]) assert.throws(() => createBondSource({ id, milestone: 5, choice: "invalid" }));
@@ -54,4 +56,22 @@ test("all six bonds produce level-gated native rules", () => {
   const form = createBondSource({ id: "form", milestone: 10, choice: "con" }).system.rules[0];
   assert.equal(form.path, "system.abilities.con.mod");
   assert.equal(form.phase, "beforeDerived");
+});
+
+test("higher level characters retain earlier unfilled choices", () => {
+  const actor = { level: 15, items: [createBondSource({ id: "skin", milestone: 10 })] };
+  assert.deepEqual(bondMilestones(actor).map(slot => [slot.milestone, slot.selected, slot.unlocked]),
+    [[5, false, true], [10, true, true], [15, false, true], [20, false, false]]);
+});
+
+test("bond list opens all milestones and closing does not modify the actor", async () => {
+  const original = globalThis.foundry;
+  globalThis.foundry = { applications: { api: { DialogV2: { wait: async options => {
+    for (const milestone of [5, 10, 15, 20]) assert.match(options.content, new RegExp("Level " + milestone));
+    assert.match(options.content, /Locked/);
+    assert.equal(options.window.title, "Nephilim Bonds");
+    return null;
+  } } } } };
+  try { await openNephilimBonds({ level: 15, isOwner: true, items: [] }); }
+  finally { globalThis.foundry = original; }
 });

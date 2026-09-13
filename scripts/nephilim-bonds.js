@@ -1,5 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 
+export const NEPHILIM_BOND_LEVELS = Object.freeze([5, 10, 15, 20]);
+
 export const NEPHILIM_BONDS = Object.freeze([
   { id: "toughness", name: "Ao's Toughness", description: "+8 maximum HP per character level." },
   { id: "will", name: "Ao's Will", description: "+3 to one saving throw.", choices: ["fortitude", "reflex", "will"] },
@@ -15,8 +17,8 @@ const level = actor => Number(actor.level ?? actor.system?.details?.level?.value
 
 export function validateBondSelection(selection, existing, actorLevel) {
   const definition = NEPHILIM_BONDS.find(b => b.id === selection.id);
-  if (![5, 10].includes(selection.milestone) || actorLevel < selection.milestone)
-    throw new Error("This Nephilim Bond unlocks at level 5 or 10.");
+  if (!NEPHILIM_BOND_LEVELS.includes(selection.milestone) || actorLevel < selection.milestone)
+    throw new Error("This Nephilim Bond unlocks at level 5, 10, 15 or 20.");
   if (!definition) throw new Error("Choose a valid Nephilim Bond.");
   if (existing.some(b => b.milestone !== selection.milestone && b.id === selection.id))
     throw new Error("Each Nephilim Bond may only be chosen once, even with a different save or attribute.");
@@ -47,7 +49,7 @@ export function createBondSource(selection) {
 }
 
 export async function chooseBond(actor, milestone) {
-  if (!actor.isOwner || level(actor) < milestone) return;
+  if (!actor.isOwner || !NEPHILIM_BOND_LEVELS.includes(milestone) || level(actor) < milestone) return;
   const current = items(actor).find(i => bond(i)?.milestone === milestone);
   const selected = bond(current);
   const existing = items(actor).map(bond).filter(Boolean);
@@ -67,11 +69,46 @@ export async function chooseBond(actor, milestone) {
   });
   if (!result || typeof result !== "object") return;
   // Re-read after the dialog: another user may have changed the character.
+  if (!actor.isOwner) return;
   validateBondSelection(result, items(actor).map(bond).filter(Boolean), level(actor));
   const latest = items(actor).find(i => bond(i)?.milestone === milestone);
   const source = createBondSource(result);
   if (latest) await actor.updateEmbeddedDocuments("Item", [{ _id: latest.id, ...source }]);
   else await actor.createEmbeddedDocuments("Item", [source]);
+}
+
+/** Earlier unfilled milestones remain selectable at every later level. */
+export function bondMilestones(actor) {
+  return NEPHILIM_BOND_LEVELS.map(milestone => {
+    const item = items(actor).find(item => bond(item)?.milestone === milestone);
+    return { milestone, name: item?.name ?? "Not chosen", choice: bond(item)?.choice ?? "",
+      selected: Boolean(item), unlocked: level(actor) >= milestone };
+  });
+}
+
+export async function openNephilimBonds(actor) {
+  // Rebuild after a selection so the list reflects current documents and level.
+  while (true) {
+    const slots = bondMilestones(actor);
+    const first = slots.find(slot => slot.unlocked && !slot.selected) ?? slots.find(slot => slot.unlocked);
+    const content = '<p>Choose one distinct bond at each milestone. Unfilled earlier choices remain available.</p>'
+      + '<fieldset><legend>Nephilim Bonds</legend>' + slots.map(slot =>
+        '<label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border-light-primary)">'
+        + '<input type="radio" name="milestone" value="' + slot.milestone + '" '
+        + (slot === first ? 'checked ' : '') + (!slot.unlocked || !actor.isOwner ? 'disabled ' : '') + '>'
+        + '<span><strong>Level ' + slot.milestone + '</strong><br>' + escape(slot.name)
+        + (slot.choice ? ' (' + escape(slot.choice) + ')' : '')
+        + (!slot.unlocked ? ' — Locked' : '') + '</span></label>').join('') + '</fieldset>';
+    const buttons = [];
+    if (actor.isOwner && first) buttons.push({ action: "choose", label: "Choose / Change Bond", default: true,
+      callback: (_event, button) => Number(button.form.elements.namedItem("milestone").value) });
+    buttons.push({ action: "close", label: "Close", callback: () => null });
+    const milestone = await foundry.applications.api.DialogV2.wait({
+      window: { title: "Nephilim Bonds" }, content, buttons, rejectClose: false,
+    });
+    if (!NEPHILIM_BOND_LEVELS.includes(milestone)) return;
+    await chooseBond(actor, milestone);
+  }
 }
 
 export function injectNephilimBondBar(application, html) {
@@ -82,25 +119,26 @@ export function injectNephilimBondBar(application, html) {
   if (actor?.type !== "character" || !identity || details.querySelector(".cmt-nephilim-bonds")) return;
   const section = document.createElement("div");
   section.className = "cmt-nephilim-bonds";
-  const title = document.createElement("span"); title.className = "details-label";
-  title.textContent = "Nephilim Bond"; section.append(title);
-  for (const milestone of [5, 10]) {
-    const item = items(actor).find(i => bond(i)?.milestone === milestone);
-    const field = document.createElement("div"); field.className = "detail";
-    const heading = document.createElement("h3");
-    const value = document.createElement("span"); value.className = "value";
-    value.textContent = item?.name ?? `Level ${milestone} · ${level(actor) < milestone ? "Locked" : "Choose Bond"}`;
-    heading.append(value);
-    const button = document.createElement("button"); button.type = "button";
-    button.className = "cmt-profession-control";
-    button.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i>';
-    button.title = `Choose Level ${milestone} Nephilim Bond`;
-    button.setAttribute("aria-label", button.title);
-    button.disabled = !actor.isOwner || level(actor) < milestone;
-    button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation();
-      chooseBond(actor, milestone).catch(error => ui.notifications.error(error.message)); });
-    heading.append(button); field.append(heading); section.append(field);
-  }
+  const title = document.createElement("span");
+  title.className = "details-label";
+  title.textContent = "Nephilim Bonds";
+  section.append(title);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "cmt-nephilim-bonds-open";
+  const slots = bondMilestones(actor);
+  const pending = slots.filter(slot => slot.unlocked && !slot.selected).length;
+  button.textContent = pending ? "Nephilim Bonds · " + pending + " available" : "Nephilim Bonds";
+  button.setAttribute("aria-label", "Open Nephilim Bonds");
+  button.addEventListener("click", async event => {
+    event.preventDefault();
+    event.stopPropagation();
+    button.disabled = true;
+    try { await openNephilimBonds(actor); }
+    catch (error) { ui.notifications.error(error.message); }
+    finally { button.disabled = false; }
+  });
+  section.append(button);
   identity.append(section);
 }
 

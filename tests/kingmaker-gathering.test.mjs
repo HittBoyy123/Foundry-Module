@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { gatheringRollOptions } from "../scripts/gathering-tags.js";
 import { normalizeRulesConfig } from "../scripts/model.js";
 import { cloneDefaultRulesConfig } from "../scripts/constants.js";
 import { HEX_TERRAIN_RESOURCES, resolveKingmakerGathering, kingmakerTaskAllowed, kingmakerEnvironment } from "../scripts/kingmaker-gathering.js";
@@ -13,6 +14,53 @@ function fixture() {
   const canvas = { scene: {}, tokens: { placeables: [{ actor: party, center: { x: 10, y: 20 } }] } };
   return { actor, party, hex, kingmaker, canvas };
 }
+
+test("installed Kingmaker swamp and lake terrain use canonical gathering tags", () => {
+  for (const [source, expected] of [["swamp", "wetlands"], ["lake", "water"]]) {
+    const f = fixture();
+    f.hex.data.terrain = source;
+    f.hex.data.showResources = false;
+    const result = resolveKingmakerGathering(f);
+    assert.equal(result.blocked, false);
+    assert.equal(result.terrain, expected);
+    assert.deepEqual(result.materialIds, HEX_TERRAIN_RESOURCES[expected]);
+  }
+});
+
+test("feature tags are normalized, unique and require explicit discovery", () => {
+  const f = fixture();
+  f.hex.data.features = [
+    { type: " ORE ", discovered: true },
+    { type: "Farmland", discovered: true },
+    { type: "luxuries", discovered: "false" },
+    { type: "constructor", discovered: true },
+    null,
+  ];
+  const result = resolveKingmakerGathering(f);
+  assert.deepEqual(result.tags, ["ore", "farmland", "constructor"]);
+  assert.equal(result.materialIds.includes("mana-crystals"), false);
+});
+
+test("a second party token outside the map cannot be silently ignored", () => {
+  const f = fixture();
+  f.canvas.tokens.placeables.push({ actor: f.party, center: { x: -1, y: -1 } });
+  f.kingmaker.region.getHexFromPoint = point => point.x < 0 ? null : f.hex;
+  assert.equal(resolveKingmakerGathering(f).blocked, true);
+});
+
+test("multiple party memberships require an explicit party for the tier cap", () => {
+  const f = fixture();
+  f.actor.parties = [f.party, { id: "other-party", members: [f.actor] }];
+  assert.equal(resolveKingmakerGathering({ ...f, party: undefined }).blocked, true);
+  assert.equal(resolveKingmakerGathering(f).blocked, false);
+});
+
+test("canonical roll options retain existing gathering predicates", () => {
+  assert.deepEqual(gatheringRollOptions({ materialId: "metal", tier: 2 }), [
+    "action:gather", "action:gather:metal", "wrathmaker:gathering",
+    "wrathmaker:gathering:material:metal", "wrathmaker:gathering:tier:2",
+  ]);
+});
 
 test("region tier overrides persist and respect the party cap", () => {
   const config = cloneDefaultRulesConfig();

@@ -2,7 +2,7 @@
   "id": "pf2e-crafting-material-tiers",
   "title": "Wrathmaker",
   "description": "A configurable Pathfinder 2e house-rules module with character professions, crafting-material tiers, resource gathering, spell focuses, Apex items, campaign point tracking, enhanced flanking, and party Hexploration.",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "authors": [
     {
       "name": "Custom PF2e Game",
@@ -11,7 +11,7 @@
   ],
   "url": "https://github.com/HittBoyy123/Foundry-Module",
   "manifest": "https://github.com/HittBoyy123/Foundry-Module/releases/latest/download/module.json",
-  "download": "https://github.com/HittBoyy123/Foundry-Module/releases/download/v0.31.0/wrathmaker-v0.31.0.zip",
+  "download": "https://github.com/HittBoyy123/Foundry-Module/releases/download/v0.32.0/wrathmaker-v0.32.0.zip",
   "readme": "https://github.com/HittBoyy123/Foundry-Module/blob/main/README.md",
   "changelog": "https://github.com/HittBoyy123/Foundry-Module/releases",
   "bugs": "https://github.com/HittBoyy123/Foundry-Module/issues",
@@ -23,12 +23,16 @@
   },
   "socket": true,
   "relationships": {
-    "requires": [{
-      "id": "pf2e-kingmaker",
-      "type": "module",
-      "manifest": "https://r2.foundryvtt.com/packages-public/pf2e-kingmaker/module-2.3.2.json",
-      "compatibility": { "minimum": "2.2.1" }
-    }],
+    "requires": [
+      {
+        "id": "pf2e-kingmaker",
+        "type": "module",
+        "manifest": "https://r2.foundryvtt.com/packages-public/pf2e-kingmaker/module-2.3.2.json",
+        "compatibility": {
+          "minimum": "2.2.1"
+        }
+      }
+    ],
     "systems": [
       {
         "id": "pf2e",
@@ -48,21 +52,33 @@
       "label": "Wrathmaker Player Guide",
       "path": "packs/player-guide.db",
       "type": "JournalEntry",
-      "ownership": { "PLAYER": "OBSERVER", "TRUSTED": "OBSERVER", "ASSISTANT": "OBSERVER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OBSERVER"
+      }
     },
     {
       "name": "gm-guide",
       "label": "Wrathmaker GM Companion",
       "path": "packs/gm-guide.db",
       "type": "JournalEntry",
-      "ownership": { "PLAYER": "NONE", "TRUSTED": "NONE", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "NONE",
+        "TRUSTED": "NONE",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "artisan-marks",
       "label": "Wrathmaker Artisan Marks",
       "path": "packs/artisan-marks.db",
       "type": "JournalEntry",
-      "ownership": { "PLAYER": "OBSERVER", "TRUSTED": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "apex-items",

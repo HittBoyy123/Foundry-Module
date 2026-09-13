@@ -1,3 +1,4 @@
+import { professionSkillChoices, resolveProfessionStatistic } from "./profession-checks.js";
 import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 import {
   GATHERING_ENVIRONMENT_SOURCES,
@@ -20,6 +21,7 @@ import {
   resolveGatheringOutcome,
 } from "./gathering-model.js";
 import { resolveKingmakerGathering, kingmakerTaskAllowed, kingmakerEnvironment } from "./kingmaker-gathering.js";
+import { gatheringRollOptions } from "./gathering-tags.js";
 import { getActorProfession, professionCheckRollOptions } from "./professions.js";
 
 let GatheringApplication = null;
@@ -110,13 +112,13 @@ export async function grantGatheringResource(recipient, resourceDocument, quanti
   return created?.[0] ?? null;
 }
 
-async function postGatheringResult({ actor, recipient, task, evaluation, resource, resolution, roll }) {
+async function postGatheringResult({ actor, recipient, task, evaluation, resource, resolution, roll, skillLabel }) {
   const content = await renderTemplate(`modules/${MODULE_ID}/templates/gathering-chat.hbs`, {
     actorName: actor.name,
     recipientName: recipient?.name ?? actor.name,
     taskName: task.name,
     taskImg: task.img,
-    skill: task.check.skill.replace(/(^|-)([a-z])/gu, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`),
+    skill: skillLabel || task.check.skill.replace(/(^|-)([a-z])/gu, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`),
     dc: evaluation.check.dc,
     rollTotal: Number(roll.total),
     outcome: outcomeLabel(resolution.outcome),
@@ -170,7 +172,7 @@ async function attemptGathering(application, formData, event) {
     }, `This gathering task is unavailable: ${evaluation.warnings.join(", ")}.`));
   }
 
-  const statistic = actor.getStatistic?.(evaluation.task.check.skill);
+  const { statistic, label: skillLabel } = resolveProfessionStatistic(actor, evaluation.task.check.skill, [evaluation.task.materialId], formData.skillId || evaluation.task.check.skill);
   if (!statistic?.roll) throw new Error(localize("CMT.Gathering.SkillUnavailable"));
   const roll = await statistic.roll({
     event,
@@ -178,9 +180,7 @@ async function attemptGathering(application, formData, event) {
     title: format("CMT.Gathering.RollTitle", { actor: actor.name, task: evaluation.task.name }),
     label: evaluation.task.name,
     extraRollOptions: [
-      "action:gather",
-      `action:gather:${evaluation.task.materialId}`,
-      `wrathmaker:gathering:tier:${evaluation.task.tier}`,
+      ...gatheringRollOptions(evaluation.task),
       ...professionCheckRollOptions(actor, { materialId: evaluation.task.materialId }),
     ],
   });
@@ -192,7 +192,7 @@ async function attemptGathering(application, formData, event) {
   const resolution = resolveGatheringOutcome(evaluation.task, degree, evaluation.resource);
   const resource = evaluation.resource;
   if (resolution.quantity > 0) await grantGatheringResource(recipient, resource, resolution.quantity);
-  await postGatheringResult({ actor, recipient, task: evaluation.task, evaluation, resource, resolution, roll });
+  await postGatheringResult({ actor, recipient, task: evaluation.task, evaluation, resource, resolution, roll, skillLabel });
   application.gatheringState.lastResult = {
     actorName: actor.name,
     recipientName: recipient.name,
@@ -249,6 +249,8 @@ function applicationContext(application) {
     materialEnabled: config.materials?.[task.materialId]?.enabled !== false,
     sceneUuid: currentSceneUuid(),
   }) : null;
+  const skillChoices = task ? professionSkillChoices(actor, task.check.skill, [task.materialId]) : [];
+  if (!skillChoices.some(choice => choice.id === application.gatheringState.skillId)) application.gatheringState.skillId = skillChoices[0]?.id ?? "";
   const resourceData = resource ? getCraftingResourceData(resource) : null;
   const profession = getActorProfession(actor);
   const professionApplies = Boolean(task && professionCheckRollOptions(actor, {
@@ -256,6 +258,7 @@ function applicationContext(application) {
   }).length);
 
   return {
+    skillChoices: skillChoices.map(choice => ({ ...choice, selected: choice.id === application.gatheringState.skillId })),
     gatheringEnabled: config.gathering?.enabled !== false,
     actors: actors.map((actor) => ({
       id: actor.id,
@@ -280,7 +283,7 @@ function applicationContext(application) {
     })),
     task: task ? {
       ...task,
-      skillLabel: task.check.skill.replace(/(^|-)([a-z])/gu, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`),
+      skillLabel: skillChoices.find(choice => choice.id === application.gatheringState.skillId)?.label || task.check.skill.replace(/(^|-)([a-z])/gu, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`),
       dc: evaluation.check.dc,
       level: evaluation.check.level,
       successQuantity: task.yields.success,
@@ -351,7 +354,7 @@ export function createGatheringApplication(getConfig) {
     _onRender(context, options) {
       super._onRender(context, options);
       const root = rootElement(this.element);
-      for (const field of ["actorId", "environmentId", "taskId"]) {
+      for (const field of ["actorId", "environmentId", "taskId", "skillId"]) {
         root?.querySelector(`[name="${field}"]`)?.addEventListener("change", async (event) => {
           this.gatheringState[field] = event.currentTarget.value;
           if (field === "environmentId") this.gatheringState.taskId = "";
@@ -398,7 +401,7 @@ export async function renderWorkbenchGathering(application) {
 }
 
 export function bindWorkbenchGathering(application, root) {
-  for (const field of ["actorId", "environmentId", "taskId"]) {
+  for (const field of ["actorId", "environmentId", "taskId", "skillId"]) {
     root.querySelector(`[name="${field}"]`)?.addEventListener("change", async (event) => {
       application.gatheringState[field] = event.currentTarget.value;
       application.gatheringState.lastResult = null;
