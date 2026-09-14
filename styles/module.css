@@ -2767,3 +2767,10 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
     box-shadow: 0 0 4px 2px #ffb351;
   }
 }
+
+/* Combined salvage remains visible while reviewing the queue. */
+.cmt-disassembly-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 1rem; position: sticky; top: 0; z-index: 2; background: #f5efe7; padding: 0.75rem 0; }
+.cmt-disassembly-summary .cmt-workbench-drop { margin: 0; min-height: 140px; }
+.cmt-disassembly-totals { border: 1px solid #aa8a73; padding: 0.75rem; max-height: 240px; overflow: auto; }
+.cmt-disassembly-totals h4 { color: #750000; margin: 0 0 0.5rem; }
+@media (max-width: 650px) { .cmt-disassembly-summary { grid-template-columns: 1fr; position: static; } }

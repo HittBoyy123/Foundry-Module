@@ -107,7 +107,41 @@ export function disassemblyResourceSources(plan) {
   });
 }
 
-/** GM-authoritative, locked and confirmed. New stacks avoid disturbing reserved stock. */
+/** Consolidate duplicate resource stacks without invalidating active reservations. */
+export async function consolidateDisassemblyResources(party, workbench) {
+  const reserved = new Set(workbench.projects.flatMap(project =>
+    project.reservations.filter(row => row.state === "reserved").map(row => row.itemId)));
+  const groups = new Map();
+  for (const item of party.items ?? []) {
+    const data = getCraftingResourceData(item);
+    if (!data) continue;
+    const key = JSON.stringify([data.materialId, data.tier, data.variantId, data.unitsPerItem, item.system?.containerId ?? null]);
+    const group = groups.get(key) ?? [];
+    group.push(item);
+    groups.set(key, group);
+  }
+  for (const group of groups.values()) {
+    const target = group.find(item => reserved.has(item.id)) ?? group[0];
+    for (const donor of group) {
+      if (donor === target || reserved.has(donor.id)) continue;
+      const quantity = Number(donor.system.quantity);
+      const total = Number(target.system.quantity) + quantity;
+      if (!Number.isSafeInteger(quantity) || quantity < 0 || !Number.isSafeInteger(total)) continue;
+      await party.updateEmbeddedDocuments("Item", [{ _id: target.id, "system.quantity": total }]);
+      try {
+        await party.deleteEmbeddedDocuments("Item", [donor.id]);
+        if (Array.from(party.items).some(item => item.id === donor.id)) throw new Error("Material stack could not be merged.");
+      } catch (error) {
+        if (Array.from(party.items).some(item => item.id === donor.id)) {
+          await party.updateEmbeddedDocuments("Item", [{ _id: target.id, "system.quantity": Number(target.system.quantity) - quantity }]);
+        }
+        throw error;
+      }
+    }
+  }
+}
+
+/** GM-authoritative, locked and confirmed. Matching stacks retain their IDs so reservations stay valid. */
 export async function disassembleProjectItem(party, projectId, {
   user, locks, loadWorkbench, saveWorkbench, requireEnabled, expectedSignature,
   itemUuid = null, resolveItem = null, config = null, requestingUser = user,
@@ -118,6 +152,7 @@ export async function disassembleProjectItem(party, projectId, {
   if (keys.some(key => locks.has(key))) throw new Error("This Party Stash or item is already processing a project.");
   for (const key of keys) locks.add(key);
   let created = [];
+  const credited = [];
   let recorded = false;
   let originalProject;
   let existing = true;
@@ -145,8 +180,22 @@ export async function disassembleProjectItem(party, projectId, {
     if (!expectedSignature || plan.signature !== expectedSignature) throw new Error("The item or material return changed. Review and confirm a fresh preview.");
     const sources = disassemblyResourceSources(plan);
     requireEnabled();
-    if (sources.length) created = await party.createEmbeddedDocuments("Item", sources);
-    if (created.length !== sources.length) throw new Error("Foundry did not create all returned resources.");
+    const newSources = [];
+    for (const source of sources) {
+      const resource = getCraftingResourceData(source);
+      const match = Array.from(party.items ?? []).find(candidate => {
+        const data = getCraftingResourceData(candidate);
+        return data && data.materialId === resource.materialId && data.tier === resource.tier
+          && data.variantId === resource.variantId && data.unitsPerItem === resource.unitsPerItem;
+      });
+      if (!match) { newSources.push(source); continue; }
+      const quantity = Number(match.system.quantity) + source.system.quantity;
+      if (!Number.isSafeInteger(quantity)) throw new Error("Invalid material stack quantity.");
+      await party.updateEmbeddedDocuments("Item", [{ _id: match.id, "system.quantity": quantity }]);
+      credited.push({ id: match.id, quantity: source.system.quantity });
+    }
+    if (newSources.length) created = await party.createEmbeddedDocuments("Item", newSources);
+    if (created.length !== newSources.length) throw new Error("Foundry did not create all returned resources.");
     const latest = loadWorkbench(party);
     const current = latest.projects.find(project => project.id === projectId) ?? (!existing ? originalProject : null);
     // Inventory may have changed while the resource documents were being created.
@@ -166,9 +215,21 @@ export async function disassembleProjectItem(party, projectId, {
     if (stillExists) {
       throw new Error("Foundry did not remove the item. Disassembly was cancelled.");
     }
+    // Disassembly is complete; a housekeeping failure must not undo its rewards.
+    try { await consolidateDisassemblyResources(party, loadWorkbench(party)); }
+    catch (error) {
+      console.error("Wrathmaker | Material stack consolidation failed", error);
+      globalThis.ui?.notifications?.warn("Disassembly completed, but some material stacks could not be merged.");
+    }
     return plan;
   } catch (error) {
     try {
+      for (const credit of credited) {
+        const stack = Array.from(party.items ?? []).find(item => item.id === credit.id);
+        const quantity = Number(stack?.system?.quantity) - credit.quantity;
+        if (!Number.isSafeInteger(quantity) || quantity < 0) throw new Error("Returned stock changed during rollback.");
+        await party.updateEmbeddedDocuments("Item", [{ _id: credit.id, "system.quantity": quantity }]);
+      }
       if (created.length) await party.deleteEmbeddedDocuments("Item", created.map(item => item.id));
       if (recorded) {
         const rollback = loadWorkbench(party);

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MODULE_ID, cloneDefaultRulesConfig } from "../scripts/constants.js";
-import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem, droppedDisassemblyContext } from "../scripts/disassembly.js";
+import { buildDisassemblyPlan, disassembleProjectItem, consolidateDisassemblyResources, findDisassemblyItem, droppedDisassemblyContext } from "../scripts/disassembly.js";
 import { buildGMItemSource } from "../scripts/gm-item-model.js";
 import { createCraftingProject, normalizeCraftingWorkbench, recordProjectRecovery } from "../scripts/crafting-projects.js";
 import { buildCraftingRecipeFromBand } from "../scripts/recipe-catalog.js";
@@ -26,6 +26,9 @@ function fixture() {
     async createEmbeddedDocuments(_type, sources) {
       const docs = sources.map(source => ({ ...structuredClone(source), id: "returned-" + ++sequence }));
       this.items.push(...docs); calls.push("create"); return docs;
+    },
+    async updateEmbeddedDocuments(_type, updates) {
+      for (const update of updates) this.items.find(item => item.id === update._id).system.quantity = update["system.quantity"];
     },
     async deleteEmbeddedDocuments(_type, ids) {
       this.items = this.items.filter(item => !ids.includes(item.id)); calls.push("delete");
@@ -232,4 +235,42 @@ test("tracked gear still uses its original ledger after moving to a character", 
   f.state().projects[0].disassembledAt = Date.now();
   assert.throws(() => droppedDisassemblyContext(f.state(), f.item, cloneDefaultRulesConfig()), /already been disassembled/);
   assert.throws(() => droppedDisassemblyContext({ projects: [] }, f.item, cloneDefaultRulesConfig()), /original crafting project/);
+});
+
+function stock(id, quantity, tier = 2) {
+  return { id, system: { quantity }, flags: { [MODULE_ID]: { resource: { materialId: "metal", tier, unitsPerItem: 1, variantId: "" } } } };
+}
+
+test("disassembly merges existing matching stacks without merging other tiers", async () => {
+  const f = fixture();
+  f.party.items.push(stock("steel", 10), stock("duplicate", 4), stock("iron", 3, 1));
+  await disassembleProjectItem(f.party, f.id, f.options);
+  assert.equal(f.party.items.find(item => item.id === "steel").system.quantity, 19);
+  assert.equal(f.party.items.some(item => item.id === "duplicate"), false);
+  assert.equal(f.party.items.find(item => item.id === "iron").system.quantity, 3);
+});
+
+test("failed disassembly restores an existing stack's credited quantity", async () => {
+  const f = fixture();
+  f.party.items.push(stock("steel", 10));
+  await assert.rejects(disassembleProjectItem(f.party, f.id, { ...f.options, saveWorkbench: async () => { throw Error("save failed"); } }), /save failed/);
+  assert.equal(f.party.items.find(item => item.id === "steel").system.quantity, 10);
+  assert.equal(f.party.items.length, 2);
+});
+
+test("consolidation preserves stacks referenced by reservations", async () => {
+  const f = fixture();
+  f.party.items = [stock("free", 4), stock("reserved", 10), stock("also-reserved", 2)];
+  await consolidateDisassemblyResources(f.party, { projects: [{ reservations: [
+    { itemId: "reserved", state: "reserved" }, { itemId: "also-reserved", state: "reserved" },
+  ] }] });
+  assert.deepEqual(f.party.items.map(item => [item.id, item.system.quantity]), [["reserved", 14], ["also-reserved", 2]]);
+});
+
+test("failed duplicate deletion restores the destination quantity", async () => {
+  const f = fixture();
+  f.party.items = [stock("first", 10), stock("second", 4)];
+  f.party.deleteEmbeddedDocuments = async () => { throw Error("delete failed"); };
+  await assert.rejects(consolidateDisassemblyResources(f.party, { projects: [] }), /delete failed/);
+  assert.deepEqual(f.party.items.map(item => item.system.quantity), [10, 4]);
 });

@@ -56,19 +56,26 @@
   {{#if tabs.disassemble}}
     <section class="cmt-workbench-panel cmt-workbench-projects">
       <div class="cmt-workbench-section-title"><h3>Disassemble Items</h3><span>50% material return</span></div>
-      <div class="cmt-workbench-drop" data-cmt-disassembly-drop>Drop an item with a Core material and tier from a character sheet or the Party Stash here. GMs can also drop world items.</div>
-      <p>50% material return, rounded up. The original item and its Marks are destroyed only after confirmation.</p>
-      {{#if disassemblyQueueCount}}<p>{{disassemblyQueueCount}} items queued. Drop more items to add them.</p><button type="button" data-cmt-disassembly-batch>Review &amp; Disassemble Queue…</button><button type="button" data-cmt-disassembly-clear-queue>Clear Queue</button>{{/if}}
-      {{#if disassemblyError}}<p class="cmt-workbench-notice is-warning">{{disassemblyError}}</p><button type="button" data-cmt-disassembly-clear>Clear Item</button>{{/if}}
-      {{#if droppedDisassembly}}
+      <div class="cmt-disassembly-summary">
+        <div class="cmt-workbench-drop" data-cmt-disassembly-drop>Drop items here from a character sheet or the Party Stash. GMs can also drop world items.</div>
+        <section class="cmt-disassembly-totals" aria-live="polite">
+          <h4>Total Materials Returned</h4>
+          <ul>{{#each disassemblyTotals}}<li>{{name}} — Tier {{tier}}: <strong>{{quantity}}</strong></li>{{else}}<li>Add items to preview their combined returns.</li>{{/each}}</ul>
+        </section>
+      </div>
+      <p>50% material return, rounded up for each stack. Items and their Marks are destroyed only after confirmation.</p>
+      {{#if disassemblyQueueCount}}<p>{{disassemblyQueueCount}} stacks queued. Drop more items to add them.</p><button type="button" data-cmt-disassembly-batch>Review &amp; Disassemble Queue…</button><button type="button" data-cmt-disassembly-clear-queue>Clear Queue</button>{{/if}}
+      {{#each disassemblyQueue}}
         <article class="cmt-panel">
-          <h4 class="cmt-disassembly-item-title">{{droppedDisassembly.itemName}} × {{droppedDisassembly.stackQuantity}}</h4>
-          <p>From: {{droppedDisassembly.sourceName}}</p>
-          <p>{{#if droppedDisassembly.basis}}{{droppedDisassembly.basis}}{{else}}Recorded crafting materials{{/if}}</p>
-          <ul>{{#each droppedDisassembly.returns}}<li>{{name}} — Tier {{tier}}: {{consumed}} units → <strong>{{quantity}} returned</strong></li>{{/each}}</ul>
-          <div class="cmt-workbench-actions"><button type="button" data-cmt-disassembly-clear>Clear Item</button><button type="button" data-cmt-disassembly-confirm {{#unless droppedDisassembly.canDisassemble}}disabled{{/unless}}>Disassemble…</button></div>
+          <h4 class="cmt-disassembly-item-title">{{itemName}}{{#if stackQuantity}} × {{stackQuantity}}{{/if}}</h4>
+          {{#if error}}<p class="cmt-workbench-notice is-warning">{{error}} Remove this entry before processing the queue.</p>{{else}}
+          <p>From: {{sourceName}}</p>
+          <p>{{#if basis}}{{basis}}{{else}}Recorded crafting materials{{/if}}</p>
+          <ul>{{#each returns}}<li>{{name}} — Tier {{tier}}: {{consumed}} units → <strong>{{quantity}} returned</strong></li>{{/each}}</ul>
+          {{/if}}
+          <div class="cmt-workbench-actions"><button type="button" data-cmt-disassembly-clear="{{uuid}}">Remove from Queue</button><button type="button" data-cmt-disassembly-confirm="{{uuid}}" {{#unless canDisassemble}}disabled{{/unless}}>Disassemble…</button></div>
         </article>
-      {{/if}}
+      {{/each}}
       <h4 class="cmt-disassembly-list-title">Completed items already in the Party Stash</h4>
       {{#each disassemblyItems}}
         <article class="cmt-panel">

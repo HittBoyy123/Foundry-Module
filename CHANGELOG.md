@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.33.1 — Disassembly Layout & Material Stacks (2026-09-14)
+
+- Moved the disassembly drop zone to the left third, with combined material returns on the right and every queued stack listed below.
+- Disassembly adds returns to matching material stacks and consolidates duplicates. Stacks referenced by active reservations retain their identities.
+- Added a five-second stash change check to keep crafting requirements current, pausing while a field is being edited and avoiding unchanged renders.
+- Added coverage for stack merging, tier separation, reserved stock, and failed-operation rollback. All 304 tests pass; live Foundry verification remains outstanding.
+
+
 ## 0.33.0 — Live Crafting & Playtest Fixes (2026-09-14)
 
 - Shared Workbench drafts and live project/inventory refreshes. Draft editing retains party update permissions; character drops use the current Foundry drag API.

@@ -409,23 +409,27 @@ async function workbenchContext(application) {
   application.workbenchConfig = config;
   const gatheringHtml = application.workbenchState.tab === "gather" ? await renderWorkbenchGathering(application) : "";
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
-  let droppedDisassembly = null;
-  let disassemblyError = "";
-  if (application.workbenchState.disassemblyItemUuid) {
+  const disassemblyQueue = [];
+  for (const uuid of application.workbenchState.disassemblyQueue ?? []) {
     try {
-      const item = await resolveBaseItem(application.workbenchState.disassemblyItemUuid);
+      const item = await resolveBaseItem(uuid);
       const owner = item?.actor ?? item?.parent;
-      if (!item || (owner ? owner.canUserModify?.(game.user, "update") !== true : !game.user.isGM)) {
-        throw new Error("You cannot dismantle this source item.");
-      }
+      if (!item || (owner ? owner.canUserModify?.(game.user, "update") !== true : !game.user.isGM)) throw new Error("You cannot dismantle this source item.");
       const context = droppedDisassemblyContext(workbench, item, config);
-      droppedDisassembly = { ...context.plan, sourceName: owner?.name ?? "World Items", canDisassemble: canEdit };
-    } catch (error) { disassemblyError = error.message; }
+      disassemblyQueue.push({ ...context.plan, uuid, sourceName: owner?.name ?? "World Items", canDisassemble: canEdit });
+    } catch (error) { disassemblyQueue.push({ uuid, itemName: "Unavailable item", error: error.message }); }
+  }
+  const totals = new Map();
+  for (const entry of disassemblyQueue) for (const row of entry.returns ?? []) {
+    const key = JSON.stringify([row.materialId, row.tier, row.variantId]);
+    const total = totals.get(key) ?? { ...row, quantity: 0 };
+    total.quantity += row.quantity;
+    totals.set(key, total);
   }
   return {
     party,
-    droppedDisassembly, disassemblyError, upgradeError,
-    disassemblyQueueCount: application.workbenchState.disassemblyQueue?.length ?? 0,
+    disassemblyQueue, disassemblyTotals: [...totals.values()], upgradeError,
+    disassemblyQueueCount: disassemblyQueue.length,
     upgradeDragonAvailable: baseItem?.type === "armor",
     upgradeDragonColors: Object.entries(config.materials["dragon-scale"].colors).map(([id, color]) => ({
       id, label: color.label, selected: application.workbenchState.upgradeDragon?.color === id,
@@ -1199,12 +1203,30 @@ export function createWorkbenchApplication() {
 
     async close(options) {
       openWorkbenches.delete(this);
+      clearInterval(this.stashRefreshTimer);
+      this.stashRefreshTimer = null;
       return super.close(options);
     }
 
     _onRender(context, options) {
       super._onRender(context, options);
       openWorkbenches.add(this);
+      const stashSignature = () => {
+        const party = partyActors().find(entry => entry.id === this.workbenchState.partyId);
+        return JSON.stringify([party?.id, Array.from(party?.items ?? []).map(item =>
+          [item.id, item.name, item.system?.quantity, item.flags?.[MODULE_ID]])]);
+      };
+      this.stashRefreshSignature = stashSignature();
+      if (!this.stashRefreshTimer) this.stashRefreshTimer = setInterval(() => {
+        const root = rootElement(this.element);
+        if (!this.rendered || this.disassemblyBatchBusy || this.stashRefreshBusy || root?.contains(document.activeElement)
+          && document.activeElement.matches("input, select, textarea")) return;
+        if (["craft", "upgrade", "projects", "disassemble"].includes(this.workbenchState.tab)
+          && stashSignature() !== this.stashRefreshSignature) {
+          this.stashRefreshBusy = true;
+          Promise.resolve(this.render({ force: true })).catch(console.error).finally(() => { this.stashRefreshBusy = false; });
+        }
+      }, 5000);
       if (!workbenchEnabled()) return;
       const root = rootElement(this.element);
       if (!root) return;
@@ -1234,16 +1256,23 @@ export function createWorkbenchApplication() {
           await this.render({ force: true });
         } catch (error) { ui.notifications.error(error.message); }
       });
-      root.querySelector("[data-cmt-disassembly-clear]")?.addEventListener("click", async () => {
-        this.workbenchState.disassemblyItemUuid = "";
-        await this.render({ force: true });
-      });
-      root.querySelector("[data-cmt-disassembly-confirm]")?.addEventListener("click", async () => {
-        try {
-          await confirmDisassembly(this, null, this.workbenchState.disassemblyItemUuid);
+      for (const button of root.querySelectorAll("[data-cmt-disassembly-clear]")) {
+        button.addEventListener("click", async () => {
+          if (this.disassemblyBatchBusy) return;
+          const uuid = button.dataset.cmtDisassemblyClear;
+          this.workbenchState.disassemblyQueue = (this.workbenchState.disassemblyQueue ?? []).filter(id => id !== uuid);
+          if (this.workbenchState.disassemblyItemUuid === uuid) this.workbenchState.disassemblyItemUuid = "";
           await this.render({ force: true });
-        } catch (error) { ui.notifications.error(error.message, { permanent: true }); }
-      });
+        });
+      }
+      for (const button of root.querySelectorAll("[data-cmt-disassembly-confirm]")) {
+        button.addEventListener("click", async () => {
+          try {
+            await confirmDisassembly(this, null, button.dataset.cmtDisassemblyConfirm);
+            await this.render({ force: true });
+          } catch (error) { ui.notifications.error(error.message, { permanent: true }); }
+        });
+      }
       for (const button of root.querySelectorAll("[data-cmt-disassemble]")) {
         button.addEventListener("click", async () => {
           try {
