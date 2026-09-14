@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.1 — Long Campaign Dates (2026-09-14)
+
+- Completion and disassembly dates use ordinal day, full month, year, and the appropriate era, such as 7th Rova 4710 AR, without a time.
+- Uses PF2e campaign month translations and year offsets. Existing records with saved campaign timestamps receive the updated display automatically.
+- All 313 automated tests pass; live Foundry verification remains outstanding.
+
+
 ## 0.34.0 — Workbench Polish & Disassembly History (2026-09-14)
 
 - Rounded drag-and-drop boxes and simplified the disassembly target to its label and matching icon. Yellow queue buttons now sit beneath the material totals.

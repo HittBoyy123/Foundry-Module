@@ -1,4 +1,4 @@
-import { archivedProjectMatches } from "./project-history.js";
+import { archivedProjectMatches, projectHistoryDate } from "./project-history.js";
 import { postDisassemblyChat } from "./disassembly-chat.js";
 import { bindSharedCraftDraft, hydrateCraftDraft } from "./workbench-live.js";
 import { addDisassemblyItems, processDisassemblyBatch } from "./disassembly-batch.js";
@@ -384,7 +384,7 @@ async function workbenchContext(application) {
       recipeName: getCraftingRecipeBand(project.recipeBandId)?.label ?? project.recipe.name,
       coreLabel: `Tier ${project.coreTier} ${materialLabel(project.coreMaterialId, project.coreTier)}`,
       statusLabel: project.disassembledAt ? "Disassembled" : statusLabels[project.status] ?? project.status,
-      historyDate: project.disassembledAt ? project.disassembledWorldDate || "Date not recorded" : project.completedWorldDate || "Date not recorded",
+      historyDate: projectHistoryDate(project),
       historyDateLabel: project.disassembledAt ? "Disassembled" : "Completed",
       hasHistoryDate: Boolean(project.disassembledAt || project.completedAt),
       statusClass: `is-${project.status}`,
