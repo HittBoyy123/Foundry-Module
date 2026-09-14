@@ -31,7 +31,7 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-artisan-portrait img { width: 46px; height: 46px; object-fit: contain; border: 0; }
 .cmt-artisan-text { display: grid; gap: 0.2rem; min-width: 0; color: #332d29; text-align: left; overflow-wrap: anywhere; }
 .cmt-artisan-text small { color: #605856; line-height: 1.3; }
-.cmt-slot-empty { display: grid; place-items: center; gap: 0.6rem; padding: 1.4rem 0; border: 1px dashed #a88973; margin-top: 0.5rem; }
+.cmt-slot-empty { display: grid; place-items: center; gap: 0.6rem; padding: 1.4rem 0; border: 1px dashed #a88973; border-radius: 10px; margin-top: 0.5rem; }
 .cmt-slot-requirement { font-size: 0.85rem; }
 .cmt-mark-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
 .cmt-mark-badges button { width: auto; height: auto; white-space: normal; background: #e9d7a1; color: #5e0000; font-size: 0.85rem; }
@@ -214,6 +214,7 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   gap: 0.8rem;
   text-align: center;
   border: 2px dashed #9b8272;
+  border-radius: 10px;
   background: var(--cmt-workbench-paper);
   transition: border-color 120ms ease, background 120ms ease;
 }
@@ -275,6 +276,7 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   gap: 0.45rem;
   padding: 0.6rem;
   border: 2px dashed #9b8272;
+  border-radius: 10px;
   background: var(--cmt-workbench-paper);
 }
 
@@ -2774,3 +2776,34 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-disassembly-totals { border: 1px solid #aa8a73; padding: 0.75rem; max-height: 240px; overflow: auto; }
 .cmt-disassembly-totals h4 { color: #750000; margin: 0 0 0.5rem; }
 @media (max-width: 650px) { .cmt-disassembly-summary { grid-template-columns: 1fr; position: static; } }
+
+.cmt-disassembly-queue-actions {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.pf2e-crafting-material-tiers .cmt-disassembly-queue-actions button {
+  background: var(--cmt-workbench-gold, #e9d7a1);
+  color: #5e0000;
+  border: 1px solid #a88973;
+  height: auto;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.6rem;
+  white-space: normal;
+  line-height: 1.3;
+}
+.pf2e-crafting-material-tiers .cmt-disassembly-queue-actions button:hover {
+  background: #f3e3b7;
+}
+@media (max-width: 650px) {
+  .cmt-disassembly-queue-actions { grid-column: 1; }
+}
+
+.cmt-disassembly-chat { background: #f5efe7; color: #332d29; padding: 0.75rem; border-left: 4px solid #386641; }
+.cmt-disassembly-chat h3, .cmt-disassembly-chat h4 { color: #5e0000; text-shadow: none; }
+
+.pf2e-crafting-material-tiers .cmt-disassembly-drop { flex-direction: column; }
+
+.cmt-gathering-map-notice { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.pf2e-crafting-material-tiers .cmt-gathering-map-notice button { flex: 0 0 auto; width: auto; margin-left: auto; background: #e9d7a1; color: #5e0000; border: 1px solid #a88973; }

@@ -11,7 +11,12 @@
   {{/unless}}
 
   {{#if region.active}}
-    {{#if region.blocked}}<p class="cmt-gathering-notice is-warning">{{region.reason}}</p>{{/if}}
+    {{#if region.blocked}}
+      <div class="cmt-gathering-notice is-warning cmt-gathering-map-notice">
+        <span>{{region.reason}}</span>
+        <button type="button" data-cmt-gather-map><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Stolen Lands Map</button>
+      </div>
+    {{/if}}
     <section class="cmt-gathering-region">
       <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
       <div>

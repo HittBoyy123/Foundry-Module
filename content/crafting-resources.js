@@ -75,7 +75,7 @@ const RESOURCE_FAMILIES = Object.freeze({
   "mana-crystals": Object.freeze({
     unit: "mana-lot",
     unitsPerItem: 1,
-    name: (label) => `${pluralizeLastWord(label)} (10)`,
+    name: (label) => `${pluralizeLastWord(label)}`,
     icons: Object.freeze([
       "icons/commodities/gems/gem-faceted-rough-blue.webp",
       "icons/commodities/gems/gem-faceted-rough-green.webp",
@@ -218,7 +218,7 @@ function buildResourceSources() {
         index,
         materialId: "dragon-scale",
         tier,
-        name: `${tierLabel} ${color.label} Dragon Scales (5)`,
+        name: `${tierLabel} ${color.label} Dragon Scales`,
         img: DRAGON_SCALE_ICONS[colorId],
         unit: "dragon-scale",
         unitsPerItem: 1,

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.34.0 — Workbench Polish & Disassembly History (2026-09-14)
+
+- Rounded drag-and-drop boxes and simplified the disassembly target to its label and matching icon. Yellow queue buttons now sit beneath the material totals.
+- Added public disassembly chat cards listing item quantities and combined material returns, including successful items when a batch stops partway.
+- Disassembled projects move directly into the archive, with separate Crafted and Disassembled views. New completion and disassembly records capture the campaign calendar date; older records retain an unknown date.
+- Removed parenthesized bundle numbers from mana crystal and dragon scale names. Rebuilt resource and guide compendiums; existing imported items may retain old names.
+- Added a Stolen Lands Map shortcut to the gathering notice. It views the named scene for the clicking user and refreshes gathering without activating the scene for everyone.
+- All 312 automated tests pass. Live Foundry visual and campaign-calendar verification remains outstanding.
+
+
 ## 0.33.1 — Disassembly Layout & Material Stacks (2026-09-14)
 
 - Moved the disassembly drop zone to the left third, with combined material returns on the right and every queued stack listed below.

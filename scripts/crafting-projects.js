@@ -1,3 +1,4 @@
+import { captureProjectDate } from "./project-history.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
 import { evaluateCraftingRecipe, normalizeCraftingRecipe } from "./crafting-recipes.js";
 import { defaultProjectProgress } from "./recipe-catalog.js";
@@ -187,7 +188,7 @@ export function normalizeCraftingProject(source) {
     artisanMarks: (Array.isArray(source.artisanMarks) ? source.artisanMarks : [])
       .map((mark, index) => normalizeProjectMark(mark, index, integer(source.coreTier, recipe.tier, 1, 6))),
     status,
-    archived: source.archived === true && TERMINAL_STATUSES.has(status),
+    archived: (source.archived === true || Boolean(source.disassembledAt)) && TERMINAL_STATUSES.has(status),
     stage,
     reservations: (Array.isArray(source.reservations) ? source.reservations : []).map(normalizeReservation),
     requiredProgress,
@@ -201,6 +202,10 @@ export function normalizeCraftingProject(source) {
     updatedAt: timestamp(source.updatedAt),
     completedAt: source.completedAt ? timestamp(source.completedAt) : null,
     disassembledAt: source.disassembledAt ? timestamp(source.disassembledAt) : null,
+    completedWorldTime: Number.isFinite(source.completedWorldTime) ? source.completedWorldTime : null,
+    completedWorldDate: text(source.completedWorldDate),
+    disassembledWorldTime: Number.isFinite(source.disassembledWorldTime) ? source.disassembledWorldTime : null,
+    disassembledWorldDate: text(source.disassembledWorldDate),
     completedBy: text(source.completedBy),
     finalItemUuid: text(source.finalItemUuid),
     finalItemSource: source.finalItemSource && typeof source.finalItemSource === "object"
@@ -490,6 +495,9 @@ export function completeCraftingProject(source, { finalItemUuid = "", finalItemS
   project.reservations = project.reservations.map((entry) => ({ ...entry, state: "consumed" }));
   project.consumptionConfirmed = true;
   project.completedAt = Date.now();
+  const date = captureProjectDate();
+  project.completedWorldTime = date.worldTime;
+  project.completedWorldDate = date.label;
   project.completedBy = user.id ?? "";
   project.finalItemUuid = finalItemUuid;
   project.finalItemSource = finalItemSource ? clone(finalItemSource) : project.finalItemSource;
@@ -513,6 +521,10 @@ export function recordProjectDisassembly(source, returns, user) {
   const project = normalizeCraftingProject(source);
   if (project.status !== "completed" || project.disassembledAt) throw new Error("This project cannot be disassembled again.");
   project.disassembledAt = Date.now();
+  project.archived = true;
+  const date = captureProjectDate();
+  project.disassembledWorldTime = date.worldTime;
+  project.disassembledWorldDate = date.label;
   return audit(project, "item-disassembled", "Finished item disassembled; 50% of consumed materials returned, rounded up.", user, { returns });
 }
 

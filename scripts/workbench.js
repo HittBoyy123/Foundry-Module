@@ -1,3 +1,5 @@
+import { archivedProjectMatches } from "./project-history.js";
+import { postDisassemblyChat } from "./disassembly-chat.js";
 import { bindSharedCraftDraft, hydrateCraftDraft } from "./workbench-live.js";
 import { addDisassemblyItems, processDisassemblyBatch } from "./disassembly-batch.js";
 import { MODULE_ID } from "./constants.js";
@@ -382,6 +384,9 @@ async function workbenchContext(application) {
       recipeName: getCraftingRecipeBand(project.recipeBandId)?.label ?? project.recipe.name,
       coreLabel: `Tier ${project.coreTier} ${materialLabel(project.coreMaterialId, project.coreTier)}`,
       statusLabel: project.disassembledAt ? "Disassembled" : statusLabels[project.status] ?? project.status,
+      historyDate: project.disassembledAt ? project.disassembledWorldDate || "Date not recorded" : project.completedWorldDate || "Date not recorded",
+      historyDateLabel: project.disassembledAt ? "Disassembled" : "Completed",
+      hasHistoryDate: Boolean(project.disassembledAt || project.completedAt),
       statusClass: `is-${project.status}`,
       progressPercent: Math.round((project.currentProgress / project.requiredProgress) * 100),
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
@@ -393,7 +398,7 @@ async function workbenchContext(application) {
       canComplete: craftingEnabled && canEdit && project.status === "ready",
       canManage: canEdit,
       expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
-      canArchive: canEdit && ["completed", "cancelled"].includes(project.status),
+      canArchive: canEdit && !project.disassembledAt && ["completed", "cancelled"].includes(project.status),
       canRecover: game.user.isGM && canEdit && project.status === "completed" && !project.disassembledAt && !project.supersededBy,
       canCancel: canEdit && !["completed", "cancelled"].includes(project.status),
     }));
@@ -453,6 +458,10 @@ async function workbenchContext(application) {
     })),
     showArchived: application.workbenchState.showArchived === true,
     archivedCount: projects.filter((entry) => entry.archived).length,
+    archiveCrafted: application.workbenchState.archiveTab !== "disassembled",
+    archiveDisassembled: application.workbenchState.archiveTab === "disassembled",
+    craftedArchiveCount: projects.filter(entry => archivedProjectMatches(entry, "crafted")).length,
+    disassembledArchiveCount: projects.filter(entry => archivedProjectMatches(entry, "disassembled")).length,
     canEdit,
     craftingEnabled,
     worldDate: currentWorldDate(),
@@ -525,7 +534,7 @@ async function workbenchContext(application) {
       && preview?.craftable
       && !markPlan.capacity.overCapacity
     ),
-    projects: projects.filter((entry) => application.workbenchState.showArchived ? entry.archived : !entry.archived),
+    projects: projects.filter((entry) => application.workbenchState.showArchived ? archivedProjectMatches(entry, application.workbenchState.archiveTab) : !entry.archived),
     projectCount: projects.length,
     activeProjectCount,
   };
@@ -1077,16 +1086,21 @@ async function confirmDisassemblyBatch(application) {
     const confirmed = await foundry.applications.api.DialogV2.confirm({ window: { title: "Disassemble Queued Items" }, modal: true,
       content: `<p>Permanently destroy these ${entries.length} items and their Marks? Returned materials enter the Party Stash. Processing stops if an item changes or fails; already completed items stay disassembled.</p>${content}` });
     if (!confirmed) return;
+    const completed = [];
+    try {
     await processDisassemblyBatch(entries, async ({ uuid, plan }) => {
       requireWorkbench();
       if (application.workbenchState.partyId !== party.id) throw new Error("The selected party changed. Review the remaining items.");
       const gm = activePrimaryGM();
-      if (game.user.isGM && gm?.id === game.user.id) await runDisassembly(party, plan.projectId, plan.signature, uuid);
-      else await requestGMProjectCompletion(party, plan.projectId, plan.signature, uuid);
+      const result = game.user.isGM && gm?.id === game.user.id
+        ? await runDisassembly(party, plan.projectId, plan.signature, uuid)
+        : await requestGMProjectCompletion(party, plan.projectId, plan.signature, uuid);
+      completed.push(result);
     }, ({ uuid }) => {
       application.workbenchState.disassemblyQueue = application.workbenchState.disassemblyQueue.filter(id => id !== uuid);
       if (application.workbenchState.disassemblyItemUuid === uuid) application.workbenchState.disassemblyItemUuid = "";
     });
+    } finally { await postDisassemblyChat(party, completed); }
     ui.notifications.info("Queued items disassembled. Materials are in the Party Stash.");
   } finally {
     application.disassemblyBatchBusy = false;
@@ -1110,10 +1124,12 @@ async function confirmDisassembly(application, projectId, itemUuid = null) {
   if (!confirmed) return;
   requireWorkbench();
   const primaryGM = activePrimaryGM();
-  if (game.user.isGM && primaryGM?.id === game.user.id) await runDisassembly(party, projectId, plan.signature, itemUuid);
-  else await requestGMProjectCompletion(party, projectId, plan.signature, itemUuid);
+  const result = game.user.isGM && primaryGM?.id === game.user.id
+    ? await runDisassembly(party, projectId, plan.signature, itemUuid)
+    : await requestGMProjectCompletion(party, projectId, plan.signature, itemUuid);
   application.workbenchState.disassemblyQueue = (application.workbenchState.disassemblyQueue ?? []).filter(uuid => uuid !== itemUuid);
   application.workbenchState.disassemblyItemUuid = "";
+  await postDisassemblyChat(party, [result]);
   ui.notifications.info("Item disassembled. Returned materials are in the Party Stash.");
 }
 
@@ -1313,6 +1329,12 @@ export function createWorkbenchApplication() {
         button.addEventListener("click", () => openArtisanMarkPicker(this, button.dataset.cmtOpenMarks));
       }
       bindMarkDetails(root, context.selectedMarks ?? []);
+      for (const button of root.querySelectorAll("[data-cmt-archive-tab]")) {
+        button.addEventListener("click", async () => {
+          this.workbenchState.archiveTab = button.dataset.cmtArchiveTab;
+          await this.render({ force: true });
+        });
+      }
       root.querySelector("[data-cmt-show-archived]")?.addEventListener("click", async () => {
         this.workbenchState.showArchived = !this.workbenchState.showArchived;
         await this.render({ force: true });

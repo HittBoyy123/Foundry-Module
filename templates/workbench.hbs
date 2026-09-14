@@ -57,14 +57,23 @@
     <section class="cmt-workbench-panel cmt-workbench-projects">
       <div class="cmt-workbench-section-title"><h3>Disassemble Items</h3><span>50% material return</span></div>
       <div class="cmt-disassembly-summary">
-        <div class="cmt-workbench-drop" data-cmt-disassembly-drop>Drop items here from a character sheet or the Party Stash. GMs can also drop world items.</div>
+        <div class="cmt-workbench-drop cmt-disassembly-drop" data-cmt-disassembly-drop aria-label="Drop items to disassemble">
+          <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>
+          <strong>Disassemble Item</strong>
+        </div>
         <section class="cmt-disassembly-totals" aria-live="polite">
           <h4>Total Materials Returned</h4>
           <ul>{{#each disassemblyTotals}}<li>{{name}} — Tier {{tier}}: <strong>{{quantity}}</strong></li>{{else}}<li>Add items to preview their combined returns.</li>{{/each}}</ul>
         </section>
+        {{#if disassemblyQueueCount}}
+          <div class="cmt-disassembly-queue-actions">
+            <button type="button" data-cmt-disassembly-batch>Review &amp; Disassemble Queue…</button>
+            <button type="button" data-cmt-disassembly-clear-queue>Clear Queue</button>
+          </div>
+        {{/if}}
       </div>
       <p>50% material return, rounded up for each stack. Items and their Marks are destroyed only after confirmation.</p>
-      {{#if disassemblyQueueCount}}<p>{{disassemblyQueueCount}} stacks queued. Drop more items to add them.</p><button type="button" data-cmt-disassembly-batch>Review &amp; Disassemble Queue…</button><button type="button" data-cmt-disassembly-clear-queue>Clear Queue</button>{{/if}}
+      {{#if disassemblyQueueCount}}<p>{{disassemblyQueueCount}} stacks queued. Drop more items to add them.</p>{{/if}}
       {{#each disassemblyQueue}}
         <article class="cmt-panel">
           <h4 class="cmt-disassembly-item-title">{{itemName}}{{#if stackQuantity}} × {{stackQuantity}}{{/if}}</h4>
@@ -254,12 +263,19 @@
         <h3>{{localize "CMT.Workbench.ProjectLedger"}}</h3>
         <button type="button" data-cmt-show-archived>{{#if showArchived}}Back to projects{{else}}Archive ({{archivedCount}}){{/if}}</button>
       </div>
+      {{#if showArchived}}
+        <nav class="cmt-workbench-tabs" aria-label="Project archive">
+          <button type="button" data-cmt-archive-tab="crafted" class="{{#if archiveCrafted}}active{{/if}}" aria-pressed="{{archiveCrafted}}">Crafted ({{craftedArchiveCount}})</button>
+          <button type="button" data-cmt-archive-tab="disassembled" class="{{#if archiveDisassembled}}active{{/if}}" aria-pressed="{{archiveDisassembled}}">Disassembled ({{disassembledArchiveCount}})</button>
+        </nav>
+      {{/if}}
       {{#each projects}}
         <article class="cmt-workbench-project {{statusClass}}" data-cmt-project-id="{{id}}">
           <header>
             <img src="{{baseItemImg}}" alt="">
             <div>
               <h4>{{name}}</h4>
+              {{#if hasHistoryDate}}<span>{{historyDateLabel}}: {{historyDate}}</span>{{/if}}
               <span>{{recipeName}} · {{coreLabel}}</span>
             </div>
             <span class="cmt-workbench-status">{{statusLabel}}</span>

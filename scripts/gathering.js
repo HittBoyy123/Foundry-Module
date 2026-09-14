@@ -1,3 +1,4 @@
+import { bindGatheringMap } from "./gathering-map.js";
 import { professionSkillChoices, resolveProfessionStatistic } from "./profession-checks.js";
 import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 import {
@@ -361,6 +362,7 @@ export function createGatheringApplication(getConfig) {
     _onRender(context, options) {
       super._onRender(context, options);
       const root = rootElement(this.element);
+      bindGatheringMap(this, root);
       for (const field of ["actorId", "environmentId", "taskId", "skillId"]) {
         root?.querySelector(`[name="${field}"]`)?.addEventListener("change", async (event) => {
           this.gatheringState[field] = event.currentTarget.value;
@@ -408,6 +410,7 @@ export async function renderWorkbenchGathering(application) {
 }
 
 export function bindWorkbenchGathering(application, root) {
+  bindGatheringMap(application, root);
   for (const field of ["actorId", "environmentId", "taskId", "skillId"]) {
     root.querySelector(`[name="${field}"]`)?.addEventListener("change", async (event) => {
       application.gatheringState[field] = event.currentTarget.value;

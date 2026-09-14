@@ -65,8 +65,8 @@ test("the resource catalogue includes every base material tier and dragon color 
 test("resource names and bundle quantities remain useful in a PF2e inventory", () => {
   const iron = CRAFTING_RESOURCE_SOURCES.find((item) => item.name === "Iron Ingot");
   const godwood = CRAFTING_RESOURCE_SOURCES.find((item) => item.name === "Godwood Lumber");
-  const mana = CRAFTING_RESOURCE_SOURCES.find((item) => item.name === "Aetherheart Crystals (10)");
-  const scales = CRAFTING_RESOURCE_SOURCES.find((item) => item.name === "Arch Dragon Red Dragon Scales (5)");
+  const mana = CRAFTING_RESOURCE_SOURCES.find((item) => item.name === "Aetherheart Crystals");
+  const scales = CRAFTING_RESOURCE_SOURCES.find((item) => item.name === "Arch Dragon Red Dragon Scales");
 
   assert.equal(resourceData(iron).unit, "ingot");
   assert.equal(resourceData(godwood).tier, 6);
