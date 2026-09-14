@@ -362,17 +362,17 @@ function professionDescription(profession) {
 
   return [
     `<p><strong>${profession.name} Profession</strong></p>`,
-    "<p>This is a Wrathmaker profession chosen at 1st level. It supplies a +2 circumstance bonus to relevant checks and Additional Lore for the profession. It does not grant Specialty Crafting.</p>",
+    "<p>You can choose this profession at 1st level. You gain a +2 circumstance bonus to relevant checks and Additional Lore for your profession. This profession does not grant Specialty Crafting.</p>",
     "<ul>",
     `<li><strong>Profession Lore:</strong> ${profession.loreName}</li>`,
-    "<li><strong>Automatic Lore proficiency:</strong> trained at level 1, expert at level 3, master at level 7, and legendary at level 15.</li>",
-    "<li><strong>Profession development:</strong> at levels 4, 10, and 16, choose a specialty of the starting profession or learn a new profession.</li>",
-    `<li><strong>Relevant profession checks:</strong> +${profession.checkBonus} ${profession.checkBonusType} bonus.</li>`,
+    "<li><strong>Lore Proficiency:</strong> trained at level 1, expert at level 3, master at level 7, and legendary at level 15.</li>",
+    "<li><strong>Profession Development:</strong> at levels 4, 10, and 16, choose a specialty of the starting profession or learn a new profession.</li>",
+    `<li><strong>Relevant Checks:</strong> +${profession.checkBonus} ${profession.checkBonusType} bonus.</li>`,
     bonusFeat,
     "</ul>",
     "<p><strong>Specialisations</strong></p>",
     `<ol>${specialties}</ol>`,
-    "<p><em>Signature, Mastery, and Legacy benefits follow the Wrathmaker profession rules. Artisan Marks are selected and anchored to items in the Wrathmaker Workbench.</em></p>",
+    "<p><em>Your specialisation provides Signature, Mastery, and Legacy benefits. Select Artisan Marks and assign them to compatible item anchors in the Workbench.</em></p>",
   ].join("\n");
 }
 

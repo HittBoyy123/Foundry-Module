@@ -56,7 +56,9 @@ export function syncActorMarkActions(actor) {
       if (Object.keys(changes).length > 1) updates.push(changes);
     }
     if (removals.length) await actor.deleteEmbeddedDocuments("Item", removals);
-    if (updates.length) await actor.updateEmbeddedDocuments("Item", updates);
+    const liveIds = new Set(Array.from(actor.items?.contents ?? actor.items ?? []).map(item => item.id));
+    const liveUpdates = updates.filter(update => liveIds.has(update._id));
+    if (liveUpdates.length) await actor.updateEmbeddedDocuments("Item", liveUpdates);
     if (desired.size) await actor.createEmbeddedDocuments("Item", [...desired.values()]);
   });
   actorQueues.set(actor.uuid, pending);
@@ -65,19 +67,28 @@ export function syncActorMarkActions(actor) {
 }
 
 export function registerMarkActionHooks() {
+  const pending = new Map();
   const schedule = actor => {
     if (!actor || !["character", "npc"].includes(actor.type)) return;
     const users = Array.from(game.users).filter(user => user.active);
     const updater = users.filter(user => user.isGM).sort((a, b) => a.id.localeCompare(b.id))[0]
       ?? users.filter(user => actor.testUserPermission(user, "OWNER")).sort((a, b) => a.id.localeCompare(b.id))[0];
     if (updater?.id !== game.user.id) return;
-    void syncActorMarkActions(actor).catch(error => console.error(`${MODULE_ID} | Mark action synchronization failed`, error));
+    if (pending.has(actor.uuid)) return;
+    pending.set(actor.uuid, setTimeout(() => {
+      pending.delete(actor.uuid);
+      void syncActorMarkActions(actor).catch(error => console.error(`${MODULE_ID} | Mark action synchronization failed`, error));
+    }, 75));
   };
-  for (const hook of ["createItem", "updateItem", "deleteItem"]) Hooks.on(hook, item => {
-    if (item.type !== "action") schedule(item.actor);
+  for (const hook of ["createItem", "updateItem", "deleteItem"]) Hooks.on(hook, (item, changes) => {
+    if (item.type === "action") return;
+    if (item.flags?.[MODULE_ID]?.crafting?.artisanMarks?.length
+      || (hook === "updateItem" && JSON.stringify(changes ?? {}).includes("artisanMarks"))) schedule(item.actor);
   });
   Hooks.on("createActor", schedule);
-  Hooks.on("updateActor", schedule);
+  Hooks.on("updateActor", (actor, changes) => {
+    if (/level|abilities|size/.test(JSON.stringify(changes ?? {}))) schedule(actor);
+  });
   Hooks.once("ready", () => {
     for (const actor of game.actors) schedule(actor);
     for (const token of canvas?.tokens?.placeables ?? []) schedule(token.actor);

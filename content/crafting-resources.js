@@ -114,9 +114,9 @@ function resourceDescription({ familyLabel, tier, tierLabel, unit, unitsPerItem,
   const variantText = variantLabel ? ` Its ${variantLabel} variety is retained for recipes that care about the resource's origin or damage type.` : "";
   return [
     `<p>A <strong>Tier ${tier}</strong>, <strong>Level ${craftingDC.level}</strong> ${familyLabel.toLowerCase()} crafting resource: <strong>${tierLabel}</strong>.</p>`,
-    `<p>Its standard level-based crafting DC is <strong>${craftingDC.baseDC}</strong>. The GM can apply PF2e's Easy, Hard, Very Easy/Hard, or Incredibly Easy/Hard adjustment when the crafting check is made.</p>`,
-    `<p>Each point of this item's inventory quantity represents ${quantityText} (0.2 Bulk).${variantText} Wrathmaker records the family, Tier, tags, and unit under module flags so recipes can consume it reliably even if its displayed name is changed.</p>`,
-    `<p>The current playtest value is <strong>${priceGp.toLocaleString("en-GB")} gp per Resource Unit</strong>. Five units form one Bulk and are worth ${(priceGp * 5).toLocaleString("en-GB")} gp.</p>`,
+    `<p>The standard Crafting DC is <strong>${craftingDC.baseDC}</strong>. The GM can adjust this DC to reflect the circumstances.</p>`,
+    `<p>Each unit contains ${quantityText} (0.2 Bulk).${variantText}</p>`,
+    `<p>The value is <strong>${priceGp.toLocaleString("en-GB")} gp per Resource Unit</strong>. Five units form one Bulk and are worth ${(priceGp * 5).toLocaleString("en-GB")} gp.</p>`,
   ].join("\n");
 }
 

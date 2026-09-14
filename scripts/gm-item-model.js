@@ -8,7 +8,7 @@ import { markConfigurationChoices } from "./artisan-mark-effects.js";
 export function gmItemPlan(base, state, config, { legacyDisassembly = false } = {}) {
   const bands = compatibleRecipeBands(base);
   const band = bands.find(entry => entry.id === state.bandId) ?? bands[0];
-  if (!band) throw new Error("Drop a weapon, armor, shield, or Wrathmaker Spell Focus.");
+  if (!band) throw new Error("Drop a weapon, armor, shield, or Spell Focus.");
   const tier = Number(state.tier);
   if (!Number.isInteger(tier) || tier < 1 || tier > 6) throw new Error("Choose a Tier from 1 to 6.");
   const materialId = state.materialId || band.coreMaterialIds[0];

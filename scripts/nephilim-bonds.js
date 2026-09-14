@@ -130,10 +130,12 @@ export async function openNephilimBonds(actor) {
 
 export function injectNephilimBondBar(application, html) {
   const actor = application.actor ?? application.document;
-  const root = html?.querySelector ? html : html?.[0];
+  const element = html ?? application.element;
+  const root = element?.querySelector ? element : element?.[0];
   const details = root?.querySelector('.tab.character .subsection.details');
-  const identity = details?.querySelector(":scope > .abcd");
-  if (actor?.type !== "character" || !identity || details.querySelector(".cmt-nephilim-bonds")) return;
+  const identity = (root?.matches?.(".abcd") ? root : root?.querySelector(".abcd"))
+    ?? details ?? root?.querySelector('[data-tab="character"] .details, .sheet-body .details, .window-content form, form');
+  if (actor?.type !== "character" || !identity || identity.querySelector(".cmt-nephilim-bonds")) return;
   const section = document.createElement("div");
   section.className = "cmt-nephilim-bonds";
   const title = document.createElement("span");

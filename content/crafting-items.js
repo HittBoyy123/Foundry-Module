@@ -14,9 +14,9 @@ export const CRAFTING_ITEM_SOURCES = Object.freeze([
       containerId: null,
       description: {
         value: [
-          "<p>This adaptable magical implement might be a wand, rod, orb, engraved tablet, or another object shaped to direct a spellcaster's power. It can be crafted from metal or wood.</p>",
-          "<p>Choose its <strong>Core Material</strong> and <strong>Tier</strong> on the item sheet. While the focus is held in one hand, the Core supplies Wrathmaker spell attack and spell DC progression. If you hold more than one spell focus, only the strongest applies.</p>",
-          "<p>The <strong>Make &amp; Marks</strong> strip records its Core, Artisan Capacity, Marks, and maker provenance without replacing the PF2e item chassis.</p>",
+          "<p>This adaptable magical implement might be a wand, rod, orb, engraved tablet, or another object shaped to direct a spellcaster's power. A Mana Gem forms its magical Core; wood, metal, or other materials form the frame.</p>",
+          "<p>Choose its <strong>Core Material</strong> and <strong>Tier</strong> on the item sheet. While the focus is held in one hand, the Core grants the spell attack and spell DC bonuses for its tier. If you hold more than one spell focus, only the strongest applies.</p>",
+          "<p>You can enhance the focus with Artisan Marks, up to its Artisan Capacity.</p>",
         ].join("\n"),
       },
       hardness: 0,
@@ -37,7 +37,11 @@ export const CRAFTING_ITEM_SOURCES = Object.freeze([
     },
     type: "equipment",
     flags: {
-      [MODULE_ID]: JSON.parse(JSON.stringify(DEFAULT_ITEM_FLAGS)),
+      [MODULE_ID]: {
+        ...JSON.parse(JSON.stringify(DEFAULT_ITEM_FLAGS)),
+        material: "mana-crystals",
+        crafting: { ...JSON.parse(JSON.stringify(DEFAULT_ITEM_FLAGS.crafting)), core: { materialId: "mana-crystals", tier: 1 } },
+      },
     },
   }),
 ]);

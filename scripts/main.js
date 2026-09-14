@@ -35,7 +35,7 @@ Hooks.once("init", () => {
   registerRulesSetting();
   // Make the resource classification visible even on PF2e versions without this trait label.
   if (CONFIG.PF2E.equipmentTraits) CONFIG.PF2E.equipmentTraits.precious ??= "Precious";
-  if (CONFIG.PF2E.traitsDescriptions) CONFIG.PF2E.traitsDescriptions.precious ??= "A valuable Wrathmaker crafting resource. This tag does not change its listed price.";
+  if (CONFIG.PF2E.traitsDescriptions) CONFIG.PF2E.traitsDescriptions.precious ??= "A valuable crafting resource. This tag does not change its listed price.";
   const RulesConfigApplication = createRulesConfigApplication();
   game.settings.registerMenu(MODULE_ID, "rulesMenu", {
     name: "CMT.Settings.Menu.Name",

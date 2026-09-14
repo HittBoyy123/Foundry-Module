@@ -79,7 +79,7 @@ export function buildCraftingRecipeFromBand(bandId, {
   return normalizeCraftingRecipe({
     id: `${slug(band.id)}-${slug(materialId)}-tier-${coreTier}`,
     name: `Tier ${coreTier} ${band.label}`,
-    description: `Wrathmaker ${band.label} chassis using a Tier ${coreTier} ${materialId.replaceAll("-", " ")} Core.`,
+    description: `${band.label} chassis using a Tier ${coreTier} ${materialId.replaceAll("-", " ")} Core.`,
     enabled: true,
     categoryId: category.id,
     tier: coreTier,

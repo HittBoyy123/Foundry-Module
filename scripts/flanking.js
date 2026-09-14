@@ -34,6 +34,8 @@ const BASE_ATTACK_REACH_BY_SIZE = Object.freeze({
 const BASE_ATTACK_REACH_BY_SIZE_RANK = Object.freeze([0, 5, 5, 5, 10, 15]);
 
 let refreshTimer = null;
+const preparedFlankingStates = new WeakMap();
+let currentFlankingConfig = null;
 let warnedAboutModifier = false;
 let refreshHooksRegistered = false;
 const actorsPreparingSynthetics = new WeakSet();
@@ -365,6 +367,7 @@ export function calculateActorFlankingState(actor, config, environment = {}) {
 
 export function injectFlankingModifier(actor, config, environment = {}) {
   const state = calculateActorFlankingState(actor, config, environment);
+  preparedFlankingStates.set(actor, JSON.stringify([state?.active ?? false, state?.sides ?? 0, state?.wrathmakerPenalty ?? 0]));
   if (!state?.active || state.wrathmakerPenalty === 0) return false;
   const Modifier = globalThis.game?.pf2e?.Modifier;
   if (typeof Modifier !== "function") {
@@ -415,6 +418,11 @@ function refreshSceneActors() {
   refreshTimer = null;
   const actors = new Set((globalThis.canvas?.tokens?.placeables ?? []).map((token) => token.actor).filter(Boolean));
   for (const actor of actors) {
+    if (currentFlankingConfig) {
+      const state = calculateActorFlankingState(actor, currentFlankingConfig());
+      const signature = JSON.stringify([state?.active ?? false, state?.sides ?? 0, state?.wrathmakerPenalty ?? 0]);
+      if (preparedFlankingStates.get(actor) === signature) continue;
+    }
     actor.reset?.();
     if (actor.sheet?.rendered) actor.render?.(false);
   }
@@ -422,7 +430,7 @@ function refreshSceneActors() {
 
 export function scheduleFlankingRefresh() {
   if (refreshTimer !== null) clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshSceneActors, 50);
+  refreshTimer = setTimeout(refreshSceneActors, 150);
 }
 
 function registerRefreshHooks() {
@@ -435,9 +443,13 @@ function registerRefreshHooks() {
     const relevant = ["x", "y", "width", "height", "elevation", "disposition", "hidden"];
     if (relevant.some((key) => key in changes)) scheduleFlankingRefresh();
   });
-  Hooks.on("updateActor", scheduleFlankingRefresh);
+  Hooks.on("updateActor", (_actor, changes) => {
+    if (/flanking|reach|size|speed|traits/.test(JSON.stringify(changes ?? {}))) scheduleFlankingRefresh();
+  });
   Hooks.on("createItem", (item) => item.actor && scheduleFlankingRefresh());
-  Hooks.on("updateItem", (item) => item.actor && scheduleFlankingRefresh());
+  Hooks.on("updateItem", (item, changes) => {
+    if (item.actor && (item.type === "condition" || /equipped|rules|traits|reach/.test(JSON.stringify(changes ?? {})))) scheduleFlankingRefresh();
+  });
   Hooks.on("deleteItem", (item) => item.actor && scheduleFlankingRefresh());
   Hooks.on("updateCombatant", scheduleFlankingRefresh);
 }
@@ -529,5 +541,6 @@ export function installFlankingBridge(getConfig) {
   if (installed === 0) return false;
   const tokenOverrideInstalled = installTokenFlankingOverride(getConfig);
   registerRefreshHooks();
+  currentFlankingConfig = () => getConfig().flanking;
   return tokenOverrideInstalled;
 }

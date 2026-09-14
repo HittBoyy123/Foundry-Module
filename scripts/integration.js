@@ -29,12 +29,17 @@ function getActorItems(actor) {
   return [];
 }
 
+function isHeldSpellFocus(item) {
+  const equipped = item.system?.equipped;
+  return item.isEquipped !== false && (!equipped || (equipped.carryType === "held" && Number(equipped.handsHeld ?? 1) > 0));
+}
+
 function isPrimarySpellFocus(item, config) {
   const actorItems = getActorItems(item.actor);
   if (actorItems.length === 0) return true;
 
   const eligible = actorItems
-    .filter((candidate) => getCraftingItemType(candidate) === "spellFocus" && candidate.isEquipped !== false)
+    .filter((candidate) => getCraftingItemType(candidate) === "spellFocus" && isHeldSpellFocus(candidate))
     .map((candidate) => {
       const result = calculateItem(candidate, config);
       const focusEffect = result.previews.find((effect) => effect.id === "spell-focus-potency");
@@ -51,6 +56,7 @@ function isPrimarySpellFocus(item, config) {
 export function buildItemRuleElements(item, config) {
   if (!item?.actor || !item?.type) return [];
   const craftingItemType = getCraftingItemType(item);
+  if (craftingItemType === "spellFocus" && !isHeldSpellFocus(item)) return [];
   if (["armor", "spellFocus"].includes(craftingItemType) && item.isEquipped === false) return [];
   if (craftingItemType === "spellFocus" && !isPrimarySpellFocus(item, config)) return [];
   const result = calculateItem(item, config);

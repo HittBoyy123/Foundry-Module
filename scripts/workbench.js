@@ -1,3 +1,5 @@
+import { bindSharedCraftDraft, hydrateCraftDraft } from "./workbench-live.js";
+import { addDisassemblyItems, processDisassemblyBatch } from "./disassembly-batch.js";
 import { MODULE_ID } from "./constants.js";
 import { professionSkillChoices, resolveProfessionStatistic } from "./profession-checks.js";
 import { validateUpgradeItem, retainedUpgradeMarks, buildUpgradePlan, upgradeSnapshot, selectUpgradeComponentTiers, retainedMaterialHistory } from "./upgrades.js";
@@ -154,7 +156,7 @@ function currentWorldDate() {
 
 async function resolveBaseItem(uuid) {
   if (!uuid || typeof globalThis.fromUuid !== "function") return null;
-  const document = await fromUuid(uuid);
+  const document = await fromUuid(uuid, { strict: false });
   return document?.documentName === "Item" ? document : null;
 }
 
@@ -423,6 +425,7 @@ async function workbenchContext(application) {
   return {
     party,
     droppedDisassembly, disassemblyError, upgradeError,
+    disassemblyQueueCount: application.workbenchState.disassemblyQueue?.length ?? 0,
     upgradeDragonAvailable: baseItem?.type === "armor",
     upgradeDragonColors: Object.entries(config.materials["dragon-scale"].colors).map(([id, color]) => ({
       id, label: color.label, selected: application.workbenchState.upgradeDragon?.color === id,
@@ -1051,6 +1054,41 @@ async function runDisassembly(party, projectId, expectedSignature, itemUuid = nu
   });
 }
 
+async function confirmDisassemblyBatch(application) {
+  if (application.disassemblyBatchBusy) return;
+  application.disassemblyBatchBusy = true;
+  try {
+    requireWorkbench();
+    const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
+    const entries = [];
+    for (const uuid of application.workbenchState.disassemblyQueue ?? []) {
+      const item = await resolveBaseItem(uuid);
+      const owner = item?.actor ?? item?.parent;
+      if (!item || (owner ? owner.canUserModify?.(game.user, "update") !== true : !game.user.isGM)) throw new Error("A queued item is missing or cannot be edited.");
+      const { plan } = droppedDisassemblyContext(projectState(party), item, getRulesConfig());
+      entries.push({ uuid, plan });
+    }
+    if (!entries.length) return;
+    const content = entries.map(({ plan }) => `<h3>${escapeHtml(plan.itemName)} × ${plan.stackQuantity}</h3><ul>${plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.quantity}</li>`).join("")}</ul>`).join("");
+    const confirmed = await foundry.applications.api.DialogV2.confirm({ window: { title: "Disassemble Queued Items" }, modal: true,
+      content: `<p>Permanently destroy these ${entries.length} items and their Marks? Returned materials enter the Party Stash. Processing stops if an item changes or fails; already completed items stay disassembled.</p>${content}` });
+    if (!confirmed) return;
+    await processDisassemblyBatch(entries, async ({ uuid, plan }) => {
+      requireWorkbench();
+      if (application.workbenchState.partyId !== party.id) throw new Error("The selected party changed. Review the remaining items.");
+      const gm = activePrimaryGM();
+      if (game.user.isGM && gm?.id === game.user.id) await runDisassembly(party, plan.projectId, plan.signature, uuid);
+      else await requestGMProjectCompletion(party, plan.projectId, plan.signature, uuid);
+    }, ({ uuid }) => {
+      application.workbenchState.disassemblyQueue = application.workbenchState.disassemblyQueue.filter(id => id !== uuid);
+      if (application.workbenchState.disassemblyItemUuid === uuid) application.workbenchState.disassemblyItemUuid = "";
+    });
+    ui.notifications.info("Queued items disassembled. Materials are in the Party Stash.");
+  } finally {
+    application.disassemblyBatchBusy = false;
+    await application.render({ force: true });
+  }
+}
 async function confirmDisassembly(application, projectId, itemUuid = null) {
   requireWorkbench();
   const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
@@ -1063,13 +1101,14 @@ async function confirmDisassembly(application, projectId, itemUuid = null) {
   const list = plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.consumed} → ${row.quantity}</li>`).join("");
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: "Disassemble Item" }, modal: true,
-    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>50% return, rounded up per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
+    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)} × ${plan.stackQuantity}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>50% return, rounded up per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
   });
   if (!confirmed) return;
   requireWorkbench();
   const primaryGM = activePrimaryGM();
   if (game.user.isGM && primaryGM?.id === game.user.id) await runDisassembly(party, projectId, plan.signature, itemUuid);
   else await requestGMProjectCompletion(party, projectId, plan.signature, itemUuid);
+  application.workbenchState.disassemblyQueue = (application.workbenchState.disassemblyQueue ?? []).filter(uuid => uuid !== itemUuid);
   application.workbenchState.disassemblyItemUuid = "";
   ui.notifications.info("Item disassembled. Returned materials are in the Party Stash.");
 }
@@ -1153,6 +1192,8 @@ export function createWorkbenchApplication() {
     async _prepareContext(options) {
       const context = await super._prepareContext(options);
       if (!workbenchEnabled()) return { ...context, workbenchEnabled: false };
+      const party = partyActors().find(entry => entry.id === this.workbenchState.partyId);
+      if (party && this.sharedCraftPartyId !== party.id) hydrateCraftDraft(this, party);
       return { ...context, ...(await workbenchContext(this)), workbenchEnabled: true };
     }
 
@@ -1167,7 +1208,18 @@ export function createWorkbenchApplication() {
       if (!workbenchEnabled()) return;
       const root = rootElement(this.element);
       if (!root) return;
+      bindSharedCraftDraft(this, root, () => partyActors().find(entry => entry.id === this.workbenchState.partyId));
       if (this.workbenchState.tab === "gather") bindWorkbenchGathering(this, root);
+      root.querySelector("[data-cmt-disassembly-batch]")?.addEventListener("click", async () => {
+        try { await confirmDisassemblyBatch(this); }
+        catch (error) { ui.notifications.error(error.message, { permanent: true }); }
+      });
+      root.querySelector("[data-cmt-disassembly-clear-queue]")?.addEventListener("click", async () => {
+        if (this.disassemblyBatchBusy) return;
+        this.workbenchState.disassemblyQueue = [];
+        this.workbenchState.disassemblyItemUuid = "";
+        await this.render({ force: true });
+      });
       const disassemblyDrop = root.querySelector("[data-cmt-disassembly-drop]");
       disassemblyDrop?.addEventListener("dragover", event => event.preventDefault());
       disassemblyDrop?.addEventListener("drop", async event => {
@@ -1177,6 +1229,7 @@ export function createWorkbenchApplication() {
           const data = JSON.parse(event.dataTransfer.getData("text/plain"));
           const item = await resolveBaseItem(data.uuid);
           if (item?.documentName !== "Item" || item.pack) throw new Error("Drop a world or inventory item, not a compendium entry.");
+          this.workbenchState.disassemblyQueue = addDisassemblyItems(this.workbenchState.disassemblyQueue ?? [], [item.uuid]);
           this.workbenchState.disassemblyItemUuid = item.uuid;
           await this.render({ force: true });
         } catch (error) { ui.notifications.error(error.message); }
@@ -1323,9 +1376,10 @@ export function createWorkbenchApplication() {
           event.preventDefault();
           slot.classList.remove("is-dragover");
           try {
-            const data = TextEditor.getDragEventData(event);
+            const editor = foundry.applications.ux?.TextEditor ?? globalThis.TextEditor;
+            const data = editor?.getDragEventData?.(event) ?? JSON.parse(event.dataTransfer.getData("text/plain"));
             const profile = getArtisanProfile(await resolveActor(data.uuid ?? (data.type === "Actor" ? `Actor.${data.id}` : "")));
-            if (!profile?.professions.length) throw new Error("Choose an actor with a Wrathmaker profession.");
+            if (!profile?.professions.length) throw new Error("Choose a character with a profession.");
             const requirement = context.artisanSlots[index];
             if (requirement.required && requirement.materialIds.length && !profile.professions.some((profession) => (
               profession.materialIds.some((id) => requirement.materialIds.includes(id))
@@ -1441,6 +1495,23 @@ export function registerWorkbench() {
   WorkbenchApplication = createWorkbenchApplication();
   Hooks.once("ready", installWorkbenchSocket);
   const refreshGathering = createLiveGatheringRefresh(() => openWorkbenches);
+  const refreshWorkbench = createLiveGatheringRefresh(() => openWorkbenches, setTimeout,
+    application => application.rendered && application.workbenchState.tab !== "gather");
+  for (const event of ["createItem", "updateItem", "deleteItem"]) {
+    Hooks.on(event, item => {
+      if (!item?.actor) return;
+      refreshWorkbench();
+      refreshGathering();
+    });
+  }
+  Hooks.on("updateActor", (actor, changes) => {
+    if (actor?.type === "party" && JSON.stringify(changes ?? {}).includes("craftDraft")) {
+      for (const application of openWorkbenches) {
+        if (application.workbenchState.partyId === actor.id) hydrateCraftDraft(application, actor);
+      }
+    }
+    if (actor?.type === "party" || /level|profession/.test(JSON.stringify(changes ?? {}))) refreshWorkbench();
+  });
   for (const event of ["refreshToken", "updateToken", "createToken", "deleteToken", "canvasReady", "updateActor", "updateSetting"]) {
     Hooks.on(event, (_document, flags) => {
       if (event === "refreshToken" && !flags?.refreshPosition) return;

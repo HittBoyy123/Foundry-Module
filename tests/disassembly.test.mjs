@@ -46,6 +46,31 @@ test("50% returns aggregate each material before rounding up", () => {
   assert.deepEqual(plan.returns.map(row => [row.materialId, row.consumed, row.quantity]), [["metal", 10, 5], ["wood", 1, 1]]);
 });
 
+test("whole stacks scale returns and are removed once", async () => {
+  const f = fixture();
+  f.item.system.quantity = 5;
+  const plan = buildDisassemblyPlan(f.state().projects[0], f.item);
+  assert.equal(plan.stackQuantity, 5);
+  assert.deepEqual(plan.returns.map(row => row.quantity), [25, 3]);
+  await disassembleProjectItem(f.party, f.id, { ...f.options, expectedSignature: plan.signature });
+  assert.equal(f.party.items.some(item => item.id === "sword"), false);
+  assert.deepEqual(f.party.items.map(item => item.system.quantity), [25, 3]);
+});
+
+test("changing stack quantity after confirmation blocks the transaction", async () => {
+  const f = fixture();
+  f.item.system.quantity = 5;
+  await assert.rejects(disassembleProjectItem(f.party, f.id, f.options), /fresh preview/);
+  assert.equal(f.calls.length, 0);
+});
+
+test("recorded batch outputs use per-item costs rather than multiplying batch costs", () => {
+  const f = fixture();
+  f.state().projects[0].recipe.result.quantity = 2;
+  f.item.system.quantity = 4;
+  assert.deepEqual(buildDisassemblyPlan(f.state().projects[0], f.item).returns.map(row => row.quantity), [10, 1]);
+});
+
 test("disassembly replaces gear with resources once and preserves completion history", async () => {
   const f = fixture();
   await disassembleProjectItem(f.party, f.id, f.options);
@@ -72,11 +97,11 @@ test("player execution, disabled Workbench, and overlapping transactions are rej
   assert.equal(f.calls.length, 0);
 });
 
-test("stale confirmation, missing gear, stacked items, and unrecorded materials are blocked", async () => {
+test("stale confirmation, missing gear, invalid quantities, and unrecorded materials are blocked", async () => {
   const f = fixture();
   await assert.rejects(disassembleProjectItem(f.party, f.id, { ...f.options, expectedSignature: "old" }), /fresh preview/);
-  f.item.system.quantity = 2;
-  assert.throws(() => buildDisassemblyPlan(f.state().projects[0], f.item), /single-item/);
+  f.item.system.quantity = 0;
+  assert.throws(() => buildDisassemblyPlan(f.state().projects[0], f.item), /positive quantities/);
   f.item.system.quantity = 1;
   f.state().projects[0].reservations[0].materialId = "unknown";
   assert.throws(() => buildDisassemblyPlan(f.state().projects[0], f.item), /No matching resource/);
@@ -159,7 +184,7 @@ function droppedFixture() {
 test("GM-created inventory items derive recipe stock and are removed from the actual character", async () => {
   const f = droppedFixture();
   assert.equal(f.context.existing, false);
-  assert.match(f.context.plan.basis, /Standard Wrathmaker recipe/);
+  assert.match(f.context.plan.basis, /Standard recipe/);
   await disassembleProjectItem(f.party, null, f.options);
   assert.equal(f.live(), null);
   assert.ok(f.party.items.length > 0);
@@ -194,7 +219,7 @@ test("world items are GM-only; compendium templates and unformatted items are re
   await disassembleProjectItem(f.party, null, f.options);
   assert.equal(f.live(), null);
   assert.throws(() => droppedDisassemblyContext(f.state(), { pack: "example" }, f.options.config), /Import/);
-  assert.throws(() => droppedDisassemblyContext(f.state(), { flags: {} }, f.options.config), /Wrathmaker material/);
+  assert.throws(() => droppedDisassemblyContext(f.state(), { flags: {} }, f.options.config), /Core material/);
 });
 
 test("tracked gear still uses its original ledger after moving to a character", () => {

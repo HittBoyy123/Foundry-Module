@@ -496,7 +496,7 @@ export function normalizeRulesConfig(input) {
     throw new ConfigValidationError("materials must contain at least one material definition.");
   }
   const materials = {};
-  for (const [materialId, material] of Object.entries(parsed.materials)) {
+  for (let [materialId, material] of Object.entries(parsed.materials)) {
     if (!SLUG_PATTERN.test(materialId)) {
       throw new ConfigValidationError(`Material id "${materialId}" must be a lowercase slug.`);
     }
@@ -518,6 +518,10 @@ export function normalizeRulesConfig(input) {
     if (!augmentation && sourceSchemaVersion < 16 && defaultMaterial?.itemTypes.includes("shield")) {
       itemTypes = [...new Set([...itemTypes, "shield"])];
     }
+    if (!augmentation && sourceSchemaVersion < 18 && materialId === "mana-crystals") {
+      itemTypes = [...new Set([...itemTypes, "spellFocus"])];
+      if (material.label === "Mana Crystals") material = { ...material, label: "Mana Gems" };
+    }
     if (!Array.isArray(material.effects)) {
       throw new ConfigValidationError(`materials.${materialId}.effects must be an array.`);
     }
@@ -526,6 +530,10 @@ export function normalizeRulesConfig(input) {
         ? { ...effect, itemTypes: originalItemTypes }
         : effect
     ));
+    if (sourceSchemaVersion < 18 && materialId === "mana-crystals"
+      && !effectSources.some(effect => effect.id === "spell-focus-potency")) {
+      effectSources.push(copyJson(defaultMaterial.effects.find(effect => effect.id === "spell-focus-potency")));
+    }
     if (!augmentation && sourceSchemaVersion < 16) {
       const currentDamage = effectSources.findIndex((effect) => isPlainObject(effect) && effect.id === "weapon-damage");
       const defaultDamage = defaultMaterial?.effects.find((effect) => effect.id === "weapon-damage");

@@ -2,7 +2,7 @@ import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 17;
+export const RULES_SCHEMA_VERSION = 18;
 export const ITEM_SCHEMA_VERSION = 4;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -329,9 +329,9 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     "mana-crystals": Object.freeze({
-      label: "Mana Crystals",
+      label: "Mana Gems",
       enabled: true,
-      itemTypes: Object.freeze(["weapon", "armor", "shield"]),
+      itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: MANA_CRYSTAL_TIER_LABELS,
       tierPricesGp: DEFAULT_TIER_PRICES_GP,

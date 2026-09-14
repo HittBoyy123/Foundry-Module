@@ -22,6 +22,12 @@ function weapon(id, label, coreUnits, coreMaterialIds, secondaries = []) {
 }
 
 function recipe(id, label, group, categoryIds, coreUnits, coreMaterialIds, secondaries = []) {
+  if (group === "spellFocus") {
+    const frameMaterials = coreMaterialIds.filter(id => id !== "mana-crystals");
+    coreMaterialIds = ["mana-crystals"];
+    secondaries = secondaries.filter(entry => entry.id !== "catalyst");
+    if (frameMaterials.length && !secondaries.some(entry => entry.id === "frame")) secondaries = [secondary("frame", "Focus frame", 1, frameMaterials), ...secondaries];
+  }
   return Object.freeze({
     id,
     label,

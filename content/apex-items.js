@@ -133,8 +133,8 @@ export const APEX_ITEM_FAMILIES = Object.freeze([
 function createDescription(family, bonus, flavor) {
   return [
     `<p>${flavor}</p>`,
-    `<p><strong>Wrathmaker Item Boost +${bonus}:</strong> While this Apex item is invested, active, and worn, increase your ${family.ability} modifier by ${bonus}. Wrathmaker applies this as an exact additive increase.</p>`,
-    "<p>Use the A beside this attribute on the character sheet to activate it. Wrathmaker Apex items for different attributes can be active together; only the strongest active item for the same attribute applies.</p>",
+    `<p><strong>Item Boost +${bonus}:</strong> While this Apex item is invested, active, and worn, increase your ${family.ability} modifier by ${bonus}.</p>`,
+    "<p>Use the A beside this attribute on the character sheet to activate it. Apex items for different attributes can be active together; only the strongest active item for the same attribute applies.</p>",
   ].join("\n");
 }
 

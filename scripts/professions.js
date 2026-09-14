@@ -68,7 +68,7 @@ function specialtyDescriptionHtml(profession, specialty, milestoneLevel) {
     `<h3>Associated Lore: ${escapeHtml(specialty.proficiency.label)}</h3>`,
     `<p>${escapeHtml(specialty.proficiency.description)}</p>`,
     stages,
-    "<p><em>Signature, Mastery, and Legacy are player-facing development directions. They do not add automatic numerical modifiers until their final rules are approved.</em></p>",
+    "<p><em>Resolve these development features with the GM. They grant no additional numerical modifiers unless their rules specify them.</em></p>",
   ].join("");
 }
 
@@ -76,7 +76,7 @@ function specialtyLoreDescriptionHtml(profession, specialty) {
   return [
     `<p>${escapeHtml(specialty.proficiency.description)}</p>`,
     `<p>This Lore is associated with <strong>${escapeHtml(profession.name)}: ${escapeHtml(specialty.label)}</strong>.</p>`,
-    "<p>Wrathmaker advances it to expert at level 3, master at level 7, and legendary at level 15.</p>",
+    "<p>Your proficiency rank increases to expert at 3rd level, master at 7th level, and legendary at 15th level.</p>",
   ].join("");
 }
 
@@ -378,7 +378,7 @@ export function createProfessionLoreSource(professionValue, level = 1) {
     name: profession.loreName,
     system: {
       description: {
-        value: `<p>Knowledge and practical experience gained through the <strong>${profession.name}</strong> profession.</p><p>Wrathmaker automatically advances this Lore to expert at level 3, master at level 7, and legendary at level 15.</p>`,
+        value: `<p>Knowledge and practical experience gained through the <strong>${profession.name}</strong> profession.</p><p>Your proficiency rank in this Lore increases to expert at 3rd level, master at 7th level, and legendary at 15th level.</p>`,
       },
       mod: { value: 0 },
       proficient: { value: rank },
@@ -683,6 +683,12 @@ export async function synchronizeActorProfession(actor, _options = {}) {
   const key = actorId(actor);
   if (!key || actor?.type !== "character" || syncingActors.has(key)) return false;
   if (!game.user.isGM && !actor.isOwner) return false;
+  if (game.users) {
+    const users = Array.from(game.users).filter(user => user.active);
+    const executor = users.filter(user => user.isGM).sort((a, b) => a.id.localeCompare(b.id))[0]
+      ?? users.filter(user => actor.testUserPermission?.(user, "OWNER")).sort((a, b) => a.id.localeCompare(b.id))[0];
+    if (executor && executor.id !== game.user.id) return false;
+  }
   syncingActors.add(key);
   try {
     let changed = false;
@@ -1302,7 +1308,7 @@ export function registerProfessionHooks() {
   Hooks.on("createItem", (item) => {
     if (item?.actor?.type !== "character") return;
     const profession = getProfessionData(item);
-    scheduleProfessionSync(item.actor, profession ? itemId(item) : null);
+    if (profession || getProfessionGrant(item) || getProfessionSpecialty(item)) scheduleProfessionSync(item.actor, profession ? itemId(item) : null);
   });
   Hooks.on("deleteItem", (item) => {
     if (item?.actor?.type === "character" && (

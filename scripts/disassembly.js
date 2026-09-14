@@ -11,7 +11,7 @@ export const DISASSEMBLY_RETURN_PERCENT = 50;
 export function droppedDisassemblyContext(workbench, item, config) {
   if (!item || item.pack) throw new Error("Import the item into the world before dismantling it.");
   const flags = item.flags?.[MODULE_ID];
-  if (!flags?.material || !flags?.tier) throw new Error("This item does not have Wrathmaker material and Tier data.");
+  if (!flags?.material || !flags?.tier) throw new Error("This item does not have a Core material and tier.");
   const ids = (flags.crafting?.provenance ?? []).map(entry => entry.projectId).filter(Boolean);
   const existing = workbench.projects.find(project => !project.supersededBy && (project.finalItemUuid === item.uuid || ids.includes(project.id)));
   if (existing) return { project: existing, existing: true, plan: buildDisassemblyPlan(existing, item) };
@@ -38,7 +38,7 @@ export function droppedDisassemblyContext(workbench, item, config) {
     status: "completed", finalItemUuid: item.uuid, consumptionConfirmed: true,
     reservations, coreMaterialId: flags.material, coreTier: flags.tier, recipeBandId: itemPlan.band.id,
   };
-  const plan = { ...buildDisassemblyPlan(project, item), basis: "Standard Wrathmaker recipe (no recorded project)" };
+  const plan = { ...buildDisassemblyPlan(project, item), basis: "Standard recipe (no recorded project)" };
   return { project, existing: false, plan };
 }
 
@@ -60,8 +60,11 @@ export function buildDisassemblyPlan(project, item) {
     !item.flags?.[MODULE_ID]?.crafting?.provenance?.some(entry => entry.projectId === project.id))) {
     throw new Error("Move the project's finished item into the Party Stash first (one matching item only).");
   }
-  if (Number(item.system?.quantity) !== 1 || Number(project.recipe?.result?.quantity) !== 1) {
-    throw new Error("Disassembly currently supports single-item projects and unstacked items only.");
+  const stackQuantity = Number(item.system?.quantity);
+  const craftedQuantity = Number(project.recipe?.result?.quantity);
+  if (!Number.isSafeInteger(stackQuantity) || stackQuantity < 1
+    || !Number.isSafeInteger(craftedQuantity) || craftedQuantity < 1) {
+    throw new Error("The stack and recorded output must have valid positive quantities.");
   }
   if (item.system?.equipped?.invested || item.system?.equipped?.carryType === "held") {
     throw new Error("Unequip and uninvest this item before disassembly.");
@@ -77,6 +80,9 @@ export function buildDisassemblyPlan(project, item) {
     groups.set(key, group);
   }
   const returns = [...groups.values()].map(group => {
+    // The ledger covers the original recipe output; scale it to the actual stack.
+    group.consumed = group.consumed * stackQuantity / craftedQuantity;
+    if (!Number.isFinite(group.consumed) || group.consumed > Number.MAX_SAFE_INTEGER) throw new Error("The stack is too large to disassemble safely.");
     const source = CRAFTING_RESOURCE_SOURCES.find(resource => {
       const data = getCraftingResourceData(resource);
       return data.materialId === group.materialId && data.tier === group.tier && data.variantId === group.variantId && data.unitsPerItem === 1;
@@ -84,7 +90,7 @@ export function buildDisassemblyPlan(project, item) {
     if (!source) throw new Error("No matching resource exists for a recorded material; ask the GM to review this project.");
     return { ...group, name: source.name, quantity: Math.ceil(group.consumed * DISASSEMBLY_RETURN_PERCENT / 100) };
   });
-  const plan = { projectId: project.id, itemId: item.id, itemUuid: item.uuid, itemName: item.name, returns };
+  const plan = { projectId: project.id, itemId: item.id, itemUuid: item.uuid, itemName: item.name, stackQuantity, returns };
   return { ...plan, signature: JSON.stringify(plan) };
 }
 

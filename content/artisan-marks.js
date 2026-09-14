@@ -980,7 +980,7 @@ const MARK_ROWS = [
     "",
     "Master Reforge",
     "standard",
-    "Recover 75% of ordinary/resource components when rebuilding and preserve compatible Wrathmaker work where physically possible.",
+    "Recover 75% of ordinary/resource components when rebuilding and preserve compatible crafted components where physically possible.",
     "universal"
   ],
   [

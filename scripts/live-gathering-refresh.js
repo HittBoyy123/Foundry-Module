@@ -1,6 +1,6 @@
 /** Leading refresh plus a bounded trailing refresh: continuous movement cannot
  * postpone updates indefinitely. A given window never renders concurrently. */
-export function createLiveGatheringRefresh(getApplications, schedule = setTimeout) {
+export function createLiveGatheringRefresh(getApplications, schedule = setTimeout, accepts = application => application.workbenchState.tab === "gather") {
   let timer = null;
   let dirty = false;
   const pending = new WeakMap();
@@ -12,13 +12,13 @@ export function createLiveGatheringRefresh(getApplications, schedule = setTimeou
     }).finally(() => {
       const again = pending.get(application);
       pending.delete(application);
-      if (again && application.workbenchState.tab === "gather") refresh(application);
+      if (again && accepts(application)) refresh(application);
     });
   }
   function flush() {
     dirty = false;
     for (const application of getApplications()) {
-      if (application.workbenchState.tab === "gather") refresh(application);
+      if (accepts(application)) refresh(application);
     }
     timer = schedule(() => {
       timer = null;

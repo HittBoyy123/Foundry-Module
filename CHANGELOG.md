@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.33.0 — Live Crafting & Playtest Fixes (2026-09-14)
+
+- Shared Workbench drafts and live project/inventory refreshes. Draft editing retains party update permissions; character drops use the current Foundry drag API.
+- Added multi-item disassembly queues and whole-stack recovery, with quantity-aware previews and stale-confirmation checks. Split a stack first to keep part of it.
+- Mana Gems now support spell-focus bonuses; new focus recipes use Mana Gem cores with structural frames. Existing world configurations migrate without discarding custom tier values. Only held focuses qualify for strongest-focus selection.
+- Reduced unrelated flanking refreshes and repeated Mark synchronization. Profession synchronization uses one active executor to reduce competing document updates.
+- Broadened Nephilim Bonds sheet-layout detection and made missing-item lookups non-strict during disassembly.
+- Removed repetitive branding and implementation details from player descriptions; rebuilt compendiums. Existing imported descriptions may need refreshing.
+- Live Forge performance and cross-client sheet visibility still require verification. These changes do not claim every reported lag or missing-item error is resolved.
+
 ## 0.32.2 — Bond Reminders & Gathering Readability (2026-09-13)
 
 - The Nephilim Bonds box pulses with PF2e's orange ability-boost glow while any unlocked milestone remains unchosen. The reminder clears when available choices are filled; reduced-motion users receive a static glow.
