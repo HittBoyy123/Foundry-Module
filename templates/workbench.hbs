@@ -121,6 +121,7 @@
       </div>
 
       <div class="cmt-crafting-summary">
+        <div class="cmt-crafting-setup">
       <div class="cmt-workbench-drop {{#if baseItem}}is-filled{{/if}}" data-cmt-workbench-drop="base-item">
         {{#if baseItem}}
           <img src="{{baseItem.img}}" alt="">
@@ -138,26 +139,6 @@
             <span>{{localize "CMT.Workbench.DropBaseHint"}}</span>
           </div>
         {{/if}}
-      </div>
-
-        <section class="cmt-crafting-materials" aria-live="polite">
-          <h4>Total Materials Required</h4>
-          {{#if preview}}
-            <p>Includes selected Artisan Marks. Available stock excludes reserved materials.</p>
-            <ul>
-              {{#each preview.materials}}
-                <li class="{{#unless alternative}}{{#if available}}is-valid{{else}}is-invalid{{/if}}{{/unless}}">
-                  <strong>{{label}}</strong>
-                  {{#unless alternative}}<span>{{units}} required · {{owned}} available{{#if missing}} · {{missing}} missing{{/if}}</span>{{/unless}}
-                </li>
-              {{/each}}
-            </ul>
-            <p>DC {{preview.check.dc}} · {{preview.requiredProgress}} {{localize "CMT.Workbench.Progress"}}</p>
-            <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
-          {{else}}
-            <p>Drop an item to see its material requirements.</p>
-          {{/if}}
-        </section>
       </div>
 
       <div class="cmt-workbench-form-grid">
@@ -191,10 +172,6 @@
             {{/each}}
           </select>
         </label>
-        <label>
-          <span>{{localize "CMT.Workbench.RequiredProgress"}}</span>
-          <input type="number" min="1" step="1" data-cmt-workbench-field="required-progress" value="{{draft.requiredProgress}}">
-        </label>
       </div>
 
 
@@ -206,6 +183,28 @@
           {{#if ../tabs.upgrade}}<label>{{label}} Tier <input type="number" min="1" max="6" value="{{upgradeTier}}" data-cmt-upgrade-tier="{{id}}"></label>{{/if}}
         {{/each}}
       </div>
+        </div>
+        <section class="cmt-crafting-materials" aria-live="polite">
+          <h4>Total Materials Required</h4>
+          {{#if preview}}
+            <p>Includes selected Artisan Marks. Available stock excludes reserved materials.</p>
+            <ul>
+              {{#each preview.materials}}
+                <li class="{{#unless alternative}}{{#if available}}is-valid{{else}}is-invalid{{/if}}{{/unless}}">
+                  <strong>{{label}}</strong>
+                  {{#unless alternative}}<span>{{units}} required · {{owned}} available{{#if missing}} · {{missing}} missing{{/if}}</span>{{/unless}}
+                </li>
+              {{/each}}
+            </ul>
+            <p>DC {{preview.check.dc}} · Days required: {{estimatedDays}}</p>
+            <p class="cmt-crafting-duration-hint">Based on successful checks by the selected team. Critical successes can shorten this; failed checks can extend it.</p>
+            <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
+          {{else}}
+            <p>Drop an item to see its material requirements.</p>
+          {{/if}}
+        </section>
+      </div>
+
       <section class="cmt-workbench-contributors">
         <div class="cmt-workbench-section-title"><h3>Artisans involved</h3><span>Up to six artisans</span></div>
         <div class="cmt-artisan-slots">

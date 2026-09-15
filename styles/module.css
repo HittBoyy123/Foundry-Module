@@ -2816,3 +2816,8 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-crafting-materials li { display: grid; gap: 0.2rem; padding: 0.4rem 0; border-bottom: 1px solid #d4c6b7; }
 .cmt-crafting-materials li.is-invalid { color: #8b1a1a; }
 @media (max-width: 650px) { .cmt-crafting-summary { grid-template-columns: 1fr; } }
+
+.cmt-crafting-setup { display: grid; gap: 0.8rem; min-width: 0; }
+.pf2e-crafting-material-tiers .cmt-crafting-setup .cmt-workbench-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+.cmt-crafting-setup select, .cmt-crafting-setup input { min-width: 0; width: 100%; }
+.cmt-crafting-duration-hint { font-size: 0.85rem; }

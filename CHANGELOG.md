@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.3 — Compact Crafting Setup (2026-09-15)
+
+- Moved project and material fields directly beneath the item drop box in two compact columns, alongside the materials summary.
+- Removed the editable Required Progress field and its shared draft override. New projects calculate work from the recipe and selected Marks.
+- The summary shows Days required beside the DC, adjusted for the artisan team and based on successful checks. Roll outcomes can change the actual duration.
+- All 315 automated tests pass; live Foundry visual verification remains outstanding.
+
+
 ## 0.34.2 — Crafting Material Summary (2026-09-15)
 
 - Split the crafting header between the item drop box and live material requirements, including selected Artisan Mark costs.

@@ -336,7 +336,7 @@ async function workbenchContext(application) {
   let evaluation = null;
   let upgradeError = "";
   let markPlan = { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], tier) };
-  let requiredProgress = Math.max(1, Math.trunc(Number(application.workbenchState.requiredProgress) || 0));
+  let requiredProgress = 1;
   if (baseItem && selectedBand) {
     try {
       baseRecipe = buildCraftingRecipeFromBand(selectedBand.id, {
@@ -351,9 +351,7 @@ async function workbenchContext(application) {
         ? markPlan.assignments.filter(m => m.status !== "completed") : markPlan.assignments;
       recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments.map(m =>
         m.status === "completed" ? { ...m, materialUnits: 0 } : m));
-      if (!application.workbenchState.requiredProgress) {
-        requiredProgress = defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, tier);
-      }
+      requiredProgress = defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, tier);
       if (application.workbenchState.tab === "upgrade") {
         const plan = buildUpgradePlan(baseItem, recipe, newMarks, application.workbenchState.upgradeDragon);
         recipe = plan.recipe;
@@ -614,8 +612,7 @@ async function createAndReserve(application) {
       })),
     })),
     artisanMarks: markPlan.assignments,
-    requiredProgress: upgrade?.requiredProgress || application.workbenchState.requiredProgress
-      || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier),
+    requiredProgress: upgrade?.requiredProgress || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier),
   }, userAuditIdentity());
   project = reserveCraftingProject(project, {
     inventoryItems: party.items,
@@ -1362,7 +1359,6 @@ export function createWorkbenchApplication() {
           material: "materialId",
           tier: "tier",
           "project-name": "projectName",
-          "required-progress": "requiredProgress",
         }[field.dataset.cmtWorkbenchField];
         if (!stateKey) continue;
         const eventName = field.dataset.cmtWorkbenchField === "project-name" ? "input" : "change";
