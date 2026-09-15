@@ -120,6 +120,7 @@
         <span>{{localize "CMT.Workbench.Planning"}}</span>
       </div>
 
+      <div class="cmt-crafting-summary">
       <div class="cmt-workbench-drop {{#if baseItem}}is-filled{{/if}}" data-cmt-workbench-drop="base-item">
         {{#if baseItem}}
           <img src="{{baseItem.img}}" alt="">
@@ -137,6 +138,26 @@
             <span>{{localize "CMT.Workbench.DropBaseHint"}}</span>
           </div>
         {{/if}}
+      </div>
+
+        <section class="cmt-crafting-materials" aria-live="polite">
+          <h4>Total Materials Required</h4>
+          {{#if preview}}
+            <p>Includes selected Artisan Marks. Available stock excludes reserved materials.</p>
+            <ul>
+              {{#each preview.materials}}
+                <li class="{{#unless alternative}}{{#if available}}is-valid{{else}}is-invalid{{/if}}{{/unless}}">
+                  <strong>{{label}}</strong>
+                  {{#unless alternative}}<span>{{units}} required · {{owned}} available{{#if missing}} · {{missing}} missing{{/if}}</span>{{/unless}}
+                </li>
+              {{/each}}
+            </ul>
+            <p>DC {{preview.check.dc}} · {{preview.requiredProgress}} {{localize "CMT.Workbench.Progress"}}</p>
+            <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
+          {{else}}
+            <p>Drop an item to see its material requirements.</p>
+          {{/if}}
+        </section>
       </div>
 
       <div class="cmt-workbench-form-grid">
@@ -219,30 +240,6 @@
         <strong>{{markCapacity.remaining}} / {{markCapacity.maximum}} Capacity remaining · {{markLabourDays}} artisan-days</strong>
         <p>{{teamSize}} artisan(s) · about {{estimatedDays}} days on successful checks. Work rate: 1–2 artisans ×1; 3–5 ×1.25; 6 ×1.5. All artisans commit that downtime. Specialists unlock eligible Marks.</p>
       </div>
-
-      {{#if preview}}
-        <section class="cmt-workbench-requirements">
-          <div class="cmt-workbench-section-title">
-            <h3>{{localize "CMT.Workbench.Requirements"}}</h3>
-            <span>DC {{preview.check.dc}} · {{preview.requiredProgress}} {{localize "CMT.Workbench.Progress"}}</span>
-          </div>
-          <div class="cmt-workbench-requirement-list">
-            {{#each preview.groups}}
-              <article class="{{#if available}}is-valid{{else}}is-invalid{{/if}}">
-                <i class="fa-solid {{#if available}}fa-circle-check{{else}}fa-circle-xmark{{/if}}" aria-hidden="true"></i>
-                <div>
-                  <strong>{{label}}</strong>
-                  <span>{{summary}}</span>
-                </div>
-              </article>
-            {{/each}}
-          </div>
-          <div class="cmt-workbench-summary {{#if preview.craftable}}is-valid{{else}}is-invalid{{/if}}">
-            <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
-            <span>{{localize "CMT.Workbench.ReservationHint"}}</span>
-          </div>
-        </section>
-      {{/if}}
 
       <footer class="cmt-workbench-actions">
         <button type="button" data-cmt-workbench-action="create-project" {{#unless canCreate}}disabled{{/unless}}>

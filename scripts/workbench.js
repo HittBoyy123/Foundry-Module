@@ -1,3 +1,4 @@
+import { craftingMaterialSummary } from "./crafting-summary.js";
 import { archivedProjectMatches, projectHistoryDate } from "./project-history.js";
 import { postDisassemblyChat } from "./disassembly-chat.js";
 import { bindSharedCraftDraft, hydrateCraftDraft } from "./workbench-live.js";
@@ -408,6 +409,7 @@ async function workbenchContext(application) {
     check: evaluation.check,
     requiredProgress,
     groups: evaluation.ingredientSets[0].groups.map((group) => recipeGroupContext(group, config)),
+    materials: craftingMaterialSummary(evaluation.ingredientSets[0].groups, config.materials),
   } : null;
 
   const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles);

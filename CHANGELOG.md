@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.2 — Crafting Material Summary (2026-09-15)
+
+- Split the crafting header between the item drop box and live material requirements, including selected Artisan Mark costs.
+- Combined matching materials into single rows with required, available, and missing quantities. Different tiers and variants remain separate, and alternative ingredients remain alternatives.
+- Removed the repeated requirements list below the artisan controls.
+- All 315 automated tests pass; live Foundry visual verification remains outstanding.
+
+
 ## 0.34.1 — Long Campaign Dates (2026-09-14)
 
 - Completion and disassembly dates use ordinal day, full month, year, and the appropriate era, such as 7th Rova 4710 AR, without a time.
