@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.5 — Sleeker Crafting Controls (2026-09-15)
+
+- Mark capacity pips are slim rectangles, red when used and yellow when available.
+- Reduced the crafting button to a compact rounded hammer-and-Craft control and aligned material labels to preserve consistent field spacing.
+- All 317 automated tests pass; live Foundry visual verification remains outstanding.
+
+
 ## 0.34.4 — Crafting Controls & Announcements (2026-09-15)
 
 - Moved Mark capacity pips into the Artisans involved header and removed the bottom capacity and work-rate text panel.
