@@ -1,3 +1,4 @@
+import { postCraftingStart } from "./crafting-start-chat.js";
 import { craftingMaterialSummary } from "./crafting-summary.js";
 import { archivedProjectMatches, projectHistoryDate } from "./project-history.js";
 import { postDisassemblyChat } from "./disassembly-chat.js";
@@ -627,6 +628,7 @@ async function createAndReserve(application) {
     if (upgrade) await baseItem.update({ ["flags." + MODULE_ID + ".-=upgradeProject"]: null }, { wrathmakerUpgrade: true });
     throw error;
   }
+  await postCraftingStart(project, party);
   application.workbenchState.tab = "projects";
   application.workbenchState.projectName = "";
   application.workbenchState.selectedMarks = [];

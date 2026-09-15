@@ -182,6 +182,11 @@
           </select></label>
           {{#if ../tabs.upgrade}}<label>{{label}} Tier <input type="number" min="1" max="6" value="{{upgradeTier}}" data-cmt-upgrade-tier="{{id}}"></label>{{/if}}
         {{/each}}
+        <button type="button" class="cmt-start-crafting" data-cmt-workbench-action="create-project" {{#unless canCreate}}disabled{{/unless}}>
+          <i class="fa-solid fa-hammer" aria-hidden="true"></i>
+          <strong>{{#if tabs.upgrade}}Start Upgrade{{else}}Start Crafting{{/if}}</strong>
+          <small>Reserve materials &amp; begin project</small>
+        </button>
       </div>
         </div>
         <section class="cmt-crafting-materials" aria-live="polite">
@@ -206,7 +211,7 @@
       </div>
 
       <section class="cmt-workbench-contributors">
-        <div class="cmt-workbench-section-title"><h3>Artisans involved</h3><span>Up to six artisans</span></div>
+        <div class="cmt-workbench-section-title"><h3 class="cmt-artisan-heading">Artisans involved <span class="cmt-artisan-capacity-pips" role="img" aria-label="{{markCapacity.remaining}} of {{markCapacity.maximum}} Mark capacity available" title="{{markCapacity.remaining}} of {{markCapacity.maximum}} Mark capacity available">{{#each markCapacity.segments}}<i class="{{#if used}}is-used{{/if}}" aria-hidden="true"></i>{{/each}}</span></h3><span>Up to six artisans</span></div>
         <div class="cmt-artisan-slots">
           {{#each artisanSlots}}
             <article class="cmt-artisan-slot" data-cmt-artisan-slot="{{index}}">
@@ -234,18 +239,6 @@
         </div>
       </section>
       {{#each teamReasons}}<p class="cmt-workbench-notice is-warning">{{this}}</p>{{/each}}
-      <div class="cmt-workbench-capacity">
-        {{#each markCapacity.segments}}<i class="{{#if used}}is-used{{/if}}"></i>{{/each}}
-        <strong>{{markCapacity.remaining}} / {{markCapacity.maximum}} Capacity remaining · {{markLabourDays}} artisan-days</strong>
-        <p>{{teamSize}} artisan(s) · about {{estimatedDays}} days on successful checks. Work rate: 1–2 artisans ×1; 3–5 ×1.25; 6 ×1.5. All artisans commit that downtime. Specialists unlock eligible Marks.</p>
-      </div>
-
-      <footer class="cmt-workbench-actions">
-        <button type="button" data-cmt-workbench-action="create-project" {{#unless canCreate}}disabled{{/unless}}>
-          <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
-          {{localize "CMT.Workbench.CreateAndReserve"}}
-        </button>
-      </footer>
     </section>
   {{/if}}
 

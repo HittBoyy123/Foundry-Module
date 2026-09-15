@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.4 — Crafting Controls & Announcements (2026-09-15)
+
+- Moved Mark capacity pips into the Artisans involved header and removed the bottom capacity and work-rate text panel.
+- Added a larger gold Start Crafting button beside the material selectors.
+- Successfully starting a project posts a public chat card with the item, combined reserved materials, and estimated days. Chat failures do not undo the created project.
+- All 317 automated tests pass; live Foundry visual verification remains outstanding.
+
+
 ## 0.34.3 — Compact Crafting Setup (2026-09-15)
 
 - Moved project and material fields directly beneath the item drop box in two compact columns, alongside the materials summary.

@@ -2821,3 +2821,13 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .pf2e-crafting-material-tiers .cmt-crafting-setup .cmt-workbench-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
 .cmt-crafting-setup select, .cmt-crafting-setup input { min-width: 0; width: 100%; }
 .cmt-crafting-duration-hint { font-size: 0.85rem; }
+
+.cmt-artisan-heading { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.cmt-artisan-capacity-pips { display: inline-flex; gap: 0.25rem; }
+.cmt-artisan-capacity-pips i { width: 13px; height: 13px; border: 1px solid #e9d7a1; background: transparent; }
+.cmt-artisan-capacity-pips i.is-used { background: #e9d7a1; }
+.pf2e-crafting-material-tiers .cmt-start-crafting { display: grid; justify-items: center; align-content: center; gap: 0.2rem; align-self: end; min-height: 72px; height: auto; padding: 0.7rem; background: #e9d7a1; color: #5e0000; border: 2px solid #b18b36; border-radius: 8px; box-shadow: 0 2px 4px #0003; }
+.cmt-start-crafting strong { font-size: 1.15rem; }
+.cmt-start-crafting small { white-space: normal; }
+.pf2e-crafting-material-tiers .cmt-start-crafting:not(:disabled):hover { background: #f5e4ad; box-shadow: 0 0 8px #bd8d3a; }
+.pf2e-crafting-material-tiers .cmt-start-crafting:disabled { opacity: 0.55; box-shadow: none; }
