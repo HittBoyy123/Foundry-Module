@@ -14,7 +14,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
     const group = index === 0 ? core : index === 1 ? secondary : null;
     const materialIds = [...new Set(group?.options?.map((option) => option.materialId) ?? [])];
     const profile = profiles.find((entry) => entry.actorUuid === slotUuids[index]);
-    const wyrmSlot = armor && index === 2;
+    const wyrmSlot = armor && dragonResistance && index === 2;
     const qualified = wyrmSlot ? hasWyrmcraft(profile) : !group || Boolean(profile?.professions.some((profession) => (
       profession.materialIds.some((id) => materialIds.includes(id))
     )));

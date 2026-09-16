@@ -2831,3 +2831,6 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-crafting-setup .cmt-workbench-form-grid > label { align-self: start; }
 .pf2e-crafting-material-tiers .cmt-start-crafting:not(:disabled):hover { background: #f5e4ad; box-shadow: 0 0 8px #bd8d3a; }
 .pf2e-crafting-material-tiers .cmt-start-crafting:disabled { opacity: 0.55; box-shadow: none; }
+
+.cmt-crafting-setup .cmt-dragon-scale-field { grid-column: 1; }
+.cmt-crafting-setup .cmt-start-crafting { grid-column: 2; }

@@ -179,6 +179,14 @@
           </select></label>
           {{#if ../tabs.upgrade}}<label>{{label}} Tier <input type="number" min="1" max="6" value="{{upgradeTier}}" data-cmt-upgrade-tier="{{id}}"></label>{{/if}}
         {{/each}}
+        {{#if upgradeDragonAvailable}}
+          <label class="cmt-dragon-scale-field"><span>Dragon Scales</span>
+            <select data-cmt-dragon-scale>
+              <option value="">No new resistance</option>
+              {{#each upgradeDragonOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}} {{#if unavailable}}disabled{{/if}}>{{label}}</option>{{/each}}
+            </select>
+          </label>
+        {{/if}}
         <button type="button" class="cmt-start-crafting" data-cmt-workbench-action="create-project" {{#unless canCreate}}disabled{{/unless}}>
           <i class="fa-solid fa-hammer" aria-hidden="true"></i>
           <strong>{{#if tabs.upgrade}}Upgrade{{else}}Craft{{/if}}</strong>
@@ -206,10 +214,7 @@
         </section>
       </div>
 
-      {{#if upgradeDragonAvailable}}
-        <label>Dragon Scales <select data-cmt-upgrade-dragon="color"><option value="">No new resistance</option>{{#each upgradeDragonColors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
-        <label>Scale Tier <input type="number" min="1" max="6" value="{{upgradeDragonTier}}" data-cmt-upgrade-dragon="tier"></label>
-      {{/if}}
+
       <section class="cmt-workbench-contributors">
         <div class="cmt-workbench-section-title"><h3 class="cmt-artisan-heading">Artisans involved <span class="cmt-artisan-capacity-pips" role="img" aria-label="{{markCapacity.remaining}} of {{markCapacity.maximum}} Mark capacity available" title="{{markCapacity.remaining}} of {{markCapacity.maximum}} Mark capacity available">{{#each markCapacity.segments}}<i class="{{#if used}}is-used{{/if}}" aria-hidden="true"></i>{{/each}}</span></h3><span>Up to six artisans</span></div>
         <div class="cmt-artisan-slots">

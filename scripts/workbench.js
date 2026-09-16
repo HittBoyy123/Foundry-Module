@@ -1,3 +1,4 @@
+import { dragonScaleOptions } from "./dragon-scale-options.js";
 import { postCraftingStart } from "./crafting-start-chat.js";
 import { craftingMaterialSummary } from "./crafting-summary.js";
 import { archivedProjectMatches, projectHistoryDate } from "./project-history.js";
@@ -453,10 +454,7 @@ async function workbenchContext(application) {
     disassemblyQueue, disassemblyTotals: [...totals.values()], upgradeError,
     disassemblyQueueCount: disassemblyQueue.length,
     upgradeDragonAvailable: baseItem?.type === "armor",
-    upgradeDragonColors: Object.entries(config.materials["dragon-scale"].colors).map(([id, color]) => ({
-      id, label: color.label, selected: application.workbenchState.upgradeDragon?.color === id,
-    })),
-    upgradeDragonTier: application.workbenchState.upgradeDragon?.tier ?? tier,
+    upgradeDragonOptions: dragonScaleOptions(virtualUnreservedInventory(party, workbench.projects), config.materials["dragon-scale"].colors, application.workbenchState.upgradeDragon),
     upgradeAnchors: baseRecipe ? buildRecipeAnchorSlots(baseRecipe) : [],
     retainedMarks: application.workbenchState.tab === "upgrade" ? baseItem?.flags?.[MODULE_ID]?.crafting?.artisanMarks ?? [] : [],
     disassemblyItems: workbench.projects.filter(project => project.status === "completed" && !project.disassembledAt)
@@ -1351,11 +1349,9 @@ export function createWorkbenchApplication() {
         };
         await this.render({ force: true });
       });
-      for (const field of root.querySelectorAll("[data-cmt-upgrade-dragon]")) field.addEventListener("change", async () => {
-        this.workbenchState.upgradeDragon = {
-          color: root.querySelector('[data-cmt-upgrade-dragon="color"]').value,
-          tier: Number(root.querySelector('[data-cmt-upgrade-dragon="tier"]').value),
-        };
+      root.querySelector("[data-cmt-dragon-scale]")?.addEventListener("change", async event => {
+        const [color, tier] = event.currentTarget.value.split(":");
+        this.workbenchState.upgradeDragon = color ? { color, tier: Number(tier) } : null;
         await this.render({ force: true });
       });
       for (const button of root.querySelectorAll("[data-cmt-open-marks]")) {

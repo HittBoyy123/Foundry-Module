@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.7 — Stash-Based Dragon Scale Choices (2026-09-16)
+
+- Wyrmcraft specialist requirements appear only when dragon-scale resistance is selected.
+- Moved Dragon Scales beneath the other material choices and removed the separate tier input.
+- Scale options show colour, tier, and available party-stash quantity, excluding reserved stock. Matching stacks combine; depleted selections remain visible as unavailable.
+- All 320 automated tests pass; live Foundry verification remains outstanding.
+
+
 ## 0.34.6 — Armor Specialists & Compact Controls (2026-09-16)
 
 - Matched the Craft button width to the material dropdowns and reduced the item drop area height.
