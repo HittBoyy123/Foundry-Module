@@ -10,17 +10,19 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
   const groups = recipe?.ingredientSets?.[0]?.groups ?? [];
   const core = groups.find((group) => group.id === "core");
   const secondary = groups.find((group) => group.id !== "core");
+  const leatherGroupIndex = [core, secondary].findIndex(group => group?.options?.some(option => option.materialId === "leather"));
+  const wyrmIndex = leatherGroupIndex >= 0 ? leatherGroupIndex : 2;
   return Array.from({ length: 6 }, (_, index) => {
     const group = index === 0 ? core : index === 1 ? secondary : null;
     const materialIds = [...new Set(group?.options?.map((option) => option.materialId) ?? [])];
     const profile = profiles.find((entry) => entry.actorUuid === slotUuids[index]);
-    const wyrmSlot = armor && dragonResistance && index === 2;
+    const wyrmSlot = armor && dragonResistance && index === wyrmIndex;
     const qualified = wyrmSlot ? hasWyrmcraft(profile) : !group || Boolean(profile?.professions.some((profession) => (
       profession.materialIds.some((id) => materialIds.includes(id))
     )));
     return {
       index,
-      role: wyrmSlot ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
+      role: wyrmSlot && index > 1 ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
       required: index === 0 || (wyrmSlot && dragonResistance),
       materialIds,
       requirement: wyrmSlot ? "Leatherwork · Wyrmcraft (dragon-scale resistance)" : group ? PROFESSION_DEFINITIONS.filter(profession => profession.materialIds.some(id => materialIds.includes(id)))

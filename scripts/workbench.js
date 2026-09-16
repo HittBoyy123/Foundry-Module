@@ -1,3 +1,4 @@
+import { addArmorResistance } from "./armor-resistance.js";
 import { dragonScaleOptions } from "./dragon-scale-options.js";
 import { postCraftingStart } from "./crafting-start-chat.js";
 import { craftingMaterialSummary } from "./crafting-summary.js";
@@ -309,17 +310,6 @@ function recipeGroupContext(group, config) {
   };
 }
 
-function addArmorResistance(recipe, item, selection) {
-  if (!selection?.color) return;
-  const core = recipe.ingredientSets[0].groups.find(group => group.id === "core")?.options[0]?.materialId;
-  if (item?.type !== "armor" || !["metal", "leather"].includes(core)) throw new Error("Dragon-scale resistance requires Metal or Leather armor.");
-  const config = getRulesConfig();
-  if (!config.materials["dragon-scale"].colors[selection.color]) throw new Error("Choose a valid dragon scale color.");
-  const tier = Math.min(6, Math.max(1, Number(selection.tier) || recipe.tier));
-  recipe.ingredientSets[0].groups.push({ id: "dragon-scale", label: "Dragon-scale resistance", options: [
-    { materialId: "dragon-scale", tier, tierMode: "exact", maximumTier: tier, variantId: selection.color, units: 1 },
-  ] });
-}
 
 async function workbenchContext(application) {
   const config = getRulesConfig();
@@ -372,7 +362,7 @@ async function workbenchContext(application) {
         requiredProgress = plan.requiredProgress;
       }
       if (application.workbenchState.tab !== "upgrade") {
-        addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon);
+        addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon, getRulesConfig());
         if (application.workbenchState.upgradeDragon?.color) requiredProgress += 1;
       }
       evaluation = evaluateCraftingRecipe(recipe, {
@@ -586,7 +576,7 @@ async function createAndReserve(application) {
   const newMarks = upgrading ? markPlan.assignments.filter(m => m.status !== "completed") : markPlan.assignments;
   let recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments.map(m =>
     upgrading && m.status === "completed" ? { ...m, materialUnits: 0 } : m));
-  if (!upgrading) addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon);
+  if (!upgrading) addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon, getRulesConfig());
   const workbench = projectState(party);
   let upgrade = null;
   if (upgrading) {

@@ -209,7 +209,7 @@
             <p class="cmt-crafting-duration-hint">Based on successful checks by the selected team. Critical successes can shorten this; failed checks can extend it.</p>
             <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
           {{else}}
-            <p>Drop an item to see its material requirements.</p>
+            {{#if upgradeError}}<p class="cmt-workbench-notice is-warning">{{upgradeError}}</p>{{else}}<p>Drop an item to see its material requirements.</p>{{/if}}
           {{/if}}
         </section>
       </div>

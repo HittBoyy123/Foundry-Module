@@ -14,3 +14,30 @@ test('armor resistance requires Wyrmcraft, while plain armor does not', () => {
  specialist.specializations[0].specializationId = 'specialty-2';
  assert.equal(validateArtisanTeam(recipe, ['Actor.lead', '', 'Actor.wyrm'], [lead, specialist], { armor: true, dragonResistance: true }).valid, false);
 });
+import { addArmorResistance } from '../scripts/armor-resistance.js';
+import { buildCraftingRecipeFromBand } from '../scripts/recipe-catalog.js';
+import { evaluateCraftingRecipe } from '../scripts/crafting-recipes.js';
+import { chooseSecondaryMaterials } from '../scripts/workbench-team.js';
+import { cloneDefaultRulesConfig, MODULE_ID } from '../scripts/constants.js';
+test('tier 4 scales on tier 3 full plate preserve preview and permit crafting with stock', () => {
+ const item = { type: 'armor', system: { category: 'heavy' } };
+ const recipe = buildCraftingRecipeFromBand('armor-full-plate', { targetItem: item, tier: 3, coreMaterialId: 'metal' });
+ chooseSecondaryMaterials(recipe);
+ addArmorResistance(recipe, item, { color: 'black', tier: 4 }, cloneDefaultRulesConfig());
+ const inventoryItems = recipe.ingredientSets[0].groups.map((group, index) => {
+  const o = group.options[0];
+  return { id: String(index), system: { quantity: 100 }, flags: { [MODULE_ID]: { resource: { materialId: o.materialId, tier: o.tier, variantId: o.variantId || '', unitsPerItem: 1 } } } };
+ });
+ const result = evaluateCraftingRecipe(recipe, { targetItem: item, inventoryItems });
+ assert.equal(result.craftable, true);
+ const scales = result.ingredientSets[0].groups.find(g => g.id === 'dragon-scale');
+ assert.equal(scales.options[0].tier, 4);
+ assert.equal(scales.options[0].maximumTier, 4);
+ const leather = { actorUuid: 'Actor.leather', professions: [{ name: 'Leatherwork', materialIds: ['leather'] }], specializations: [{ professionId: 'leatherwork', specializationId: 'specialty-1' }] };
+ const team = validateArtisanTeam(recipe, [lead.actorUuid, leather.actorUuid], [lead, leather], { armor: true, dragonResistance: true });
+ assert.equal(team.valid, true);
+ assert.equal(team.slots[1].required, true);
+ assert.match(team.slots[1].requirement, /Wyrmcraft/);
+ assert.equal(team.slots[2].role, 'Mark Artisan');
+ assert.equal(team.slots[2].required, false);
+});

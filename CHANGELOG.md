@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.8 — Dragon Scale Preview Fix (2026-09-16)
+
+- Fixed dragon scales with a different tier from the armor clearing the crafting preview. Scale requirements now retain their selected tier independently.
+- Merged Wyrmcraft into an existing Leatherwork artisan slot when available, making that slot required for dragon-scale resistance instead of adding another specialist.
+- Preview errors now display their reason instead of asking users to drop an item again.
+- All 321 automated tests pass, including tier-4 scales on tier-3 full plate with one Leatherwork/Wyrmcraft artisan. Live Foundry verification remains outstanding.
+
+
 ## 0.34.7 — Stash-Based Dragon Scale Choices (2026-09-16)
 
 - Wyrmcraft specialist requirements appear only when dragon-scale resistance is selected.
