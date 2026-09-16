@@ -2843,3 +2843,15 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-crafting-work-readout dl { display: grid; gap: 0.5rem; }
 .cmt-crafting-work-readout dl > div { display: flex; justify-content: space-between; gap: 0.5rem; }
 .cmt-crafting-work-readout dd { margin: 0; text-align: right; }
+
+.cmt-project-browser { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; height: clamp(350px, 65vh, 760px); min-height: 0; }
+.cmt-project-list, .cmt-project-detail-pane { overflow-y: auto; min-width: 0; padding: 0.25rem; }
+.cmt-project-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.pf2e-crafting-material-tiers .cmt-project-list-entry { display: block; flex: 0 0 auto; height: auto; width: 100%; padding: 0.8rem; white-space: normal; text-align: left; line-height: 1.4; background: #f5efe7; color: #332d29; border: 2px solid #bba38c; border-radius: 6px; }
+.pf2e-crafting-material-tiers .cmt-project-list-entry.is-selected { border-color: #5e0000; box-shadow: 0 0 0 1px #5e0000; background: #eee1ca; }
+.cmt-project-list-heading { display: flex; align-items: center; gap: 0.65rem; color: #5e0000; }
+.cmt-project-list-heading img { width: 48px; height: 48px; object-fit: contain; }
+.cmt-project-detail-pane .cmt-workbench-project { margin: 0; }
+.cmt-project-detail-body { padding-top: 0.5rem; }
+.cmt-project-detail-pane .cmt-workbench-work-block { flex-wrap: wrap; }
+@media (max-width: 650px) { .cmt-project-browser { grid-template-columns: 1fr; height: auto; } .cmt-project-list { max-height: 260px; } }

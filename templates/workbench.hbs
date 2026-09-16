@@ -270,20 +270,31 @@
           <button type="button" data-cmt-archive-tab="disassembled" class="{{#if archiveDisassembled}}active{{/if}}" aria-pressed="{{archiveDisassembled}}">Disassembled ({{disassembledArchiveCount}})</button>
         </nav>
       {{/if}}
-      {{#each projects}}
+      <div class="cmt-project-browser">
+        <div class="cmt-project-list" data-cmt-project-list aria-label="Crafting projects">
+          {{#each projects}}
+            <button type="button" class="cmt-project-list-entry {{#if selected}}is-selected{{/if}}" data-cmt-select-project="{{id}}" aria-pressed="{{selected}}">
+              <span class="cmt-project-list-heading"><img src="{{baseItemImg}}" alt=""><strong>{{name}}</strong></span>
+              <span class="cmt-project-day-pips" aria-hidden="true">{{#each dayPips}}<i class="{{#if completed}}is-complete{{/if}}"></i>{{/each}}</span>
+              <span>{{daysCompleted}} of {{daysTotal}} days completed · {{daysRemaining}} remaining</span>
+            </button>
+          {{else}}<p>{{localize "CMT.Workbench.NoProjects"}}</p>{{/each}}
+        </div>
+        <div class="cmt-project-detail-pane" aria-label="Selected project">
+          {{#with selectedProject}}
         <article class="cmt-workbench-project {{statusClass}}" data-cmt-project-id="{{id}}">
           <header>
             <img src="{{baseItemImg}}" alt="">
             <div>
               <h4>{{name}}</h4>
-              {{#if hasHistoryDate}}<span>{{historyDateLabel}}: {{historyDate}}</span>{{/if}}
+              {{#if hasHistoryDate}}<span>{{historyDateLabel}}: {{historyDate}}</span>{{else}}<span>Completion date: Not yet completed</span>{{/if}}
               <span>{{recipeName}} · {{coreLabel}}</span>
             </div>
             <span class="cmt-workbench-status">{{statusLabel}}</span>
             {{#if canArchive}}<button type="button" data-cmt-project-action="archive" title="{{#if archived}}Restore{{else}}Archive{{/if}}" aria-label="Archive or restore"><i class="fa-solid fa-box-archive"></i></button>{{/if}}
             {{#if canManage}}<button type="button" data-cmt-project-action="remove" title="Remove project" aria-label="Remove project"><i class="fa-solid fa-xmark"></i></button>{{/if}}
           </header>
-          <details class="cmt-project-details" {{#if expanded}}open{{/if}}><summary>Project details & actions</summary>
+          <div class="cmt-project-detail-body">
           <div class="cmt-project-day-pips" role="img" aria-label="{{daysCompleted}} of {{daysTotal}} days completed">
             {{#each dayPips}}<i class="{{#if completed}}is-complete{{/if}}" title="Day {{day}}{{#if completed}} completed{{/if}}" aria-hidden="true"></i>{{/each}}
           </div>
@@ -296,7 +307,7 @@
           </div>
           {{#if contributorSummary}}<p class="cmt-workbench-project-artisans"><strong>Artisans:</strong> {{contributorSummary}}</p>{{/if}}
           {{#if artisanMarks.length}}
-            <details>
+            <details open>
               <summary>Artisan Marks</summary>
               <ul>
                 {{#each artisanMarks}}
@@ -306,8 +317,8 @@
             </details>
           {{/if}}
           {{#if reservations.length}}
-            <details>
-              <summary>{{localize "CMT.Workbench.ReservedMaterials"}}</summary>
+            <details open>
+              <summary>Materials</summary>
               <ul>
                 {{#each reservations}}
                   <li><span>{{itemName}}</span><strong>{{quantity}} × ({{units}} units)</strong></li>
@@ -350,14 +361,12 @@
               </button>
             {{/if}}
           </footer>
-          </details>
+          </div>
         </article>
-      {{else}}
-        <div class="cmt-workbench-empty">
-          <i class="fa-solid fa-scroll" aria-hidden="true"></i>
-          <p>{{localize "CMT.Workbench.NoProjects"}}</p>
+          {{else}}<p>Select a project to view its details.</p>{{/with}}
         </div>
-      {{/each}}
+      </div>
+
     </section>
   {{/if}}
   {{/unless}}

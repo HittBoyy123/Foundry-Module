@@ -443,8 +443,13 @@ async function workbenchContext(application) {
     total.quantity += row.quantity;
     totals.set(key, total);
   }
+  const visibleProjects = projects.filter(entry => application.workbenchState.showArchived
+    ? archivedProjectMatches(entry, application.workbenchState.archiveTab) : !entry.archived);
+  const selectedProject = visibleProjects.find(entry => entry.id === application.workbenchState.selectedProjectId) ?? visibleProjects[0] ?? null;
+  application.workbenchState.selectedProjectId = selectedProject?.id ?? "";
   return {
     party,
+    selectedProject,
     disassemblyQueue, disassemblyTotals: [...totals.values()], upgradeError,
     disassemblyQueueCount: disassemblyQueue.length,
     equipmentSizes: EQUIPMENT_SIZES.map(size => ({ ...size, selected: size.id === normalizeEquipmentSize(application.workbenchState.tab === "upgrade" ? baseItem?.system?.size : application.workbenchState.equipmentSize) })),
@@ -545,7 +550,7 @@ async function workbenchContext(application) {
       && preview?.craftable
       && !markPlan.capacity.overCapacity
     ),
-    projects: projects.filter((entry) => application.workbenchState.showArchived ? archivedProjectMatches(entry, application.workbenchState.archiveTab) : !entry.archived),
+    projects: visibleProjects.map(entry => ({ ...entry, selected: entry.id === selectedProject?.id })),
     projectCount: projects.length,
     activeProjectCount,
   };
@@ -1501,6 +1506,17 @@ export function createWorkbenchApplication() {
           ui.notifications.error(error.message);
         }
       });
+      const projectList = root.querySelector("[data-cmt-project-list]");
+      if (projectList) {
+        projectList.scrollTop = this.projectListScrollTop ?? 0;
+        projectList.addEventListener("scroll", () => { this.projectListScrollTop = projectList.scrollTop; });
+      }
+      for (const button of root.querySelectorAll("[data-cmt-select-project]")) {
+        button.addEventListener("click", async () => {
+          this.workbenchState.selectedProjectId = button.dataset.cmtSelectProject;
+          await this.render({ force: true });
+        });
+      }
       for (const card of root.querySelectorAll("[data-cmt-project-id]")) {
         card.querySelector(".cmt-project-details")?.addEventListener("toggle", (event) => {
           const ids = new Set(this.workbenchState.expandedProjectIds ?? []);

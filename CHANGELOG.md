@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.35.1 — Two-Pane Project Browser (2026-09-16)
+
+- Split Projects into a scrollable list of compact project cards and a selected-project detail pane.
+- List cards show the image, name, day pips, and completed/remaining counts. Selection is highlighted and list scroll position is preserved during refreshes.
+- The detail pane shows materials, artisans, Marks, completion date, work rolls, and completion controls. Archive categories use the same layout.
+- All 336 automated tests pass; live Foundry visual verification remains outstanding.
+
+
 ## 0.35.0 — Project Day Readouts & Profession Defaults (2026-09-16)
 
 - Replaced project progress bars with individual day-of-work pips, red when completed and yellow when remaining. Counts explicitly show completed days out of the required total.
