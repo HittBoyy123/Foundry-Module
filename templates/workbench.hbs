@@ -292,16 +292,16 @@
             </div>
             <span class="cmt-workbench-status">{{statusLabel}}</span>
             {{#if canArchive}}<button type="button" data-cmt-project-action="archive" title="{{#if archived}}Restore{{else}}Archive{{/if}}" aria-label="Archive or restore"><i class="fa-solid fa-box-archive"></i></button>{{/if}}
-            {{#if canManage}}<button type="button" data-cmt-project-action="remove" title="Remove project" aria-label="Remove project"><i class="fa-solid fa-xmark"></i></button>{{/if}}
+            {{#if canCancel}}
+              <button type="button" data-cmt-project-action="cancel" title="Cancel project" aria-label="Cancel project"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            {{else}}
+              {{#if canManage}}<button type="button" data-cmt-project-action="remove" title="Remove project" aria-label="Remove project"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>{{/if}}
+            {{/if}}
           </header>
           <div class="cmt-project-detail-body">
-          <div class="cmt-project-day-pips" role="img" aria-label="{{daysCompleted}} of {{daysTotal}} days completed">
-            {{#each dayPips}}<i class="{{#if completed}}is-complete{{/if}}" title="Day {{day}}{{#if completed}} completed{{/if}}" aria-hidden="true"></i>{{/each}}
-          </div>
           <div class="cmt-workbench-project-stats">
             <span><strong>{{daysCompleted}} of {{daysTotal}} days completed</strong> · {{daysRemaining}} remaining</span>
             <span>{{teamSize}} artisan(s) · {{estimatedDays}} successful work days remaining</span>
-            <span><strong>{{downtimeSpent}}</strong> {{localize "CMT.Workbench.ArtisanDays"}}</span>
             <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>
             <span><strong>{{markCount}}</strong> Artisan Marks</span>
           </div>
@@ -352,12 +352,6 @@
               <button type="button" data-cmt-project-action="complete" class="primary">
                 <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                 {{localize "CMT.Workbench.CompleteProject"}}
-              </button>
-            {{/if}}
-            {{#if canCancel}}
-              <button type="button" data-cmt-project-action="cancel">
-                <i class="fa-solid fa-ban" aria-hidden="true"></i>
-                {{localize "CMT.Workbench.CancelProject"}}
               </button>
             {{/if}}
           </footer>

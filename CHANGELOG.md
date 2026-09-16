@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.35.2 — Cleaner Project Controls (2026-09-16)
+
+- Keep day pips in the project list and remove the duplicate pips and artisan-days statistic from the detail pane.
+- Highlight Roll Crafting in gold with red text beside the Work Block selector.
+- Consolidate active-project cancellation into the compact header X, retaining confirmation and releasing reservations. Finished project records retain their remove control.
+- All 336 automated tests pass; live Foundry visual verification remains outstanding.
+
 ## 0.35.1 — Two-Pane Project Browser (2026-09-16)
 
 - Split Projects into a scrollable list of compact project cards and a selected-project detail pane.

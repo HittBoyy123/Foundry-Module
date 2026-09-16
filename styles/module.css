@@ -2855,3 +2855,17 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-project-detail-body { padding-top: 0.5rem; }
 .cmt-project-detail-pane .cmt-workbench-work-block { flex-wrap: wrap; }
 @media (max-width: 650px) { .cmt-project-browser { grid-template-columns: 1fr; height: auto; } .cmt-project-list { max-height: 260px; } }
+
+.pf2e-crafting-material-tiers .cmt-project-detail-pane [data-cmt-project-action="roll-work"] {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #9f8036;
+  border-radius: 6px;
+  background: var(--cmt-workbench-gold);
+  color: var(--cmt-workbench-red);
+  font-weight: 700;
+}
+.pf2e-crafting-material-tiers .cmt-project-detail-pane [data-cmt-project-action="roll-work"]:is(:hover, :focus-visible) {
+  background: #f2df9c;
+  box-shadow: 0 0 5px #9f8036;
+}
