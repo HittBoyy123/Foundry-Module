@@ -6,7 +6,7 @@ export function materialDisplayName(id) {
 }
 
 /** Six stable slots: Core lead, required component specialist, four assistants. */
-export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
+export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor = false, dragonResistance = false } = {}) {
   const groups = recipe?.ingredientSets?.[0]?.groups ?? [];
   const core = groups.find((group) => group.id === "core");
   const secondary = groups.find((group) => group.id !== "core");
@@ -14,15 +14,16 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
     const group = index === 0 ? core : index === 1 ? secondary : null;
     const materialIds = [...new Set(group?.options?.map((option) => option.materialId) ?? [])];
     const profile = profiles.find((entry) => entry.actorUuid === slotUuids[index]);
-    const qualified = !group || Boolean(profile?.professions.some((profession) => (
+    const wyrmSlot = armor && index === 2;
+    const qualified = wyrmSlot ? hasWyrmcraft(profile) : !group || Boolean(profile?.professions.some((profession) => (
       profession.materialIds.some((id) => materialIds.includes(id))
     )));
     return {
       index,
-      role: index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
-      required: index === 0,
+      role: wyrmSlot ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
+      required: index === 0 || (wyrmSlot && dragonResistance),
       materialIds,
-      requirement: group ? PROFESSION_DEFINITIONS.filter(profession => profession.materialIds.some(id => materialIds.includes(id)))
+      requirement: wyrmSlot ? "Leatherwork · Wyrmcraft (dragon-scale resistance)" : group ? PROFESSION_DEFINITIONS.filter(profession => profession.materialIds.some(id => materialIds.includes(id)))
         .map(profession => profession.name).join(" / ") || "Qualified Artisan" : "Any Profession",
       actorUuid: profile?.actorUuid ?? "",
       name: profile?.name ?? "",
@@ -34,9 +35,16 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = []) {
   });
 }
 
-export function validateArtisanTeam(recipe, slotUuids, profiles) {
-  const slots = buildArtisanSlots(recipe, slotUuids, profiles);
+export function hasWyrmcraft(profile) {
+  return profile?.specializations?.some(s => s.professionId === "leatherwork" && s.specializationId === "specialty-1") === true;
+}
+
+export function validateArtisanTeam(recipe, slotUuids, profiles, options = {}) {
+  const slots = buildArtisanSlots(recipe, slotUuids, profiles, options);
   const reasons = slots[0].actorUuid ? [] : ["Choose a lead artisan. Material specialists unlock Marks but are not required to craft the base item."];
+  if (options.dragonResistance && !profiles.some(hasWyrmcraft)) {
+    reasons.push("Add a Leatherwork artisan with Wyrmcraft to apply dragon-scale resistance.");
+  }
   const uuids = slotUuids.filter(Boolean);
   if (uuids.length > 6 || new Set(uuids).size !== uuids.length) {
     reasons.push("Use up to six different artisans.");

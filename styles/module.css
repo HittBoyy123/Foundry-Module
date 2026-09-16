@@ -2809,7 +2809,7 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .pf2e-crafting-material-tiers .cmt-gathering-map-notice button { flex: 0 0 auto; width: auto; margin-left: auto; background: #e9d7a1; color: #5e0000; border: 1px solid #a88973; }
 
 .cmt-crafting-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-.cmt-crafting-summary .cmt-workbench-drop { min-height: 160px; margin: 0; }
+.cmt-crafting-summary .cmt-workbench-drop { min-height: 100px; margin: 0; }
 .cmt-crafting-materials { background: #f5efe7; border: 1px solid #a88973; border-radius: 10px; padding: 0.8rem; }
 .cmt-crafting-materials h4 { color: #5e0000; margin: 0; }
 .cmt-crafting-materials ul { list-style: none; padding: 0; }
@@ -2826,7 +2826,7 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-artisan-capacity-pips { display: inline-flex; gap: 0.25rem; }
 .cmt-artisan-capacity-pips i { width: 24px; height: 8px; border: 1px solid #e9d7a1; background: #e9d7a1; }
 .cmt-artisan-capacity-pips i.is-used { background: #5e0000; border-color: #5e0000; }
-.pf2e-crafting-material-tiers .cmt-start-crafting { display: grid; justify-items: center; align-content: center; gap: 0.1rem; align-self: end; justify-self: start; width: 96px; min-height: 0; height: 48px; padding: 0.25rem 0.6rem; line-height: 1.1; background: #e9d7a1; color: #5e0000; border: 2px solid #b18b36; border-radius: 8px; box-shadow: 0 2px 4px #0003; }
+.pf2e-crafting-material-tiers .cmt-start-crafting { display: grid; justify-items: center; align-content: center; gap: 0.1rem; align-self: end; justify-self: stretch; width: 100%; min-height: 0; height: 48px; padding: 0.25rem 0.6rem; line-height: 1.1; background: #e9d7a1; color: #5e0000; border: 2px solid #b18b36; border-radius: 8px; box-shadow: 0 2px 4px #0003; }
 .cmt-start-crafting strong { font-size: 0.95rem; }
 .cmt-crafting-setup .cmt-workbench-form-grid > label { align-self: start; }
 .pf2e-crafting-material-tiers .cmt-start-crafting:not(:disabled):hover { background: #f5e4ad; box-shadow: 0 0 8px #bd8d3a; }

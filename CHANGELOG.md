@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.6 — Armor Specialists & Compact Controls (2026-09-16)
+
+- Matched the Craft button width to the material dropdowns and reduced the item drop area height.
+- Added a Wyrmcraft specialist slot for armor and dragon-scale resistance selection for new armor projects. Selected scales contribute to the material requirements and finished armor.
+- Applying dragon-scale resistance requires a participating Leatherwork artisan with Wyrmcraft when starting the project and again at completion. Plain armor does not require the specialty.
+- All 318 automated tests pass; live Foundry verification remains outstanding.
+
+
 ## 0.34.5 — Sleeker Crafting Controls (2026-09-15)
 
 - Mark capacity pips are slim rectangles, red when used and yellow when available.

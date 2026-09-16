@@ -33,7 +33,7 @@ import {
 import { normalizeItemFlags } from "./model.js";
 import { normalizeDegreeOfSuccess } from "./gathering-model.js";
 import { renderWorkbenchGathering, bindWorkbenchGathering } from "./gathering.js";
-import { validateArtisanTeam, chooseSecondaryMaterials, materialDisplayName } from "./workbench-team.js";
+import { hasWyrmcraft, validateArtisanTeam, chooseSecondaryMaterials, materialDisplayName } from "./workbench-team.js";
 import { recoverProjectItem } from "./project-recovery.js";
 import { buildDisassemblyPlan, disassembleProjectItem, findDisassemblyItem, droppedDisassemblyContext } from "./disassembly.js";
 import { markAppliesToItem, markConfigurationChoices, markAutomationLabel } from "./artisan-mark-effects.js";
@@ -308,6 +308,18 @@ function recipeGroupContext(group, config) {
   };
 }
 
+function addArmorResistance(recipe, item, selection) {
+  if (!selection?.color) return;
+  const core = recipe.ingredientSets[0].groups.find(group => group.id === "core")?.options[0]?.materialId;
+  if (item?.type !== "armor" || !["metal", "leather"].includes(core)) throw new Error("Dragon-scale resistance requires Metal or Leather armor.");
+  const config = getRulesConfig();
+  if (!config.materials["dragon-scale"].colors[selection.color]) throw new Error("Choose a valid dragon scale color.");
+  const tier = Math.min(6, Math.max(1, Number(selection.tier) || recipe.tier));
+  recipe.ingredientSets[0].groups.push({ id: "dragon-scale", label: "Dragon-scale resistance", options: [
+    { materialId: "dragon-scale", tier, tierMode: "exact", maximumTier: tier, variantId: selection.color, units: 1 },
+  ] });
+}
+
 async function workbenchContext(application) {
   const config = getRulesConfig();
   const craftingEnabled = config.crafting?.enabled !== false;
@@ -357,6 +369,10 @@ async function workbenchContext(application) {
         const plan = buildUpgradePlan(baseItem, recipe, newMarks, application.workbenchState.upgradeDragon);
         recipe = plan.recipe;
         requiredProgress = plan.requiredProgress;
+      }
+      if (application.workbenchState.tab !== "upgrade") {
+        addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon);
+        if (application.workbenchState.upgradeDragon?.color) requiredProgress += 1;
       }
       evaluation = evaluateCraftingRecipe(recipe, {
         targetItem: baseItem,
@@ -411,7 +427,7 @@ async function workbenchContext(application) {
     materials: craftingMaterialSummary(evaluation.ingredientSets[0].groups, config.materials),
   } : null;
 
-  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles);
+  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: baseItem?.type === "armor", dragonResistance: baseItem?.type === "armor" && Boolean(application.workbenchState.upgradeDragon?.color) });
   application.workbenchConfig = config;
   const gatheringHtml = application.workbenchState.tab === "gather" ? await renderWorkbenchGathering(application) : "";
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
@@ -558,7 +574,7 @@ async function createAndReserve(application) {
   });
   chooseSecondaryMaterials(baseRecipe, application.workbenchState.secondaryMaterials ??= {});
   if (application.workbenchState.tab === "upgrade") selectUpgradeComponentTiers(baseRecipe, application.workbenchState.componentTiers);
-  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles);
+  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: baseItem?.type === "armor", dragonResistance: baseItem?.type === "armor" && Boolean(application.workbenchState.upgradeDragon?.color) });
   if (!team.valid) throw new Error(team.reasons.join(" "));
   const markPlan = reconcileMarkAssignments(
     application,
@@ -572,6 +588,7 @@ async function createAndReserve(application) {
   const newMarks = upgrading ? markPlan.assignments.filter(m => m.status !== "completed") : markPlan.assignments;
   let recipe = augmentRecipeWithArtisanMarks(baseRecipe, markPlan.assignments.map(m =>
     upgrading && m.status === "completed" ? { ...m, materialUnits: 0 } : m));
+  if (!upgrading) addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon);
   const workbench = projectState(party);
   let upgrade = null;
   if (upgrading) {
@@ -613,7 +630,7 @@ async function createAndReserve(application) {
       })),
     })),
     artisanMarks: markPlan.assignments,
-    requiredProgress: upgrade?.requiredProgress || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier),
+    requiredProgress: upgrade?.requiredProgress || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier) + (application.workbenchState.upgradeDragon?.color ? 1 : 0),
   }, userAuditIdentity());
   project = reserveCraftingProject(project, {
     inventoryItems: party.items,
@@ -812,6 +829,13 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
     tier: current.coreTier,
     crafting,
   }, config);
+  if (!current.upgrade) {
+    const scales = current.reservations.filter(row => row.groupId === "dragon-scale");
+    if (scales.length) source.flags[MODULE_ID].dragonScale = {
+      color: scales[0].variantId, tier: scales[0].tier,
+      unitsCommitted: scales.reduce((sum, row) => sum + row.units, 0),
+    };
+  }
   if (current.upgrade) {
     const result = source.flags[MODULE_ID].crafting;
     if (!current.upgrade.replaced.includes("core")) result.core = priorFlags.crafting.core;
@@ -835,6 +859,14 @@ async function completeProjectTransaction(party, projectId, auditUser) {
   const workbench = projectState(party);
   const current = workbench.projects.find((entry) => entry.id === projectId);
   if (!current) throw new Error(localize("CMT.Workbench.ProjectMissing"));
+  const addsResistance = current.reservations.some(row => row.groupId === "dragon-scale") || Boolean(current.upgrade?.dragonScale?.color);
+  if (addsResistance) {
+    const artisans = await Promise.all(current.contributors.map(async contributor => {
+      const actor = await resolveActor(contributor.actorUuid);
+      return actor ? getArtisanProfile(actor) : null;
+    }));
+    if (!artisans.some(hasWyrmcraft)) throw new Error("A participating artisan must still have Wyrmcraft to complete dragon-scale resistance.");
+  }
   const freshPlan = buildConsumptionPlan(current, party.items);
   const baseItem = await resolveBaseItem(current.baseItemUuid);
   if (!baseItem) throw new Error(localize("CMT.Workbench.BaseItemMissing"));
