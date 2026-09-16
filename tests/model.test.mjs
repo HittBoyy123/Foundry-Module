@@ -252,7 +252,7 @@ test("dragon scales add editable armor resistance without replacing the base mat
   assert.equal(result.effectiveRarity, "rare");
 });
 
-test("dragon-scale resistance is armor-only and limited to metal or leather bases", () => {
+test("dragon-scale resistance supports armor bases but excludes weapons", () => {
   const customized = cloneDefaultRulesConfig();
   customized.materials["dragon-scale"].tierBonuses[2] = 4;
   const dragonConfig = normalizeRulesConfig(customized);
@@ -264,8 +264,8 @@ test("dragon-scale resistance is armor-only and limited to metal or leather base
     flags,
     config: dragonConfig,
   });
-  assert.equal(woodenArmor.dragonScale, null);
-  assert.equal(woodenArmor.rules.some((rule) => rule.key === "Resistance"), false);
+  assert.equal(woodenArmor.dragonScale.resistance, 4);
+  assert.equal(woodenArmor.rules.some((rule) => rule.key === "Resistance"), true);
 
   const metalWeapon = calculateItemEffects({
     itemType: "weapon",

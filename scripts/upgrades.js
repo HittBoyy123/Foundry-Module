@@ -1,3 +1,4 @@
+import { dragonScaleUnits, canReinforceWithScales } from "./armor-resistance.js";
 import { MODULE_ID } from "./constants.js";
 import { normalizeCraftingRecipe } from "./crafting-recipes.js";
 import { getArtisanMarkDefinition, assertSingleFreeMark } from "../content/artisan-marks.js";
@@ -59,25 +60,27 @@ export function selectUpgradeComponentTiers(recipe, tiers = {}) {
 export function buildUpgradePlan(item, fullRecipe, newMarks = [], dragonScale = null) {
   const crafting = item.flags[MODULE_ID].crafting;
   const recipe = structuredClone(fullRecipe);
-  const coreMaterial = recipe.ingredientSets[0].groups[0].options[0].materialId;
-  if (item.flags[MODULE_ID].dragonScale?.color && !["metal", "leather"].includes(coreMaterial))
-    throw new Error("Retained dragon scales require Metal or Leather armor.");
   if (dragonScale?.color) {
-    if (item.type !== "armor" || !["metal", "leather"].includes(recipe.ingredientSets[0].groups[0].options[0].materialId))
-      throw new Error("Dragon scales require Metal or Leather armor.");
+    if (!canReinforceWithScales(item)) throw new Error("Dragon scales require armor or a shield.");
     const tier = Math.min(6, Math.max(1, Number(dragonScale.tier) || recipe.tier));
     const previous = item.flags[MODULE_ID].dragonScale ?? {};
     if (previous.color !== dragonScale.color || previous.tier !== tier) {
       recipe.ingredientSets[0].groups.push({ id: "dragon-scale", label: "Dragon Scale enhancement",
         options: [{ materialId: "dragon-scale", tier, tierMode: "minimum", maximumTier: tier,
-          variantId: dragonScale.color, units: Math.max(1, previous.unitsCommitted || 1) }] });
+          variantId: dragonScale.color, units: dragonScaleUnits(recipe) }] });
     }
   }
   const replaced = [];
   let fullWork = 0;
+  let scaleWork = 0;
   for (const set of recipe.ingredientSets) {
     set.groups = set.groups.filter(group => {
       if (group.id.startsWith("mark-")) return true;
+      if (group.id === "dragon-scale") {
+        replaced.push(group.id);
+        scaleWork += group.options[0].units;
+        return true;
+      }
       const old = group.id === "core" ? crafting.core
         : crafting.components?.find(c => (c.slotType || c.id) === group.id);
       if (old && group.options.some(o => o.materialId === old.materialId &&
@@ -92,7 +95,7 @@ export function buildUpgradePlan(item, fullRecipe, newMarks = [], dragonScale = 
   if (recipe.tier < crafting.core.tier) throw new Error("Upgrades cannot lower the core tier.");
   return {
     recipe: normalizeCraftingRecipe(recipe), replaced,
-    requiredProgress: Math.max(1, Math.ceil(fullWork * 0.75) + calculateMarkLabourDays(newMarks, recipe.tier)),
+    requiredProgress: Math.max(1, Math.ceil(fullWork * 0.75) + scaleWork + calculateMarkLabourDays(newMarks, recipe.tier)),
     originalSnapshot: upgradeSnapshot(item),
     dragonScale,
   };

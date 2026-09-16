@@ -1,3 +1,4 @@
+import { normalizeEquipmentSize } from "./equipment-size.js";
 import { captureProjectDate } from "./project-history.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
 import { evaluateCraftingRecipe, normalizeCraftingRecipe } from "./crafting-recipes.js";
@@ -176,6 +177,7 @@ export function normalizeCraftingProject(source) {
     baseItemUuid: text(source.baseItemUuid),
     upgrade: source.upgrade && typeof source.upgrade === "object" ? clone(source.upgrade) : null,
     supersededBy: text(source.supersededBy),
+    equipmentSize: source.equipmentSize ? normalizeEquipmentSize(source.equipmentSize) : null,
     baseItemName: text(source.baseItemName, recipe.name),
     baseItemImg: text(source.baseItemImg, "icons/svg/item-bag.svg"),
     recipeBandId: text(source.recipeBandId),

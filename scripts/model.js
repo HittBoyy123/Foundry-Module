@@ -876,10 +876,9 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
   const dragonMaterial = config.materials["dragon-scale"];
   const dragonSelection = normalizedFlags.dragonScale;
   const dragonColor = dragonMaterial?.colors?.[dragonSelection.color];
-  const dragonEligible = itemType === "armor"
+  const dragonEligible = ["armor", "shield"].includes(itemType)
     && dragonMaterial?.augmentation === true
     && dragonMaterial.enabled
-    && dragonMaterial.allowedBaseMaterials.includes(normalizedFlags.material)
     && dragonColor;
   let dragonScale = null;
   if (dragonEligible) {

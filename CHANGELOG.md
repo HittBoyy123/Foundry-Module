@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.9 — Equipment Sizes, Scale Costs & Traits (2026-09-16)
+
+- Dragon-scale reinforcements support armor and shields, using the specified quantities for each recipe size or armor weight. Upgrade scale costs retain the full listed quantity.
+- Added equipment size selection, defaulting to Medium. Material costs change by 25% of the Medium cost per size step and always round down, with a minimum of one unit per requirement. Finished items retain their selected size; upgrades retain the existing item size.
+- Item drop previews show actual item traits beside the category, separated by dots.
+- All 335 automated tests pass; live Foundry verification remains outstanding.
+
+
 ## 0.34.8 — Dragon Scale Preview Fix (2026-09-16)
 
 - Fixed dragon scales with a different tier from the armor clearing the crafting preview. Scale requirements now retain their selected tier independently.

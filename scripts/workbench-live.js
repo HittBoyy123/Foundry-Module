@@ -2,7 +2,7 @@ import { MODULE_ID } from "./constants.js";
 
 export const SHARED_CRAFT_FIELDS = Object.freeze([
   "baseItemUuid", "bandId", "materialId", "tier", "artisanSlots", "secondaryMaterials",
-  "selectedMarks", "projectName", "componentTiers", "upgradeDragon",
+  "selectedMarks", "projectName", "equipmentSize", "componentTiers", "upgradeDragon",
 ]);
 
 export function sharedCraftDraft(state) {

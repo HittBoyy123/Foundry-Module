@@ -124,7 +124,7 @@
           <img src="{{baseItem.img}}" alt="">
           <div>
             <strong>{{baseItem.name}}</strong>
-            <span>{{baseItem.categoryLabel}}</span>
+            <span>{{baseItem.categoryLabel}}{{#if baseItem.traitSummary}} · {{baseItem.traitSummary}}{{/if}}</span>
           </div>
           <button type="button" data-cmt-workbench-action="clear-base" title="{{localize "CMT.Workbench.ClearBase"}}">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -173,6 +173,13 @@
 
 
       <div class="cmt-workbench-form-grid">
+        <label><span>Equipment Size</span>
+          <select data-cmt-workbench-field="equipment-size" {{#if tabs.upgrade}}disabled{{/if}}>
+            {{#each equipmentSizes}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </label>
+      </div>
+      <div class="cmt-workbench-form-grid">
         {{#each secondaryMaterials}}
           <label><span>{{label}} material</span><select data-cmt-secondary="{{id}}">
             {{#each options}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
@@ -196,7 +203,7 @@
         <section class="cmt-crafting-materials" aria-live="polite">
           <h4>Total Materials Required</h4>
           {{#if preview}}
-            <p>Includes selected Artisan Marks. Available stock excludes reserved materials.</p>
+            <p>Includes selected Artisan Marks and equipment size. Available stock excludes reserved materials.</p>
             <ul>
               {{#each preview.materials}}
                 <li class="{{#unless alternative}}{{#if available}}is-valid{{else}}is-invalid{{/if}}{{/unless}}">

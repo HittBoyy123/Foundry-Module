@@ -1,4 +1,6 @@
-import { addArmorResistance } from "./armor-resistance.js";
+import { itemTraitSummary } from "./item-trait-summary.js";
+import { EQUIPMENT_SIZES, normalizeEquipmentSize, scaleEquipmentRecipe } from "./equipment-size.js";
+import { addArmorResistance, canReinforceWithScales, dragonScaleUnits } from "./armor-resistance.js";
 import { dragonScaleOptions } from "./dragon-scale-options.js";
 import { postCraftingStart } from "./crafting-start-chat.js";
 import { craftingMaterialSummary } from "./crafting-summary.js";
@@ -363,8 +365,9 @@ async function workbenchContext(application) {
       }
       if (application.workbenchState.tab !== "upgrade") {
         addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon, getRulesConfig());
-        if (application.workbenchState.upgradeDragon?.color) requiredProgress += 1;
+        if (application.workbenchState.upgradeDragon?.color) requiredProgress += dragonScaleUnits(recipe);
       }
+      recipe = scaleEquipmentRecipe(recipe, application.workbenchState.tab === "upgrade" ? baseItem.system?.size : application.workbenchState.equipmentSize);
       evaluation = evaluateCraftingRecipe(recipe, {
         targetItem: baseItem,
         inventoryItems: virtualUnreservedInventory(party, workbench.projects),
@@ -418,7 +421,7 @@ async function workbenchContext(application) {
     materials: craftingMaterialSummary(evaluation.ingredientSets[0].groups, config.materials),
   } : null;
 
-  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: baseItem?.type === "armor", dragonResistance: baseItem?.type === "armor" && Boolean(application.workbenchState.upgradeDragon?.color) });
+  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: canReinforceWithScales(baseItem), dragonResistance: canReinforceWithScales(baseItem) && Boolean(application.workbenchState.upgradeDragon?.color) });
   application.workbenchConfig = config;
   const gatheringHtml = application.workbenchState.tab === "gather" ? await renderWorkbenchGathering(application) : "";
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
@@ -443,7 +446,8 @@ async function workbenchContext(application) {
     party,
     disassemblyQueue, disassemblyTotals: [...totals.values()], upgradeError,
     disassemblyQueueCount: disassemblyQueue.length,
-    upgradeDragonAvailable: baseItem?.type === "armor",
+    equipmentSizes: EQUIPMENT_SIZES.map(size => ({ ...size, selected: size.id === normalizeEquipmentSize(application.workbenchState.tab === "upgrade" ? baseItem?.system?.size : application.workbenchState.equipmentSize) })),
+    upgradeDragonAvailable: canReinforceWithScales(baseItem),
     upgradeDragonOptions: dragonScaleOptions(virtualUnreservedInventory(party, workbench.projects), config.materials["dragon-scale"].colors, application.workbenchState.upgradeDragon),
     upgradeAnchors: baseRecipe ? buildRecipeAnchorSlots(baseRecipe) : [],
     retainedMarks: application.workbenchState.tab === "upgrade" ? baseItem?.flags?.[MODULE_ID]?.crafting?.artisanMarks ?? [] : [],
@@ -481,6 +485,7 @@ async function workbenchContext(application) {
     baseItem: baseItem ? {
       name: baseItem.name,
       img: baseItem.img,
+      traitSummary: itemTraitSummary(baseItem),
       categoryLabel: evaluation?.targetCategory?.label ?? localize("CMT.Workbench.EligibleItem", "Eligible PF2e item"),
     } : null,
     recipeBands: recipeBands.map((entry) => ({ ...entry, selected: entry.id === selectedBand?.id })),
@@ -562,7 +567,7 @@ async function createAndReserve(application) {
   });
   chooseSecondaryMaterials(baseRecipe, application.workbenchState.secondaryMaterials ??= {});
   if (application.workbenchState.tab === "upgrade") selectUpgradeComponentTiers(baseRecipe, application.workbenchState.componentTiers);
-  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: baseItem?.type === "armor", dragonResistance: baseItem?.type === "armor" && Boolean(application.workbenchState.upgradeDragon?.color) });
+  const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: canReinforceWithScales(baseItem), dragonResistance: canReinforceWithScales(baseItem) && Boolean(application.workbenchState.upgradeDragon?.color) });
   if (!team.valid) throw new Error(team.reasons.join(" "));
   const markPlan = reconcileMarkAssignments(
     application,
@@ -591,7 +596,10 @@ async function createAndReserve(application) {
     });
     if (!confirmed) return;
   }
+  const equipmentSize = normalizeEquipmentSize(upgrading ? baseItem.system?.size : application.workbenchState.equipmentSize);
+  recipe = scaleEquipmentRecipe(recipe, equipmentSize);
   let project = createCraftingProject({
+    equipmentSize,
     upgrade,
     name: application.workbenchState.projectName || `${materialLabel(application.workbenchState.materialId, application.workbenchState.tier)} ${baseItem.name}`,
     partyUuid: party.uuid,
@@ -618,7 +626,7 @@ async function createAndReserve(application) {
       })),
     })),
     artisanMarks: markPlan.assignments,
-    requiredProgress: upgrade?.requiredProgress || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier) + (application.workbenchState.upgradeDragon?.color ? 1 : 0),
+    requiredProgress: upgrade?.requiredProgress || defaultProjectProgress(baseRecipe) + calculateMarkLabourDays(markPlan.assignments, application.workbenchState.tier) + (application.workbenchState.upgradeDragon?.color ? dragonScaleUnits(baseRecipe) : 0),
   }, userAuditIdentity());
   project = reserveCraftingProject(project, {
     inventoryItems: party.items,
@@ -718,6 +726,7 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
   const source = cloneItemSource(baseItem);
   source.system ??= {};
   source.system.quantity = current.recipe.result.quantity;
+  if (current.equipmentSize) source.system.size = current.equipmentSize;
   source.flags ??= {};
   const priorFlags = source.flags[MODULE_ID] ?? {};
   const componentGroups = new Map();
@@ -1379,6 +1388,7 @@ export function createWorkbenchApplication() {
           material: "materialId",
           tier: "tier",
           "project-name": "projectName",
+          "equipment-size": "equipmentSize",
         }[field.dataset.cmtWorkbenchField];
         if (!stateKey) continue;
         const eventName = field.dataset.cmtWorkbenchField === "project-name" ? "input" : "change";
