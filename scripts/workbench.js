@@ -1,3 +1,4 @@
+import { projectDayPips } from "./project-day-pips.js";
 import { itemTraitSummary } from "./item-trait-summary.js";
 import { EQUIPMENT_SIZES, normalizeEquipmentSize, scaleEquipmentRecipe } from "./equipment-size.js";
 import { addArmorResistance, canReinforceWithScales, dragonScaleUnits } from "./armor-resistance.js";
@@ -398,7 +399,7 @@ async function workbenchContext(application) {
       historyDateLabel: project.disassembledAt ? "Disassembled" : "Completed",
       hasHistoryDate: Boolean(project.disassembledAt || project.completedAt),
       statusClass: `is-${project.status}`,
-      progressPercent: Math.round((project.currentProgress / project.requiredProgress) * 100),
+      ...projectDayPips(project),
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
       contributorSummary: project.contributors.map((entry) => entry.name).join(", "),
       teamSize: projectArtisanCount(project),
@@ -658,7 +659,7 @@ async function rollWorkBlock(application, projectId, days, event) {
   const materialIds = [...new Set([project.coreMaterialId,
     ...project.reservations.map(reservation => reservation.materialId)].filter(Boolean))];
   const choices = professionSkillChoices(artisan, "crafting", materialIds);
-  let selectedSkill = "crafting";
+  let selectedSkill = choices[0]?.id ?? "crafting";
   if (choices.length > 1) {
     selectedSkill = await foundry.applications.api.DialogV2.prompt({
       window: { title: "Work Block Skill" },
@@ -703,6 +704,8 @@ async function rollWorkBlock(application, projectId, days, event) {
     dc,
     degreeLabel: degreeLabel(degree),
     progressBefore,
+    ...projectDayPips(updated),
+    daysEarned: updated.currentProgress - progressBefore,
     progressAfter: updated.currentProgress,
     requiredProgress: updated.requiredProgress,
     ready: updated.status === "ready",

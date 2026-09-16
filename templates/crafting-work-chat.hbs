@@ -1,10 +1,15 @@
-<section class="cmt-chat-card cmt-crafting-chat">
-  <header><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{projectName}}</header>
-  <p><strong>{{artisanName}}</strong> completed a {{days}}-day Work Block.</p>
+<section class="cmt-crafting-chat cmt-crafting-work-readout">
+  <h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{projectName}}</h3>
+  <p><strong>{{artisanName}}</strong> worked for {{days}} days.</p>
   <dl>
     <div><dt>{{skillLabel}}</dt><dd>{{rollTotal}} vs DC {{dc}}</dd></div>
     <div><dt>Result</dt><dd>{{degreeLabel}}</dd></div>
-    <div><dt>Progress</dt><dd>{{progressBefore}} → {{progressAfter}} / {{requiredProgress}}</dd></div>
+    <div><dt>Days earned</dt><dd>{{daysEarned}}</dd></div>
   </dl>
-  {{#if ready}}<p class="cmt-chat-success"><i class="fa-solid fa-circle-check"></i> Ready for final confirmation.</p>{{/if}}
+  <h4>{{daysCompleted}} of {{daysTotal}} days completed</h4>
+  <p>{{daysRemaining}} days of work remaining.</p>
+  <div class="cmt-project-day-pips" role="img" aria-label="{{daysCompleted}} of {{daysTotal}} days completed">
+    {{#each dayPips}}<i class="{{#if completed}}is-complete{{/if}}" title="Day {{day}}{{#if completed}} completed{{/if}}" aria-hidden="true"></i>{{/each}}
+  </div>
+  {{#if ready}}<p><strong>Ready for final confirmation.</strong></p>{{/if}}
 </section>

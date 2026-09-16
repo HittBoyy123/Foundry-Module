@@ -2834,3 +2834,12 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 
 .cmt-crafting-setup .cmt-dragon-scale-field { grid-column: 1; }
 .cmt-crafting-setup .cmt-start-crafting { grid-column: 2; }
+
+.cmt-project-day-pips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0.75rem 0; }
+.cmt-project-day-pips i { display: block; flex: 0 0 22px; height: 9px; background: #e9d7a1; border: 1px solid #b18b36; border-radius: 2px; }
+.cmt-project-day-pips i.is-complete { background: #5e0000; border-color: #5e0000; }
+.cmt-crafting-work-readout { padding: 0.8rem; background: #f5efe7; color: #332d29; border-left: 4px solid #5e0000; }
+.cmt-crafting-work-readout h3, .cmt-crafting-work-readout h4, .cmt-crafting-work-readout dt { color: #5e0000; text-shadow: none; }
+.cmt-crafting-work-readout dl { display: grid; gap: 0.5rem; }
+.cmt-crafting-work-readout dl > div { display: flex; justify-content: space-between; gap: 0.5rem; }
+.cmt-crafting-work-readout dd { margin: 0; text-align: right; }

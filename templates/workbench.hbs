@@ -284,11 +284,11 @@
             {{#if canManage}}<button type="button" data-cmt-project-action="remove" title="Remove project" aria-label="Remove project"><i class="fa-solid fa-xmark"></i></button>{{/if}}
           </header>
           <details class="cmt-project-details" {{#if expanded}}open{{/if}}><summary>Project details & actions</summary>
-          <div class="cmt-workbench-progress" title="{{currentProgress}} / {{requiredProgress}}">
-            <span style="width: {{progressPercent}}%"></span>
+          <div class="cmt-project-day-pips" role="img" aria-label="{{daysCompleted}} of {{daysTotal}} days completed">
+            {{#each dayPips}}<i class="{{#if completed}}is-complete{{/if}}" title="Day {{day}}{{#if completed}} completed{{/if}}" aria-hidden="true"></i>{{/each}}
           </div>
           <div class="cmt-workbench-project-stats">
-            <span><strong>{{currentProgress}} / {{requiredProgress}}</strong> {{localize "CMT.Workbench.Progress"}}</span>
+            <span><strong>{{daysCompleted}} of {{daysTotal}} days completed</strong> · {{daysRemaining}} remaining</span>
             <span>{{teamSize}} artisan(s) · {{estimatedDays}} successful work days remaining</span>
             <span><strong>{{downtimeSpent}}</strong> {{localize "CMT.Workbench.ArtisanDays"}}</span>
             <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>

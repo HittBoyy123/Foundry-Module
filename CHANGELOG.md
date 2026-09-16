@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.35.0 — Project Day Readouts & Profession Defaults (2026-09-16)
+
+- Replaced project progress bars with individual day-of-work pips, red when completed and yellow when remaining. Counts explicitly show completed days out of the required total.
+- Restyled crafting work chat cards with red headings, days earned, remaining work, and matching day pips.
+- Relevant trained profession Lore is listed first and selected by default in crafting skill prompts. Gathering uses the same ordering while preserving a valid selected skill. Standard skills remain available.
+- All 336 automated tests pass; live Foundry visual verification remains outstanding.
+
+
 ## 0.34.9 — Equipment Sizes, Scale Costs & Traits (2026-09-16)
 
 - Dragon-scale reinforcements support armor and shields, using the specified quantities for each recipe size or armor weight. Upgrade scale costs retain the full listed quantity.

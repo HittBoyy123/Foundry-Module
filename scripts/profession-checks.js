@@ -19,7 +19,7 @@ export function professionSkillChoices(actor, defaultSkill, materialIds = []) {
     if (!statistic?.roll || !Number.isFinite(rank) || rank < 1) continue;
     if (!choices.some(choice => choice.id === slug)) choices.push({ id: slug, label: item.name });
   }
-  return choices;
+  return [...choices.slice(1), choices[0]];
 }
 
 export function resolveProfessionStatistic(actor, defaultSkill, materialIds, selectedSkill = defaultSkill) {

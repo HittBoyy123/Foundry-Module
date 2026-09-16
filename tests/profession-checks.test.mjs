@@ -22,7 +22,7 @@ function fixture() {
 test("relevant profession Lore is offered for crafting and gathering and uses its prepared statistic", () => {
   const { actor, material, statistic } = fixture();
   for (const skill of ["crafting", "survival"]) {
-    assert.deepEqual(professionSkillChoices(actor, skill, [material]).map(choice => choice.id), [skill, "prepared-lore"]);
+    assert.deepEqual(professionSkillChoices(actor, skill, [material]).map(choice => choice.id), ["prepared-lore", skill]);
     assert.equal(resolveProfessionStatistic(actor, skill, [material], "prepared-lore").statistic, statistic);
   }
 });
