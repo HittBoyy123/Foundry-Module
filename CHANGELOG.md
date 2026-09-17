@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.35.3 — Crafting Edges & Masterstrokes (2026-09-17)
+
+- Add Crafting Edge and Masterstroke RollTables, automatically creating missing sidebar copies for the GM and providing a Crafting Tables compendium. The Edge table offers d3 and final-block d4 controls; existing world copies are not overwritten.
+- Every Work Block critical success automatically rolls a d3 Crafting Edge, or a d4 when accelerated work could finish the project. Masterstroke Opportunity rolls a d8 only if its 100% work completes the contribution; otherwise it becomes Accelerated Work.
+- Record non-sellable workshop conservation credits and carry Stable Integration’s +2 circumstance bonus to the next block. Keep existing teamwork rates.
+- Preserve all eight Masterstrokes on completed and upgraded items, independently of Artisan Mark capacity. Hidden Detail is allowed for all crafted equipment.
+- Apply Opened Channel to the first upgrade check, adjust carried/stowed Bulk for Balanced Carry, and whisper Resonant Tell warnings to the bearer’s owners.
+- Item controls support Resilient Finish checks, one-use maintenance reductions, and context-dependent Storied Presence checks. Repair HP/damage and narrative effects remain manually resolved; native Repair workflows outside the item control require applying and marking the benefit used manually.
+- Update both crafting handbooks with the tables and benefit controls. All 356 automated tests pass; live Foundry visual verification remains outstanding.
+
 ## 0.35.2 — Cleaner Project Controls (2026-09-16)
 
 - Keep day pips in the project list and remove the duplicate pips and artisan-days statistic from the detail pane.

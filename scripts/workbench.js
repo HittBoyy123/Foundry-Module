@@ -1,3 +1,4 @@
+import { craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
 import { projectDayPips } from "./project-day-pips.js";
 import { itemTraitSummary } from "./item-trait-summary.js";
 import { EQUIPMENT_SIZES, normalizeEquipmentSize, scaleEquipmentRecipe } from "./equipment-size.js";
@@ -57,6 +58,7 @@ const WORKBENCH_SOCKET = `module.${MODULE_ID}`;
 const COMPLETION_REQUEST_TIMEOUT_MS = 30_000;
 const pendingCompletionRequests = new Map();
 const completionLocks = new Set();
+const workRollLocks = new Set();
 let workbenchSocketInstalled = false;
 const openWorkbenches = new Set();
 
@@ -654,12 +656,22 @@ async function createAndReserve(application) {
   ui.notifications.info(format("CMT.Workbench.ProjectCreated", { project: project.name }, `${project.name} was created and its resources were reserved.`));
 }
 
-async function rollWorkBlock(application, projectId, days, event) {
+export async function rollWorkBlock(application, projectId, days, event) {
+  const key = application.workbenchState.partyId;
+  if (workRollLocks.has(key)) throw new Error("A Work Block is already being rolled for this party.");
+  workRollLocks.add(key);
+  try { return await resolveWorkBlock(application, projectId, days, event); }
+  finally { workRollLocks.delete(key); }
+}
+
+async function resolveWorkBlock(application, projectId, days, event) {
   requireWorkbench();
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const workbench = projectState(party);
   const project = workbench.projects.find((entry) => entry.id === projectId);
   if (!project) throw new Error(localize("CMT.Workbench.ProjectMissing"));
+  if (!canEditParty(party)) throw new Error(localize("CMT.Workbench.NotEditable"));
+  if (!["reserved", "active"].includes(project.status)) throw new Error("This project cannot receive another Work Block.");
   const artisan = await fromUuid(project.leadArtisanUuid);
   const materialIds = [...new Set([project.coreMaterialId,
     ...project.reservations.map(reservation => reservation.materialId)].filter(Boolean))];
@@ -681,16 +693,48 @@ async function rollWorkBlock(application, projectId, days, event) {
     inventoryItems: party.items,
   }).check.dc : null;
   const progressBefore = project.currentProgress;
+  const upgradeItem = project.upgrade && project.workBlocks.length === 0 ? await resolveBaseItem(project.baseItemUuid) : null;
+  if (upgradeItem && project.upgrade.originalSnapshot && upgradeSnapshot(upgradeItem) !== project.upgrade.originalSnapshot)
+    throw new Error("The original item changed. Cancel this upgrade and review a fresh project.");
+  const openedChannels = normalizeMasterstrokes(upgradeItem?.flags?.[MODULE_ID]?.crafting?.masterstrokes)
+    .filter(entry => entry.result === 3 && !entry.used);
+  const modifiers = [];
+  if (project.nextWorkBonus) modifiers.push(new game.pf2e.Modifier({ label: "Stable Integration", modifier: 2, type: "circumstance" }));
+  if (openedChannels.length) modifiers.push(new game.pf2e.Modifier({ label: "Opened Channel", modifier: 2, type: "circumstance" }));
   const roll = await statistic.roll({
+    modifiers,
     event,
-    dc,
+    dc: dc === null ? null : { value: dc },
     title: `${project.name} — Work Block`,
     label: project.name,
     extraRollOptions: ["action:craft", "wrathmaker:crafting", `wrathmaker:crafting:tier:${project.coreTier}`],
   });
   if (!roll) return;
   const degree = normalizeDegreeOfSuccess(roll.degreeOfSuccess ?? roll.options?.degreeOfSuccess);
+  const tableRolls = [];
+  let craftingEdge = null;
+  if (degree === "criticalSuccess") {
+    const edgeRoll = await new Roll(`1d${craftingEdgeDie(project, days)}`).evaluate();
+    tableRolls.push(edgeRoll);
+    craftingEdge = { result: Number(edgeRoll.total) };
+    if (craftingEdge.result === 2) {
+      const resources = project.reservations.filter(entry => entry.units > 0);
+      const selected = resources.length > 1 ? await foundry.applications.api.DialogV2.prompt({
+        window: { title: "Material Conservation" },
+        content: `<p>Record a non-sellable workshop credit worth up to 10% of one Resource Unit. No stash items are created.</p><label>Resource <select name="resource">${resources.map(entry => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.itemName)} · Tier ${entry.tier}</option>`).join("")}</select></label>`,
+        ok: { label: "Record Credit", callback: (_event, button) => button.form.elements.resource.value },
+        rejectClose: false,
+      }) : resources[0]?.id;
+      craftingEdge.reservationId = selected || resources[0]?.id;
+    }
+    if (craftingEdge.result === 4 && project.currentProgress + workYield(project, days) >= project.requiredProgress) {
+      const masterstrokeRoll = await new Roll("1d8").evaluate();
+      tableRolls.push(masterstrokeRoll);
+      craftingEdge.masterstrokeResult = Number(masterstrokeRoll.total);
+    }
+  }
   const updated = advanceCraftingProject(project, {
+    craftingEdge,
     days,
     degree,
     rollTotal: Number(roll.total),
@@ -699,8 +743,27 @@ async function rollWorkBlock(application, projectId, days, event) {
     artisanName: artisan.name,
     user: userAuditIdentity(),
   });
-  await saveWorkbench(party, replaceProject(workbench, updated));
+  const freshWorkbench = projectState(party);
+  const freshProject = freshWorkbench.projects.find(entry => entry.id === projectId);
+  if (!freshProject || JSON.stringify(freshProject) !== JSON.stringify(project))
+    throw new Error("This project changed during the roll. Refresh the Workbench before continuing; this roll has not been applied.");
+  const previousMasterstrokes = upgradeItem?.flags?.[MODULE_ID]?.crafting?.masterstrokes;
+  if (openedChannels.length) {
+    const consumed = normalizeMasterstrokes(previousMasterstrokes).map(entry => openedChannels.some(channel => channel.id === entry.id) ? { ...entry, used: true } : entry);
+    if (!await upgradeItem.update({ [`flags.${MODULE_ID}.crafting.masterstrokes`]: consumed }, { wrathmakerUpgrade: true }))
+      throw new Error("Opened Channel could not be expended. The work roll has not been applied.");
+    updated.upgrade.originalSnapshot = upgradeSnapshot(upgradeItem);
+  }
+  try { await saveWorkbench(party, replaceProject(freshWorkbench, updated)); }
+  catch (error) {
+    if (openedChannels.length) await upgradeItem.update({ [`flags.${MODULE_ID}.crafting.masterstrokes`]: previousMasterstrokes }, { wrathmakerUpgrade: true });
+    throw error;
+  }
+  const lastBlock = updated.workBlocks.at(-1);
   const content = await renderTemplate(`modules/${MODULE_ID}/templates/crafting-work-chat.hbs`, {
+    craftingEdge: lastBlock.craftingEdge,
+    masterstroke: lastBlock.masterstroke,
+    conservationCredit: craftingEdge?.result === 2 ? updated.conservationCredits.at(-1) : null,
     skillLabel,
     projectName: project.name,
     artisanName: artisan.name,
@@ -715,7 +778,7 @@ async function rollWorkBlock(application, projectId, days, event) {
     requiredProgress: updated.requiredProgress,
     ready: updated.status === "ready",
   });
-  await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: artisan }), content });
+  await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: artisan }), content, rolls: tableRolls });
   ui.notifications.info(updated.status === "ready"
     ? format("CMT.Workbench.ProjectReady", { project: updated.name }, `${updated.name} is ready to complete.`)
     : format("CMT.Workbench.ProgressSaved", { project: updated.name }, `${updated.name} progress was saved.`));
@@ -775,6 +838,7 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
   }));
   const crafting = {
     ...(priorFlags.crafting ?? {}),
+    masterstrokes: [...(current.upgrade ? normalizeMasterstrokes(priorFlags.crafting?.masterstrokes) : []), ...normalizeMasterstrokes(current.masterstrokes)],
     core: {
       ...(priorFlags.crafting?.core ?? {}),
       materialId: current.coreMaterialId,
@@ -1550,6 +1614,24 @@ export function createWorkbenchApplication() {
             } catch (error) { ui.notifications.error(error.message); }
           });
         }
+        for (const button of card.querySelectorAll("[data-cmt-use-credit]")) button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            if (!canEditParty(party)) throw new Error(localize("CMT.Workbench.NotEditable"));
+            const confirmed = await foundry.applications.api.DialogV2.confirm({ window: { title: "Use Conservation Credit" },
+              content: "<p>Apply this credit to workshop consumables worth up to 10% of one recorded Resource Unit. It cannot be sold or converted into stash materials. Mark it as used?</p>" });
+            if (!confirmed) return;
+            const state = projectState(party);
+            const entry = state.projects.find(project => project.id === projectId);
+            const credit = entry?.conservationCredits.find(credit => credit.id === button.dataset.cmtUseCredit);
+            if (!credit || credit.used) throw new Error("This credit is no longer available.");
+            credit.used = true;
+            credit.usedBy = game.user.id;
+            await saveWorkbench(party, state);
+            await this.render({ force: true });
+          } catch (error) { ui.notifications.error(error.message); }
+          finally { button.disabled = false; }
+        });
         card.querySelector('[data-cmt-project-action="roll-work"]')?.addEventListener("click", async (event) => {
           try {
             const days = Number(card.querySelector('[data-cmt-project-field="days"]')?.value) || 1;

@@ -1,3 +1,4 @@
+import { normalizeMasterstrokes } from "./crafting-edges.js";
 import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
 export const CRAFTING_STATE_SCHEMA_VERSION = 2;
 
@@ -124,6 +125,7 @@ export function normalizeCraftingState(source, { materialId = "metal", tier: cor
     components: (Array.isArray(input.components) ? input.components : []).map(normalizeComponent),
     artisanMarks: (Array.isArray(input.artisanMarks) ? input.artisanMarks : []).map(normalizeMark),
     synergies: Array.isArray(input.synergies) ? clone(input.synergies) : [],
+    masterstrokes: normalizeMasterstrokes(input.masterstrokes),
     provenance: Array.isArray(input.provenance) ? clone(input.provenance) : [],
   };
 }

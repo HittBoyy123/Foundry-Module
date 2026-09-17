@@ -2869,3 +2869,11 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   background: #f2df9c;
   box-shadow: 0 0 5px #9f8036;
 }
+
+.cmt-masterstrokes { margin-top: 0.6rem; }
+.cmt-masterstrokes h3, .cmt-masterstrokes summary { color: #5e0000; }
+.cmt-masterstrokes details { padding: 0.4rem; border-bottom: 1px solid #aa9587; }
+.cmt-masterstrokes button { width: auto; padding: 0.25rem 0.5rem; margin: 0.25rem; background: #e9d7a1; color: #5e0000; border: 1px solid #9f8036; border-radius: 5px; }
+
+.cmt-edge-table-controls { display: flex; gap: 0.5rem; padding: 0.5rem; }
+.cmt-edge-table-controls button { background: #e9d7a1; color: #5e0000; border: 1px solid #9f8036; border-radius: 5px; }

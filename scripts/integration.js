@@ -1,3 +1,4 @@
+import { applyMasterstrokeBulk } from "./masterstrokes.js";
 import { MODULE_ID } from "./constants.js";
 import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
 import { applyMarkItemStats, buildArtisanMarkRules } from "./artisan-mark-effects.js";
@@ -107,6 +108,7 @@ export function applyPreparedItemPresentation(item, config) {
   suppressPf2eRuneProgression(item);
   applyShieldCoreProgression(item, result);
   applyMarkItemStats(item);
+  applyMasterstrokeBulk(item);
 
   if (item.isIdentified !== false) {
     const baseName = item._source?.name ?? item.name;

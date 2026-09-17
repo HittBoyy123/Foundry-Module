@@ -1,3 +1,4 @@
+import { insertMasterstrokeControls } from "./masterstrokes.js";
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import { insertMarkActionButton } from "./mark-actions.js";
 import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
@@ -351,6 +352,7 @@ export function injectItemSheet(application, html, getConfig) {
   if (!itemTypeIsSupported(config, craftingItemType)) return;
   insertControls(application, item, root, config, craftingItemType);
   insertMarkActionButton(item, root);
+  insertMasterstrokeControls(item, root);
 }
 
 export function registerItemSheetHooks(getConfig) {

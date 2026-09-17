@@ -305,6 +305,13 @@
             <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>
             <span><strong>{{markCount}}</strong> Artisan Marks</span>
           </div>
+          {{#if nextWorkBonus}}<p><strong>Stable Integration:</strong> +2 circumstance bonus to the next Work Block.</p>{{/if}}
+          {{#if masterstrokes.length}}<details open><summary>Masterstrokes</summary><ul>
+            {{#each masterstrokes}}<li><span><strong>{{name}}</strong> — {{description}}</span></li>{{/each}}
+          </ul></details>{{/if}}
+          {{#if conservationCredits.length}}<details><summary>Workshop Conservation Credits</summary><ul>
+            {{#each conservationCredits}}<li><span>{{itemName}} · up to 10% of one Resource Unit’s consumable value. Non-sellable. {{#if used}}Used{{else}}Available{{/if}}</span>{{#unless used}}{{#if ../canManage}}<button type="button" data-cmt-use-credit="{{id}}">Use Credit</button>{{/if}}{{/unless}}</li>{{/each}}
+          </ul></details>{{/if}}
           {{#if contributorSummary}}<p class="cmt-workbench-project-artisans"><strong>Artisans:</strong> {{contributorSummary}}</p>{{/if}}
           {{#if artisanMarks.length}}
             <details open>

@@ -1,3 +1,4 @@
+import { normalizeMasterstrokes, resolveCraftingEdge } from "./crafting-edges.js";
 import { normalizeEquipmentSize } from "./equipment-size.js";
 import { captureProjectDate } from "./project-history.js";
 import { getCraftingResourceData } from "./crafting-categories.js";
@@ -80,6 +81,8 @@ function normalizeWorkBlock(source, index) {
     id: id(source?.id, `work-${index + 1}`),
     days: integer(source?.days, 1, 1, 5),
     artisanCount: integer(source?.artisanCount, 1, 1, 6),
+    craftingEdge: source?.craftingEdge ? clone(source.craftingEdge) : null,
+    masterstroke: normalizeMasterstrokes(source?.masterstroke ? [source.masterstroke] : [])[0] ?? null,
     degree: ["criticalFailure", "failure", "success", "criticalSuccess"].includes(source?.degree)
       ? source.degree
       : "success",
@@ -195,6 +198,9 @@ export function normalizeCraftingProject(source) {
     reservations: (Array.isArray(source.reservations) ? source.reservations : []).map(normalizeReservation),
     requiredProgress,
     currentProgress,
+    masterstrokes: normalizeMasterstrokes(source.masterstrokes),
+    conservationCredits: Array.isArray(source.conservationCredits) ? clone(source.conservationCredits) : [],
+    nextWorkBonus: source.nextWorkBonus === 2 ? 2 : 0,
     teamworkRemainder: Math.min(0.75, Math.max(0, Number(source.teamworkRemainder) || 0)),
     downtimeSpent: integer(source.downtimeSpent, 0, 0),
     workBlocks: (Array.isArray(source.workBlocks) ? source.workBlocks : []).map(normalizeWorkBlock),
@@ -403,6 +409,7 @@ export function releaseCraftingProject(source, user = {}) {
 }
 
 export function advanceCraftingProject(source, {
+  craftingEdge = null,
   days = 1,
   degree = "success",
   rollTotal = null,
@@ -418,13 +425,20 @@ export function advanceCraftingProject(source, {
   }
   const committedDays = integer(days, 1, 1, 5);
   const artisanCount = projectArtisanCount(project);
-  const earned = progressForWorkBlock(committedDays, degree) * artisanWorkRate(artisanCount) + project.teamworkRemainder;
+  const resolvedEdge = degree === "criticalSuccess" && craftingEdge
+    ? resolveCraftingEdge(project, { ...craftingEdge, days: committedDays, maker: artisanName || project.leadArtisanName }) : null;
+  const earned = progressForWorkBlock(committedDays, resolvedEdge?.progressDegree ?? degree) * artisanWorkRate(artisanCount) + project.teamworkRemainder;
+  project.nextWorkBonus = resolvedEdge?.nextWorkBonus ?? 0;
+  if (resolvedEdge?.masterstroke) project.masterstrokes.push(resolvedEdge.masterstroke);
+  if (resolvedEdge?.conservationCredit) project.conservationCredits.push(resolvedEdge.conservationCredit);
   const progress = Math.floor(earned);
   project.teamworkRemainder = earned - progress;
   const before = project.currentProgress;
   const after = Math.min(project.requiredProgress, before + progress);
   const block = normalizeWorkBlock({
     days: committedDays,
+    craftingEdge: resolvedEdge?.edge,
+    masterstroke: resolvedEdge?.masterstroke,
     artisanCount,
     degree,
     progress: after - before,

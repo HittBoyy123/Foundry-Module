@@ -1,3 +1,5 @@
+import { ensureCraftingRollTables, registerCraftingTableControls } from "./crafting-roll-tables.js";
+import { registerMasterstrokeWarnings } from "./masterstrokes.js";
 import { MODULE_ID, MODULE_TITLE } from "./constants.js";
 import { createPublicApi } from "./api.js";
 import { installAbilityBoostBridge, registerAbilityBoostSheetHooks } from "./ability-boosts.js";
@@ -62,6 +64,8 @@ Hooks.once("init", () => {
   registerGMItemCreator();
   registerMarkActionHooks();
   registerTimedMarkControls();
+  registerMasterstrokeWarnings();
+  registerCraftingTableControls();
 
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
   abilityBoostsInstalled = installAbilityBoostBridge();
@@ -82,6 +86,7 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   if (game.system.id !== "pf2e") return;
+  void ensureCraftingRollTables().catch(error => console.error(`${MODULE_ID} | Crafting tables could not be installed.`, error));
   if (bridgeInstalled || abilityBoostsInstalled || campaignResourcesInstalled || flankingInstalled || hexplorationInstalled) {
     refreshPreparedData();
   }
