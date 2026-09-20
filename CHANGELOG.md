@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.35.4 — Shield Damage & Artisan Selection (2026-09-20)
+
+- Accept artisan drops from Actor documents and scene Tokens, including linked characters and unlinked NPCs. Add a character/NPC selector to each slot, filtered by ownership, profession, specialization, and duplicate assignments.
+- Allow players to assign their own artisans through an online GM when they cannot edit the Party actor, without granting stash permissions. Save and validate only the changed assignment against the current shared draft.
+- Preserve the actual current HP written by Shield Block, damage, and repair updates instead of reapplying Core and Artisan Mark HP bonuses as healing during each refresh.
+- Retain the increased maximum HP, hardness, and broken threshold. Damaged shields can cross their broken threshold and reach zero HP.
+- Preserve saved HP through material edits and world-item refreshes, including when the system clamps an unowned item to its base maximum before preparation.
+- Legacy full-health items keep their durability bonus; saved zero HP is treated as destroyed. Damage overwritten by earlier versions cannot be reconstructed automatically.
+
+- All 369 automated tests pass; live Foundry multiplayer verification remains outstanding.
+
 ## 0.35.3 — Crafting Edges & Masterstrokes (2026-09-17)
 
 - Add Crafting Edge and Masterstroke RollTables, automatically creating missing sidebar copies for the GM and providing a Crafting Tables compendium. The Edge table offers d3 and final-block d4 controls; existing world copies are not overwritten.

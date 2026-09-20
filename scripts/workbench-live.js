@@ -17,21 +17,26 @@ export function hydrateCraftDraft(application, party) {
   application.sharedCraftPartyId = party?.id;
 }
 
+export async function publishSharedCraftDraft(application, party) {
+  clearTimeout(application.sharedCraftTimer);
+  if (!party || application.sharedCraftPartyId !== party.id || !party.canUserModify?.(game.user, "update")) return;
+  const next = sharedCraftDraft(application.workbenchState);
+  const previous = application.sharedCraftBaseline ?? {};
+  const update = Object.fromEntries(Object.entries(next).filter(([key, value]) =>
+    JSON.stringify(value) !== JSON.stringify(previous[key]))
+    .map(([key, value]) => [`flags.${MODULE_ID}.craftDraft.${key}`, value]));
+  if (!Object.keys(update).length) return;
+  application.sharedCraftBaseline = next;
+  try { await party.update(update); }
+  catch (error) { application.sharedCraftBaseline = previous; throw error; }
+}
+
 export function bindSharedCraftDraft(application, root, getParty) {
   const publish = () => {
     clearTimeout(application.sharedCraftTimer);
     application.sharedCraftTimer = setTimeout(async () => {
-      const party = getParty();
-      if (!party || application.sharedCraftPartyId !== party.id || !party.canUserModify?.(game.user, "update")) return;
-      const next = sharedCraftDraft(application.workbenchState);
-      const previous = application.sharedCraftBaseline ?? {};
-      const update = Object.fromEntries(Object.entries(next).filter(([key, value]) =>
-        JSON.stringify(value) !== JSON.stringify(previous[key]))
-        .map(([key, value]) => [`flags.${MODULE_ID}.craftDraft.${key}`, value]));
-      if (!Object.keys(update).length) return;
-      application.sharedCraftBaseline = next;
-      try { await party.update(update); }
-      catch (error) { application.sharedCraftBaseline = previous; ui.notifications.error(error.message); }
+      try { await publishSharedCraftDraft(application, getParty()); }
+      catch (error) { ui.notifications.error(error.message); }
     }, 150);
   };
   for (const event of ["change", "drop", "click"]) root.addEventListener(event, publish);

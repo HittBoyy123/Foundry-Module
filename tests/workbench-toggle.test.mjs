@@ -7,9 +7,9 @@ import { registerWorkbench, openWorkbenchApplication } from "../scripts/workbenc
 test("disabled Workbench blocks menu/API access and GM socket completion, and reacts live", async () => {
   const hooks = new Map();
   globalThis.Hooks = {
-    on(name, fn) { hooks.set(name, fn); },
-    once(name, fn) { hooks.set(name, fn); },
-    callAll(name, ...args) { hooks.get(name)?.(...args); },
+    on(name, fn) { hooks.set(name, [...(hooks.get(name) ?? []), fn]); },
+    once(name, fn) { this.on(name, fn); },
+    callAll(name, ...args) { for (const fn of hooks.get(name) ?? []) fn(...args); },
   };
   let renders = 0;
   class Application {
@@ -26,7 +26,7 @@ test("disabled Workbench blocks menu/API access and GM socket completion, and re
   users.get = id => users.find(user => user.id === id);
   let settings;
   let saved = cloneDefaultRulesConfig();
-  let socketHandler;
+  const socketHandlers = [];
   let response;
   const party = { id: "party", type: "party", canUserModify: () => true };
   globalThis.game = {
@@ -39,7 +39,7 @@ test("disabled Workbench blocks menu/API access and GM socket completion, and re
     },
     i18n: { localize: key => key },
     socket: {
-      on(_name, fn) { socketHandler = fn; },
+      on(_name, fn) { socketHandlers.push(fn); },
       emit(_name, payload) { response = payload; },
     },
   };
@@ -60,11 +60,11 @@ test("disabled Workbench blocks menu/API access and GM socket completion, and re
   saved.crafting.workbenchEnabled = false;
   settings.onChange();
   assert.deepEqual(await menu._prepareContext({}), { workbenchEnabled: false });
-  hooks.get("ready")();
+  Hooks.callAll("ready");
   const originalError = console.error;
   console.error = () => {};
   try {
-    socketHandler({ type: "complete-request", gmId: "gm", userId: "gm", partyId: "party", projectId: "project" });
+    for (const socketHandler of socketHandlers) socketHandler({ type: "complete-request", gmId: "gm", userId: "gm", partyId: "party", projectId: "project" });
     await new Promise(resolve => setImmediate(resolve));
   } finally { console.error = originalError; }
   assert.equal(response.ok, false);

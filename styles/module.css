@@ -2877,3 +2877,6 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 
 .cmt-edge-table-controls { display: flex; gap: 0.5rem; padding: 0.5rem; }
 .cmt-edge-table-controls button { background: #e9d7a1; color: #5e0000; border: 1px solid #9f8036; border-radius: 5px; }
+
+.cmt-artisan-select-label { display: grid; gap: 0.2rem; margin: 0.5rem 0; font-weight: 600; }
+.cmt-artisan-select-label select { width: 100%; min-width: 0; }

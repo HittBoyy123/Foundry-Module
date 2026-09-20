@@ -229,6 +229,15 @@
             <article class="cmt-artisan-slot" data-cmt-artisan-slot="{{index}}">
               <header><strong>{{role}}</strong><small>{{#if required}}Required{{else}}Optional{{/if}}</small></header>
               <span class="cmt-slot-requirement">{{requirement}}</span>
+              <label class="cmt-artisan-select-label">Choose artisan
+                <select data-cmt-artisan-select="{{index}}" aria-label="Choose {{role}}" {{#unless canAssign}}disabled{{/unless}}>
+                  <option value="">Select a character or NPC</option>
+                  {{#if selectedUnavailable}}<option value="{{actorUuid}}" selected disabled>{{name}} — assigned</option>{{/if}}
+                  {{#each choices}}<option value="{{uuid}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+                </select>
+              </label>
+              {{#unless choices.length}}<small>No eligible characters or NPCs you control.</small>{{/unless}}
+
               {{#if actorUuid}}
                 <div class="cmt-artisan-identity">
                   <button type="button" class="cmt-artisan-portrait" data-cmt-open-marks="{{actorUuid}}" title="Choose Artisan Marks for {{name}}" aria-label="Choose Artisan Marks for {{name}}">
@@ -239,7 +248,7 @@
                   </div>
                 </div>
                 <div class="cmt-slot-actions"><button type="button" data-cmt-open-marks="{{actorUuid}}">Choose Marks</button>
-                <button type="button" data-cmt-slot-remove="{{index}}" title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
+                <button type="button" data-cmt-slot-remove="{{index}}" {{#unless canAssign}}disabled{{/unless}} title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
                 <div class="cmt-mark-badges">
                   {{#each marks}}<button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} · {{capacityCost}}<small>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</small></button>{{/each}}
                 </div>

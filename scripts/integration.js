@@ -1,3 +1,4 @@
+import { addItemHitPointBonus, preserveItemHitPointUpdate } from "./item-hit-points.js";
 import { applyMasterstrokeBulk } from "./masterstrokes.js";
 import { MODULE_ID } from "./constants.js";
 import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
@@ -84,15 +85,7 @@ function applyShieldCoreProgression(item, result) {
   if (Number.isFinite(Number(item.system.hardness))) {
     item.system.hardness = Number(item.system.hardness) + (progression * 3);
   }
-  const hp = item.system.hp;
-  if (hp && typeof hp === "object") {
-    const bonus = progression * 30;
-    if (Number.isFinite(Number(hp.max))) hp.max = Number(hp.max) + bonus;
-    if (Number.isFinite(Number(hp.value))) hp.value = Number(hp.value) + bonus;
-    if (Number.isFinite(Number(hp.max)) && Object.hasOwn(hp, "brokenThreshold")) {
-      hp.brokenThreshold = Math.floor(Number(hp.max) / 2);
-    }
-  }
+  addItemHitPointBonus(item, progression * 30);
   adjustedShieldStats.add(item.system);
 }
 
@@ -147,6 +140,7 @@ export function registerPreparedItemHooks(getConfig) {
       return false;
     }
   });
+  Hooks.on("preUpdateItem", (item, changes) => preserveItemHitPointUpdate(item, changes) || undefined);
   Hooks.on("prepareItemData", (item) => {
     try {
       applyPreparedItemPresentation(item, getConfig());

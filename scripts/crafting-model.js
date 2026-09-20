@@ -113,6 +113,7 @@ export function normalizeCraftingState(source, { materialId = "metal", tier: cor
   const core = input.core && typeof input.core === "object" ? input.core : {};
   return {
     schemaVersion: CRAFTING_STATE_SCHEMA_VERSION,
+    ...(input.hpValueMode === "absolute" ? { hpValueMode: "absolute" } : {}),
     core: {
       materialId: text(core.materialId, materialId),
       tier: tier(core.tier, tier(coreTier)),

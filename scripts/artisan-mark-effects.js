@@ -1,3 +1,4 @@
+import { addItemHitPointBonus } from "./item-hit-points.js";
 import { MODULE_ID } from "./constants.js";
 import { powerRules, MARK_ITEM_POWER } from "../content/mark-power.js";
 import { catalogueRules } from "./mark-catalogue-effects.js";
@@ -114,11 +115,7 @@ export function applyMarkItemStats(item) {
     }
   }
   if (extraRange) item.system.range = baseRange + extraRange;
-  if (extraHP && item.system.hp) {
-    item.system.hp.max += extraHP;
-    item.system.hp.value = Math.min(item.system.hp.max, item.system.hp.value + extraHP);
-    if ("brokenThreshold" in item.system.hp) item.system.hp.brokenThreshold = Math.floor(item.system.hp.max / 2);
-  }
+  addItemHitPointBonus(item, extraHP);
   appliedSystems.add(item.system);
 }
 

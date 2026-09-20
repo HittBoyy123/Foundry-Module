@@ -25,6 +25,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
       role: wyrmSlot && index > 1 ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
       required: index === 0 || (wyrmSlot && dragonResistance),
       materialIds,
+      requiresWyrmcraft: wyrmSlot,
       requirement: wyrmSlot ? "Leatherwork · Wyrmcraft (dragon-scale resistance)" : group ? PROFESSION_DEFINITIONS.filter(profession => profession.materialIds.some(id => materialIds.includes(id)))
         .map(profession => profession.name).join(" / ") || "Qualified Artisan" : "Any Profession",
       actorUuid: profile?.actorUuid ?? "",

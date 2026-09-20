@@ -1,3 +1,4 @@
+import { artisanSlotChoices, availableArtisanProfiles, canControlArtisan, resolveDroppedArtisan, slotAllowsArtisan, requestArtisanAssignment, installArtisanAssignmentSocket } from "./artisan-selection.js";
 import { craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
 import { projectDayPips } from "./project-day-pips.js";
 import { itemTraitSummary } from "./item-trait-summary.js";
@@ -8,7 +9,7 @@ import { postCraftingStart } from "./crafting-start-chat.js";
 import { craftingMaterialSummary } from "./crafting-summary.js";
 import { archivedProjectMatches, projectHistoryDate } from "./project-history.js";
 import { postDisassemblyChat } from "./disassembly-chat.js";
-import { bindSharedCraftDraft, hydrateCraftDraft } from "./workbench-live.js";
+import { bindSharedCraftDraft, hydrateCraftDraft, publishSharedCraftDraft } from "./workbench-live.js";
 import { addDisassemblyItems, processDisassemblyBatch } from "./disassembly-batch.js";
 import { MODULE_ID } from "./constants.js";
 import { professionSkillChoices, resolveProfessionStatistic } from "./profession-checks.js";
@@ -425,6 +426,7 @@ async function workbenchContext(application) {
   } : null;
 
   const team = validateArtisanTeam(baseRecipe, application.workbenchState.artisanSlots, profiles, { armor: canReinforceWithScales(baseItem), dragonResistance: canReinforceWithScales(baseItem) && Boolean(application.workbenchState.upgradeDragon?.color) });
+  const artisanChoices = availableArtisanProfiles();
   application.workbenchConfig = config;
   const gatheringHtml = application.workbenchState.tab === "gather" ? await renderWorkbenchGathering(application) : "";
   const activeProjectCount = projects.filter((project) => !["completed", "cancelled"].includes(project.status)).length;
@@ -468,7 +470,12 @@ async function workbenchContext(application) {
       }).filter(Boolean),
     gatheringHtml,
     teamReasons: baseRecipe ? team.reasons : [],
-    artisanSlots: team.slots.map((slot) => ({ ...slot, marks: markPlan.assignments.filter((mark) => mark.maker.actorUuid === slot.actorUuid) })),
+    artisanSlots: team.slots.map((slot) => {
+      const choices = artisanSlotChoices(slot, artisanChoices, application.workbenchState.artisanSlots);
+      const canAssign = !slot.actorUuid || canEdit || canControlArtisan(profiles.find(profile => profile.actorUuid === slot.actorUuid)?.actor, game.user);
+      return { ...slot, choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
+        marks: markPlan.assignments.filter(mark => mark.maker.actorUuid === slot.actorUuid) };
+    }),
     secondaryMaterials: (selectedBand?.secondaries ?? []).filter((entry) => !entry.optional).map((entry) => ({
       upgradeTier: application.workbenchState.componentTiers?.[entry.id] ?? Math.max(1, tier - 2),
       id: entry.id, label: entry.label, options: entry.materialIds.map((id) => ({ id, label: config.materials?.[id]?.label ?? id, selected: application.workbenchState.secondaryMaterials?.[entry.id] === id })),
@@ -1314,7 +1321,8 @@ export function createWorkbenchApplication() {
     async _prepareContext(options) {
       const context = await super._prepareContext(options);
       if (!workbenchEnabled()) return { ...context, workbenchEnabled: false };
-      const party = partyActors().find(entry => entry.id === this.workbenchState.partyId);
+      const party = partyActors().find(entry => entry.id === this.workbenchState.partyId) ?? game.actors?.party ?? partyActors()[0];
+      if (party) this.workbenchState.partyId = party.id;
       if (party && this.sharedCraftPartyId !== party.id) hydrateCraftDraft(this, party);
       return { ...context, ...(await workbenchContext(this)), workbenchEnabled: true };
     }
@@ -1519,36 +1527,53 @@ export function createWorkbenchApplication() {
         }
       });
 
+      const assignArtisan = async (index, actor) => {
+        if (actor) {
+          if (!canControlArtisan(actor, game.user)) throw new Error("Choose a character or NPC you control.");
+          if (!slotAllowsArtisan(context.artisanSlots[index], getArtisanProfile(actor)))
+            throw new Error(`${context.artisanSlots[index].role} requires ${context.artisanSlots[index].requirement} expertise.`);
+        }
+        const party = partyActors().find(entry => entry.id === this.workbenchState.partyId);
+        if (!party) throw new Error("Choose a party first.");
+        await publishSharedCraftDraft(this, party);
+        const slots = await requestArtisanAssignment(party, index, actor?.uuid ?? "");
+        this.workbenchState.artisanSlots = slots;
+        this.sharedCraftBaseline ??= {};
+        this.sharedCraftBaseline.artisanSlots = structuredClone(slots);
+        await this.render({ force: true });
+      };
       for (const slot of root.querySelectorAll("[data-cmt-artisan-slot]")) {
         const index = Number(slot.dataset.cmtArtisanSlot);
-        slot.addEventListener("dragover", (event) => { event.preventDefault(); slot.classList.add("is-dragover"); });
+        slot.addEventListener("dragover", event => { event.preventDefault(); event.stopPropagation(); slot.classList.add("is-dragover"); });
         slot.addEventListener("dragleave", () => slot.classList.remove("is-dragover"));
-        slot.addEventListener("drop", async (event) => {
-          event.preventDefault();
+        slot.addEventListener("drop", async event => {
+          event.preventDefault(); event.stopPropagation();
           slot.classList.remove("is-dragover");
           try {
-            const editor = foundry.applications.ux?.TextEditor ?? globalThis.TextEditor;
+            const editor = foundry.applications.ux?.TextEditor?.implementation ?? foundry.applications.ux?.TextEditor ?? globalThis.TextEditor;
             const data = editor?.getDragEventData?.(event) ?? JSON.parse(event.dataTransfer.getData("text/plain"));
-            const profile = getArtisanProfile(await resolveActor(data.uuid ?? (data.type === "Actor" ? `Actor.${data.id}` : "")));
-            if (!profile?.professions.length) throw new Error("Choose a character with a profession.");
-            const requirement = context.artisanSlots[index];
-            if (requirement.required && requirement.materialIds.length && !profile.professions.some((profession) => (
-              profession.materialIds.some((id) => requirement.materialIds.includes(id))
-            ))) throw new Error(`${requirement.role} requires ${requirement.requirement} expertise.`);
-            if (this.workbenchState.artisanSlots.some((uuid, i) => uuid === profile.actorUuid && i !== index)) {
-              throw new Error("This artisan already occupies a slot.");
-            }
-            this.workbenchState.artisanSlots[index] = profile.actorUuid;
-            this.workbenchState.requiredProgress = 0;
-            await this.render({ force: true });
+            const actor = await resolveDroppedArtisan(data);
+            if (!actor) throw new Error("Drop a character or NPC from the actor list, character sheet, or scene token.");
+            await assignArtisan(index, actor);
           } catch (error) { ui.notifications.error(error.message); }
+        });
+        const select = slot.querySelector("[data-cmt-artisan-select]");
+        select?.addEventListener("change", async event => {
+          event.stopPropagation(); select.disabled = true;
+          try {
+            const actor = select.value ? await resolveActor(select.value) : null;
+            if (select.value && !actor) throw new Error("That artisan is no longer available.");
+            await assignArtisan(index, actor);
+          } catch (error) { ui.notifications.error(error.message); select.value = context.artisanSlots[index].actorUuid; }
+          finally { select.disabled = false; }
         });
       }
       for (const button of root.querySelectorAll("[data-cmt-slot-remove]")) {
-        button.addEventListener("click", async () => {
-          this.workbenchState.artisanSlots[Number(button.dataset.cmtSlotRemove)] = "";
-          this.workbenchState.requiredProgress = 0;
-          await this.render({ force: true });
+        button.addEventListener("click", async event => {
+          event.stopPropagation(); button.disabled = true;
+          try { await assignArtisan(Number(button.dataset.cmtSlotRemove), null); }
+          catch (error) { ui.notifications.error(error.message); }
+          finally { button.disabled = false; }
         });
       }
       root.querySelector('[data-cmt-workbench-action="clear-base"]')?.addEventListener("click", async () => {
@@ -1674,6 +1699,7 @@ export function createWorkbenchApplication() {
 export function registerWorkbench() {
   WorkbenchApplication = createWorkbenchApplication();
   Hooks.once("ready", installWorkbenchSocket);
+  Hooks.once("ready", installArtisanAssignmentSocket);
   const refreshGathering = createLiveGatheringRefresh(() => openWorkbenches);
   const refreshWorkbench = createLiveGatheringRefresh(() => openWorkbenches, setTimeout,
     application => application.rendered && application.workbenchState.tab !== "gather");
