@@ -1,6 +1,6 @@
+import { insertFocusSlotControl } from "./spell-focus.js";
 import { insertMasterstrokeControls } from "./masterstrokes.js";
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
-import { insertMarkActionButton } from "./mark-actions.js";
 import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
 import {
   calculateItemEffects,
@@ -144,8 +144,9 @@ async function saveSelection(item, root, config) {
 
 function hideRuneControls(root) {
   for (const control of root.querySelectorAll('[name^="system.runes."]')) {
+    if (control.name === "system.runes.striking") continue;
     const row = control.closest(".form-group, .form-field, .field, li");
-    if (row) {
+    if (row && !row.querySelector('[name="system.runes.striking"]')) {
       row.hidden = true;
       row.dataset.cmtReplacedRuneControl = "true";
     }
@@ -157,7 +158,7 @@ function placeMakeAndMarks(root, strip, fallback) {
     ?? root.querySelector('[data-property="system.material"], [name="system.material.type"], [name^="system.runes."]')?.closest("fieldset");
   if (nativePanel) {
     // Keep the native inputs and their values intact for PF2e form submission.
-    nativePanel.hidden = true;
+    nativePanel.hidden = !nativePanel.querySelector('[name="system.runes.striking"]');
     nativePanel.dataset.cmtReplacedMaterialRunes = "true";
     strip.classList.add("cmt-make-marks-details");
     nativePanel.before(strip);
@@ -188,7 +189,7 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
   strip.dataset.cmtMakeMarks = "true";
 
   const heading = document.createElement("legend");
-  heading.textContent = localize("CMT.ItemSheet.MakeAndMarks", "Make & Marks");
+  heading.textContent = "Crafted Material";
 
   strip.append(heading);
   const addRow = (name, value) => {
@@ -206,41 +207,7 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
     return row;
   };
   addRow(localize("CMT.ItemSheet.Material", "Material"), `${result.presentation.label} · T${result.flags.tier}`);
-  const activeMarks = result.flags.crafting.artisanMarks.filter(mark => mark.status !== "suppressed");
-  addRow(localize("CMT.ItemSheet.AppliedMarks", "Applied Artisan Marks"), String(activeMarks.length));
-  const capacityRow = addRow(localize("CMT.ItemSheet.CapacityLabel", "Capacity"), `${result.capacity.used} / ${result.capacity.maximum}`);
-  if (result.capacity.overCapacity) capacityRow.classList.add("is-invalid");
-  if (activeMarks.length) {
-    const details = document.createElement("details");
-    details.className = "cmt-applied-marks";
-    const summary = document.createElement("summary");
-    summary.textContent = localize("CMT.ItemSheet.AppliedMarks", "Applied Artisan Marks");
-    const list = document.createElement("div");
-    for (const mark of activeMarks) {
-      const card = document.createElement("article");
-      const header = document.createElement("header");
-      const name = document.createElement("strong");
-      name.textContent = mark.name;
-      name.title = resolveMarkText(mark.effectSummary, markFormulaContext(item, result.flags.tier));
-      const grade = document.createElement("span");
-      grade.textContent = `${mark.grade[0].toUpperCase() + mark.grade.slice(1)} · ${mark.capacityCost} Capacity · T${mark.effectiveMarkTier}`;
-      const effect = document.createElement("p");
-      effect.textContent = name.title;
-      const provenance = document.createElement("small");
-      provenance.textContent = [
-        mark.profession,
-        mark.specialisation,
-        mark.configuration?.choice ? `Choice: ${mark.configuration.choice}` : "",
-        mark.maker?.name ? `by ${mark.maker.name}` : "",
-        mark.anchorSlotIds.length ? `Anchor: ${mark.anchorSlotIds.join(", ")}` : "",
-      ].filter(Boolean).join(" · ");
-      header.append(name, grade);
-      card.append(header, effect, provenance);
-      list.append(card);
-    }
-    details.append(summary, list);
-    strip.append(details);
-  }
+
   return strip;
 }
 
@@ -351,7 +318,7 @@ export function injectItemSheet(application, html, getConfig) {
   const craftingItemType = getCraftingItemType(item);
   if (!itemTypeIsSupported(config, craftingItemType)) return;
   insertControls(application, item, root, config, craftingItemType);
-  insertMarkActionButton(item, root);
+  insertFocusSlotControl(item, root);
   insertMasterstrokeControls(item, root);
 }
 

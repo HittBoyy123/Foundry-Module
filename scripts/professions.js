@@ -362,7 +362,7 @@ export async function synchronizeProfessionFeatHierarchy(actor) {
 }
 
 export function professionCheckRollOptions(actor, { materialId = "" } = {}) {
-  const material = String(materialId).trim();
+  const material = materialId === "omnipotisium" ? "metal" : String(materialId).trim();
   if (!material) return [];
   return getActorProfessions(actor)
     .filter((profession) => profession.materialIds.includes(material))

@@ -30,12 +30,11 @@ test("PF2e bridge injects rules ephemerally and restores system.rules", () => {
   });
 
   const prepared = item.prepareRuleElements();
-  assert.equal(prepared.length, 3);
+  assert.equal(prepared.length, 2);
   assert.equal(prepared[0].key, "ExistingRule");
   assert.equal(prepared[1].key, "FlatModifier");
   assert.equal(prepared[1].value, 2);
-  assert.equal(prepared[2].key, "DamageDice");
-  assert.equal(prepared[2].diceNumber, 2);
+  assert.ok(!prepared.some(rule => rule.key === "DamageDice"));
   assert.deepEqual(item.system.rules, [{ key: "ExistingRule" }]);
 });
 
@@ -229,4 +228,26 @@ test("shield Core progression replaces rune progression and is applied only once
   applyPreparedItemPresentation(item, config);
   assert.equal(item.system.hardness, 11);
   assert.deepEqual(item.system.hp, { max: 80, value: 80, brokenThreshold: 40 });
+});
+
+
+test("worn ring and necklace focuses grant spell bonuses, with only the strongest active", () => {
+  const config = normalizeRulesConfig(cloneDefaultRulesConfig());
+  const focus = (id, tier, usage) => ({ actor: {}, type: "equipment", id, name: id, isEquipped: true,
+    system: { traits: { otherTags: ["spell-focus"] }, usage: { value: usage, type: "worn" }, equipped: { carryType: "worn", inSlot: true } },
+    getFlag: () => ({ material: "mana", tier }) });
+  const ring = focus("ring", 4, "wornring");
+  // Use an existing configured focus material, independently of its physical form.
+  ring.getFlag = () => ({ material: "wood", tier: 4 });
+  assert.equal(buildItemRuleElements(ring, config)[0].value, 3);
+  const necklace = focus("necklace", 6, "wornnecklace");
+  necklace.getFlag = () => ({ material: "metal", tier: 6 });
+  const actor = { inventory: { contents: [ring, necklace] } }; ring.actor = actor; necklace.actor = actor;
+  assert.deepEqual(buildItemRuleElements(ring, config), []);
+  assert.equal(buildItemRuleElements(necklace, config)[0].value, 5);
+  necklace.system.containerId = "backpack";
+  assert.deepEqual(buildItemRuleElements(necklace, config), []);
+  assert.equal(buildItemRuleElements(ring, config)[0].value, 3);
+  ring.system.equipped.inSlot = false;
+  assert.deepEqual(buildItemRuleElements(ring, config), []);
 });

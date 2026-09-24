@@ -4,11 +4,11 @@ export const CRAFTING_STATE_SCHEMA_VERSION = 2;
 
 export const CORE_TIER_PROGRESSION = Object.freeze({
   1: Object.freeze({ attack: 0, weaponDice: 0, spellcasting: 0, armor: 0, saves: 0, capacity: 1 }),
-  2: Object.freeze({ attack: 1, weaponDice: 1, spellcasting: 1, armor: 1, saves: 1, capacity: 2 }),
-  3: Object.freeze({ attack: 2, weaponDice: 2, spellcasting: 2, armor: 2, saves: 2, capacity: 3 }),
-  4: Object.freeze({ attack: 3, weaponDice: 2, spellcasting: 3, armor: 3, saves: 3, capacity: 4 }),
-  5: Object.freeze({ attack: 4, weaponDice: 3, spellcasting: 4, armor: 4, saves: 4, capacity: 6 }),
-  6: Object.freeze({ attack: 5, weaponDice: 4, spellcasting: 5, armor: 5, saves: 5, capacity: 8 }),
+  2: Object.freeze({ attack: 1, weaponDice: 0, spellcasting: 1, armor: 1, saves: 1, capacity: 2 }),
+  3: Object.freeze({ attack: 2, weaponDice: 0, spellcasting: 2, armor: 2, saves: 2, capacity: 3 }),
+  4: Object.freeze({ attack: 3, weaponDice: 0, spellcasting: 3, armor: 3, saves: 3, capacity: 4 }),
+  5: Object.freeze({ attack: 4, weaponDice: 0, spellcasting: 4, armor: 4, saves: 4, capacity: 6 }),
+  6: Object.freeze({ attack: 5, weaponDice: 0, spellcasting: 5, armor: 5, saves: 5, capacity: 8 }),
 });
 
 export const ARTISAN_MARK_GRADES = Object.freeze({
@@ -113,6 +113,7 @@ export function normalizeCraftingState(source, { materialId = "metal", tier: cor
   const core = input.core && typeof input.core === "object" ? input.core : {};
   return {
     schemaVersion: CRAFTING_STATE_SCHEMA_VERSION,
+    ...(input.omnipotisiumFrame === true ? { omnipotisiumFrame: true } : {}),
     ...(input.hpValueMode === "absolute" ? { hpValueMode: "absolute" } : {}),
     core: {
       materialId: text(core.materialId, materialId),

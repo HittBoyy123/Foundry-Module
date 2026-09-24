@@ -496,12 +496,18 @@ export function normalizeRulesConfig(input) {
     throw new ConfigValidationError("materials must contain at least one material definition.");
   }
   const materials = {};
-  for (let [materialId, material] of Object.entries(parsed.materials)) {
+  for (let [materialId, material] of Object.entries({ omnipotisium: copyJson(DEFAULT_RULES_CONFIG.materials.omnipotisium), ...parsed.materials })) {
     if (!SLUG_PATTERN.test(materialId)) {
       throw new ConfigValidationError(`Material id "${materialId}" must be a lowercase slug.`);
     }
     if (!isPlainObject(material)) {
       throw new ConfigValidationError(`materials.${materialId} must be an object.`);
+    }
+    if (materialId === "omnipotisium") {
+      material = { ...material,
+        label: material.label === "Omnipotisium" ? "Omnipotassium" : material.label,
+        tierLabels: Object.fromEntries(Object.entries(material.tierLabels ?? {}).map(([tier, label]) => [tier, ["Omnipotisium", "Omnipotassium"].includes(label) ? DEFAULT_RULES_CONFIG.materials.omnipotisium.tierLabels[tier] : label])),
+      };
     }
     const originalItemTypes = normalizeItemTypes(material.itemTypes, `materials.${materialId}.itemTypes`);
     const defaultMaterial = DEFAULT_RULES_CONFIG.materials[materialId];
@@ -568,7 +574,7 @@ export function normalizeRulesConfig(input) {
         if (template) effectSources.push(copyJson(template));
       }
     }
-    const effects = effectSources.map((effect, index) =>
+    const effects = effectSources.filter(effect => effect.id !== "weapon-damage" && effect.value?.mode !== "coreWeaponDice").map((effect, index) =>
       normalizeEffect(effect, `materials.${materialId}.effects[${index}]`));
     const duplicateEffect = effects.find((effect, index) => effects.findIndex((other) => other.id === effect.id) !== index);
     if (duplicateEffect) {

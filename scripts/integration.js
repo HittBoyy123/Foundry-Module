@@ -2,7 +2,6 @@ import { addItemHitPointBonus, preserveItemHitPointUpdate } from "./item-hit-poi
 import { applyMasterstrokeBulk } from "./masterstrokes.js";
 import { MODULE_ID } from "./constants.js";
 import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
-import { applyMarkItemStats, buildArtisanMarkRules } from "./artisan-mark-effects.js";
 import { toPF2eArtisanRule } from "./artisan-bonus.js";
 
 const PATCH_MARKER = Symbol.for(`${MODULE_ID}.prepareRuleElements`);
@@ -31,17 +30,22 @@ function getActorItems(actor) {
   return [];
 }
 
-function isHeldSpellFocus(item) {
+export function isActiveSpellFocus(item) {
   const equipped = item.system?.equipped;
-  return item.isEquipped !== false && (!equipped || (equipped.carryType === "held" && Number(equipped.handsHeld ?? 1) > 0));
+  if (item.isEquipped === false || item.system?.containerId || item.flags?.[MODULE_ID]?.equipmentPanel?.carried) return false;
+  if (!equipped) return true;
+  if (equipped.carryType === "held") return Number(equipped.handsHeld ?? 1) > 0;
+  const usage = item.system?.usage ?? {};
+  const worn = usage.type === "worn" || String(usage.value ?? "").startsWith("worn");
+  return worn && equipped.carryType === "worn" && equipped.inSlot !== false;
 }
 
-function isPrimarySpellFocus(item, config) {
+export function isPrimarySpellFocus(item, config) {
   const actorItems = getActorItems(item.actor);
   if (actorItems.length === 0) return true;
 
   const eligible = actorItems
-    .filter((candidate) => getCraftingItemType(candidate) === "spellFocus" && isHeldSpellFocus(candidate))
+    .filter((candidate) => getCraftingItemType(candidate) === "spellFocus" && isActiveSpellFocus(candidate))
     .map((candidate) => {
       const result = calculateItem(candidate, config);
       const focusEffect = result.previews.find((effect) => effect.id === "spell-focus-potency");
@@ -58,18 +62,17 @@ function isPrimarySpellFocus(item, config) {
 export function buildItemRuleElements(item, config) {
   if (!item?.actor || !item?.type) return [];
   const craftingItemType = getCraftingItemType(item);
-  if (craftingItemType === "spellFocus" && !isHeldSpellFocus(item)) return [];
+  if (craftingItemType === "spellFocus" && !isActiveSpellFocus(item)) return [];
   if (["armor", "spellFocus"].includes(craftingItemType) && item.isEquipped === false) return [];
   if (craftingItemType === "spellFocus" && !isPrimarySpellFocus(item, config)) return [];
   const result = calculateItem(item, config);
-  return [...result.rules, ...(result.active ? buildArtisanMarkRules(item, craftingItemType) : [])];
+  return result.rules;
 }
 
 function suppressPf2eRuneProgression(item) {
   const runes = item.system?.runes;
   if (!runes || typeof runes !== "object") return;
   if (Object.hasOwn(runes, "potency")) runes.potency = 0;
-  if (Object.hasOwn(runes, "striking")) runes.striking = 0;
   if (Array.isArray(runes.property)) runes.property = [];
   if (Array.isArray(runes.propertyRunes)) runes.propertyRunes = [];
   if (Object.hasOwn(runes, "resilient")) runes.resilient = 0;
@@ -100,7 +103,6 @@ export function applyPreparedItemPresentation(item, config) {
 
   suppressPf2eRuneProgression(item);
   applyShieldCoreProgression(item, result);
-  applyMarkItemStats(item);
   applyMasterstrokeBulk(item);
 
   if (item.isIdentified !== false) {
@@ -165,6 +167,7 @@ export function installRuleElementBridge(getConfig) {
   if (original[PATCH_MARKER]) return true;
 
   function prepareRuleElementsWithCraftingMaterial(...args) {
+    if (this.flags?.[MODULE_ID]?.timedMark) return [];
     let generatedRules = [];
     try {
       const config = getConfig();

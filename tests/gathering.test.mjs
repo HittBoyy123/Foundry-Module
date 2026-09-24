@@ -17,9 +17,9 @@ import {
   resolveGatheringOutcome,
 } from "../scripts/gathering-model.js";
 
-test("every Wrathmaker crafting resource has one gatherable task", () => {
+test("ordinary crafting resources have gathering tasks; unique Omnipotassium is GM-awarded", () => {
   assert.equal(GATHERING_TASK_SOURCES.length, 66);
-  assert.equal(GATHERING_TASK_SOURCES.length, CRAFTING_RESOURCE_SOURCES.length);
+  assert.equal(GATHERING_TASK_SOURCES.length, CRAFTING_RESOURCE_SOURCES.filter(item => item.flags["pf2e-crafting-material-tiers"].resource.materialId !== "omnipotisium").length);
   const identities = new Set(GATHERING_TASK_SOURCES.map((task) => (
     `${task.materialId}|${task.tier}|${task.variantId}`
   )));

@@ -1,3 +1,4 @@
+import { retireProjectMarks } from "./retired-marks.js";
 import { artisanSlotChoices, availableArtisanProfiles, canControlArtisan, resolveDroppedArtisan, slotAllowsArtisan, requestArtisanAssignment, installArtisanAssignmentSocket } from "./artisan-selection.js";
 import { craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
 import { projectDayPips } from "./project-day-pips.js";
@@ -115,7 +116,9 @@ function activePrimaryGM() {
 }
 
 function projectState(party) {
-  return normalizeCraftingWorkbench(party?.getFlag?.(MODULE_ID, "workbench"));
+  const state = normalizeCraftingWorkbench(party?.getFlag?.(MODULE_ID, "workbench"));
+  state.projects.forEach(retireProjectMarks);
+  return state;
 }
 
 async function saveWorkbench(party, workbench) {
@@ -192,46 +195,8 @@ async function contributorProfiles(application) {
 }
 
 function reconcileMarkAssignments(application, profiles, recipe, itemGroup, coreTier, targetItem = null) {
-  if (!recipe) {
-    application.workbenchState.selectedMarks = [];
-    return { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], coreTier) };
-  }
-  const anchorSlots = buildRecipeAnchorSlots(recipe);
-  const requested = Array.isArray(application.workbenchState.selectedMarks)
-    ? application.workbenchState.selectedMarks
-    : [];
-  const retained = application.workbenchState.tab === "upgrade"
-    ? retainedUpgradeMarks(targetItem, recipe, itemGroup, coreTier, application.workbenchState.rearrangement) : [];
-  const assignments = [...retained];
-  for (const choice of requested) {
-    const profile = profiles.find((entry) => entry.actorUuid === choice.actorUuid);
-    const mark = profile?.marks.find((entry) => entry.id === choice.definitionId);
-    if (!profile || !mark) continue;
-    const availability = evaluateArtisanMarkChoice(mark, {
-      targetItem,
-      itemGroup,
-      coreTier,
-      anchorSlots,
-      capacityUsed: assignments.reduce((total, entry) => total + entry.capacityCost, 0),
-      selectedDefinitionIds: assignments.map((entry) => entry.definitionId),
-      selectedStackGroups: assignments.map((entry) => entry.stackGroup).filter(Boolean),
-    });
-    if (!availability.eligible) continue;
-    const anchor = availability.anchors.find((entry) => entry.id === choice.anchorSlotId)
-      ?? availability.anchors[0];
-    if (!anchor) continue;
-    const assignment = buildArtisanMarkAssignment(mark, profile, anchor, coreTier);
-    const choices = markConfigurationChoices(mark.id);
-    assignment.configuration = { choice: choices.includes(choice.configuration?.choice) ? choice.configuration.choice : choices[0] ?? "" };
-    assignments.push(assignment);
-  }
-  application.workbenchState.selectedMarks = assignments.filter(a => !retained.includes(a)).map((assignment) => ({
-    definitionId: assignment.definitionId,
-    actorUuid: assignment.maker.actorUuid,
-    anchorSlotId: assignment.anchorSlotIds[0],
-    configuration: assignment.configuration,
-  }));
-  return { assignments, anchorSlots, capacity: selectedMarkCapacity(assignments, coreTier) };
+  application.workbenchState.selectedMarks = [];
+  return { assignments: [], anchorSlots: [], capacity: selectedMarkCapacity([], coreTier) };
 }
 
 function markTrayContext(profiles, assignments, anchorSlots, itemGroup, coreTier, leadArtisanUuid, targetItem = null) {
@@ -460,7 +425,7 @@ async function workbenchContext(application) {
     upgradeDragonAvailable: canReinforceWithScales(baseItem),
     upgradeDragonOptions: dragonScaleOptions(virtualUnreservedInventory(party, workbench.projects), config.materials["dragon-scale"].colors, application.workbenchState.upgradeDragon),
     upgradeAnchors: baseRecipe ? buildRecipeAnchorSlots(baseRecipe) : [],
-    retainedMarks: application.workbenchState.tab === "upgrade" ? baseItem?.flags?.[MODULE_ID]?.crafting?.artisanMarks ?? [] : [],
+    retainedMarks: [],
     disassemblyItems: workbench.projects.filter(project => project.status === "completed" && !project.disassembledAt)
       .map(project => {
         const item = findDisassemblyItem(party, project);
@@ -524,15 +489,7 @@ async function workbenchContext(application) {
       professionSummary: profile.professions.map((entry) => entry.name).join(" · "),
       isLead: profile.actorUuid === application.workbenchState.leadArtisanUuid,
     })),
-    markTrays: selectedBand ? markTrayContext(
-      profiles,
-      markPlan.assignments,
-      markPlan.anchorSlots,
-      selectedBand.group,
-      tier,
-      application.workbenchState.leadArtisanUuid,
-      baseItem,
-    ) : [],
+    markTrays: [],
     selectedMarks: markPlan.assignments,
     markCapacity: {
       ...markPlan.capacity,
@@ -606,7 +563,7 @@ async function createAndReserve(application) {
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       window: { title: "Confirm Upgrade" },
       content: "<p>Replace " + upgrade.replaced.map(escapeHtml).join(", ") +
-        ". Old materials are lost. Replacement materials and component work cost 25% less; new Marks cost full price. The original item is updated on completion.</p>",
+        ". Old materials are lost. Replacement materials and component work cost 25% less; The original item is updated on completion.</p>",
       modal: true,
     });
     if (!confirmed) return;
@@ -845,6 +802,7 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
   }));
   const crafting = {
     ...(priorFlags.crafting ?? {}),
+    ...(!current.upgrade ? { omnipotisiumFrame: false } : {}),
     masterstrokes: [...(current.upgrade ? normalizeMasterstrokes(priorFlags.crafting?.masterstrokes) : []), ...normalizeMasterstrokes(current.masterstrokes)],
     core: {
       ...(priorFlags.crafting?.core ?? {}),
@@ -1193,7 +1151,7 @@ async function confirmDisassemblyBatch(application) {
     if (!entries.length) return;
     const content = entries.map(({ plan }) => `<h3>${escapeHtml(plan.itemName)} × ${plan.stackQuantity}</h3><ul>${plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.quantity}</li>`).join("")}</ul>`).join("");
     const confirmed = await foundry.applications.api.DialogV2.confirm({ window: { title: "Disassemble Queued Items" }, modal: true,
-      content: `<p>Permanently destroy these ${entries.length} items and their Marks? Returned materials enter the Party Stash. Processing stops if an item changes or fails; already completed items stay disassembled.</p>${content}` });
+      content: `<p>Permanently destroy these ${entries.length} items? Returned materials enter the Party Stash. Processing stops if an item changes or fails; already completed items stay disassembled.</p>${content}` });
     if (!confirmed) return;
     const completed = [];
     try {
@@ -1228,7 +1186,7 @@ async function confirmDisassembly(application, projectId, itemUuid = null) {
   const list = plan.returns.map(row => `<li>${escapeHtml(row.name)}: ${row.consumed} → ${row.quantity}</li>`).join("");
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: "Disassemble Item" }, modal: true,
-    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)} × ${plan.stackQuantity}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>50% return, rounded up per material. Artisan Marks are destroyed. This item cannot be recreated with Recover Missing Item.</p>`,
+    content: `<p>Permanently remove <strong>${escapeHtml(plan.itemName)} × ${plan.stackQuantity}</strong> from ${escapeHtml(owner?.name ?? "the Party Stash / World Items")} and return these materials to the Party Stash?</p><p>${escapeHtml(plan.basis ?? "Recorded crafting materials")}</p><ul>${list}</ul><p>50% return, rounded up per material. This item cannot be recreated with Recover Missing Item.</p>`,
   });
   if (!confirmed) return;
   requireWorkbench();

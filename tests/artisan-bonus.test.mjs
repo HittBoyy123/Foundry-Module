@@ -57,9 +57,6 @@ test("real integration boundary sends valid additive rules to PF2e and restores 
   });
   const result = item.prepareRuleElements();
   const mark = result.find(rule => rule.tags?.includes(ARTISAN_BONUS_TAG));
-  assert.ok(mark);
-  assert.equal(mark.type, "untyped");
-  assert.equal(mark.value, 2);
-  assert.equal(mark.label, "Overlord Matrix — Artisan Bonus");
+  assert.equal(mark, undefined);
   assert.deepEqual(item.system.rules, []);
 });

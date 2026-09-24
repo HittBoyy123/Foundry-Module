@@ -14,7 +14,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
   const wyrmIndex = leatherGroupIndex >= 0 ? leatherGroupIndex : 2;
   return Array.from({ length: 6 }, (_, index) => {
     const group = index === 0 ? core : index === 1 ? secondary : null;
-    const materialIds = [...new Set(group?.options?.map((option) => option.materialId) ?? [])];
+    const materialIds = [...new Set(group?.options?.map((option) => option.materialId === "omnipotisium" ? "metal" : option.materialId) ?? [])];
     const profile = profiles.find((entry) => entry.actorUuid === slotUuids[index]);
     const wyrmSlot = armor && dragonResistance && index === wyrmIndex;
     const qualified = wyrmSlot ? hasWyrmcraft(profile) : !group || Boolean(profile?.professions.some((profession) => (
@@ -22,7 +22,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
     )));
     return {
       index,
-      role: wyrmSlot && index > 1 ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Mark Artisan",
+      role: wyrmSlot && index > 1 ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Assistant Artisan",
       required: index === 0 || (wyrmSlot && dragonResistance),
       materialIds,
       requiresWyrmcraft: wyrmSlot,

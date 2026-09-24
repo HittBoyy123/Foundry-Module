@@ -91,7 +91,7 @@ function resourceData(source) {
 }
 
 function buildGatheringTasks() {
-  return CRAFTING_RESOURCE_SOURCES.map((resource) => {
+  return CRAFTING_RESOURCE_SOURCES.filter(item => item.flags["pf2e-crafting-material-tiers"].resource.materialId !== "omnipotisium").map((resource) => {
     const data = resourceData(resource);
     const environments = ENVIRONMENTS_BY_MATERIAL[data.materialId] ?? [];
     return Object.freeze({

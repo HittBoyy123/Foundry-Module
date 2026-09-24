@@ -15,8 +15,7 @@ export const CRAFTING_ITEM_SOURCES = Object.freeze([
       description: {
         value: [
           "<p>This adaptable magical implement might be a wand, rod, orb, engraved tablet, or another object shaped to direct a spellcaster's power. A Mana Gem forms its magical Core; wood, metal, or other materials form the frame.</p>",
-          "<p>Choose its <strong>Core Material</strong> and <strong>Tier</strong> on the item sheet. While the focus is held in one hand, the Core grants the spell attack and spell DC bonuses for its tier. If you hold more than one spell focus, only the strongest applies.</p>",
-          "<p>You can enhance the focus with Artisan Marks, up to its Artisan Capacity.</p>",
+          "<p>Choose its <strong>Core Material</strong> and <strong>Tier</strong> on the item sheet. While the focus is held or equipped in its worn slot, the Core grants the spell attack and spell DC bonuses for its tier. If you equip more than one spell focus, only the strongest applies.</p>",
         ].join("\n"),
       },
       hardness: 0,

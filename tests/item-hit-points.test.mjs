@@ -57,11 +57,11 @@ test("shield HP can cross its broken threshold and reach zero without gaining bo
   persistHP(item, 80);
   assert.equal(item.system.hp.value, 80);
 });
-test("Core and Artisan Mark HP bonuses use one saved current-HP value", () => {
+test("Retired Artisan Marks do not inflate Core shield HP", () => {
   const item = shield({ marks: [{ definitionId: "blacksmithing-universal-fortified-frame", status: "completed" }] });
   const { max } = item.system.hp;
   const hardness = item.system.hardness;
-  assert.ok(max > 80);
+  assert.equal(max, 80);
   persistHP(item, max - 13);
   assert.equal(item.system.hp.value, max - 13);
   assert.equal(item.system.hp.max, max);

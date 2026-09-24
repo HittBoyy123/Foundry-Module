@@ -91,7 +91,7 @@ export function buildUpgradePlan(item, fullRecipe, newMarks = [], dragonScale = 
       return true;
     });
   }
-  if (!recipe.ingredientSets[0].groups.length) throw new Error("Choose a material improvement or add a new Mark.");
+  if (!recipe.ingredientSets[0].groups.length) throw new Error("Choose a material improvement.");
   if (recipe.tier < crafting.core.tier) throw new Error("Upgrades cannot lower the core tier.");
   return {
     recipe: normalizeCraftingRecipe(recipe), replaced,

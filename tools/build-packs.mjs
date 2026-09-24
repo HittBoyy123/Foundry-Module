@@ -1,3 +1,4 @@
+import { VOID_PROTECTION_SOURCE } from "../content/void-protection.js";
 import { CRAFTING_ROLL_TABLES } from "../content/crafting-roll-tables.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -16,7 +17,7 @@ const outputDirectory = path.join(projectRoot, "packs");
 const packs = Object.freeze({
   "crafting-tables.db": CRAFTING_ROLL_TABLES,
   "apex-items.db": APEX_ITEM_SOURCES,
-  "crafting-items.db": CRAFTING_ITEM_SOURCES,
+  "crafting-items.db": [...CRAFTING_ITEM_SOURCES, { ...VOID_PROTECTION_SOURCE, _id: "wmVoidProtect001" }],
   "crafting-resources.db": CRAFTING_RESOURCE_SOURCES,
   "professions.db": PROFESSION_ITEM_SOURCES,
   "artisan-marks.db": [...ARTISAN_MARK_JOURNAL_SOURCES, CRAFTING_GUIDE],

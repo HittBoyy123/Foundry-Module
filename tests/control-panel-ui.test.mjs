@@ -35,7 +35,7 @@ test("control panel exposes only friendly settings actions", async () => {
   assert.match(itemSheet, /data-cmt-field="dragon-scale-color"/);
   assert.match(itemSheet, /data-cmt-field="dragon-scale-tier"/);
   assert.match(itemSheet, /MakeMarks/);
-  assert.match(itemSheet, /ItemSheet\.Capacity/);
+  assert.doesNotMatch(itemSheet, /ItemSheet\.Capacity/);
   assert.match(itemSheet, /system\.runes\./);
 });
 
@@ -155,7 +155,7 @@ test("Workbench exposes recipe planning, reservations, downtime, and confirmed c
   assert.match(template, /data-cmt-workbench-tab="projects"/);
   assert.match(template, /data-cmt-workbench-drop="base-item"/);
   assert.match(template, /data-cmt-artisan-slot/);
-  assert.match(template, /data-cmt-open-marks/);
+  assert.doesNotMatch(template, /data-cmt-open-marks/);
   assert.match(application, /augmentRecipeWithArtisanMarks/);
   assert.match(application, /selectedMarks/);
   assert.match(template, /data-cmt-project-action="roll-work"/);

@@ -72,7 +72,7 @@
           </div>
         {{/if}}
       </div>
-      <p>50% material return, rounded up for each stack. Items and their Marks are destroyed only after confirmation.</p>
+      <p>50% material return, rounded up for each stack. Items are destroyed only after confirmation.</p>
       {{#if disassemblyQueueCount}}<p>{{disassemblyQueueCount}} stacks queued. Drop more items to add them.</p>{{/if}}
       {{#each disassemblyQueue}}
         <article class="cmt-panel">
@@ -101,7 +101,7 @@
 
   {{#if tabs.craft}}
     {{#if tabs.upgrade}}
-      <p class="cmt-workbench-notice">Upgrade an existing item: 25% fewer replacement materials (rounded up), 25% less component work. Existing Marks stay free; new Marks cost full price. Replaced materials are lost. The item is locked until completion or cancellation.</p>
+      <p class="cmt-workbench-notice">Upgrade an existing item: 25% fewer replacement materials (rounded up), 25% less component work. Replaced materials are lost. The item is locked until completion or cancellation.</p>
       {{#if upgradeError}}<p class="cmt-workbench-notice is-warning">{{upgradeError}}</p>{{/if}}
 
       {{#if retainedMarks}}
@@ -203,7 +203,7 @@
         <section class="cmt-crafting-materials" aria-live="polite">
           <h4>Total Materials Required</h4>
           {{#if preview}}
-            <p>Includes selected Artisan Marks and equipment size. Available stock excludes reserved materials.</p>
+            <p>Includes equipment size. Available stock excludes reserved materials.</p>
             <ul>
               {{#each preview.materials}}
                 <li class="{{#unless alternative}}{{#if available}}is-valid{{else}}is-invalid{{/if}}{{/unless}}">
@@ -223,7 +223,7 @@
 
 
       <section class="cmt-workbench-contributors">
-        <div class="cmt-workbench-section-title"><h3 class="cmt-artisan-heading">Artisans involved <span class="cmt-artisan-capacity-pips" role="img" aria-label="{{markCapacity.remaining}} of {{markCapacity.maximum}} Mark capacity available" title="{{markCapacity.remaining}} of {{markCapacity.maximum}} Mark capacity available">{{#each markCapacity.segments}}<i class="{{#if used}}is-used{{/if}}" aria-hidden="true"></i>{{/each}}</span></h3><span>Up to six artisans</span></div>
+        <div class="cmt-workbench-section-title"><h3 class="cmt-artisan-heading">Artisans involved </h3><span>Up to six artisans</span></div>
         <div class="cmt-artisan-slots">
           {{#each artisanSlots}}
             <article class="cmt-artisan-slot" data-cmt-artisan-slot="{{index}}">
@@ -240,14 +240,14 @@
 
               {{#if actorUuid}}
                 <div class="cmt-artisan-identity">
-                  <button type="button" class="cmt-artisan-portrait" data-cmt-open-marks="{{actorUuid}}" title="Choose Artisan Marks for {{name}}" aria-label="Choose Artisan Marks for {{name}}">
+                  <button type="button" class="cmt-artisan-portrait" disabled>
                     <img src="{{img}}" alt="">
                   </button>
                   <div class="cmt-artisan-text"><strong>{{name}}</strong><span>{{professionSummary}}</span>
                     {{#if specializationSummary}}<small>{{specializationSummary}}</small>{{/if}}
                   </div>
                 </div>
-                <div class="cmt-slot-actions"><button type="button" data-cmt-open-marks="{{actorUuid}}">Choose Marks</button>
+                <div class="cmt-slot-actions">
                 <button type="button" data-cmt-slot-remove="{{index}}" {{#unless canAssign}}disabled{{/unless}} title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
                 <div class="cmt-mark-badges">
                   {{#each marks}}<button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} · {{capacityCost}}<small>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</small></button>{{/each}}
@@ -312,7 +312,7 @@
             <span><strong>{{daysCompleted}} of {{daysTotal}} days completed</strong> · {{daysRemaining}} remaining</span>
             <span>{{teamSize}} artisan(s) · {{estimatedDays}} successful work days remaining</span>
             <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>
-            <span><strong>{{markCount}}</strong> Artisan Marks</span>
+
           </div>
           {{#if nextWorkBonus}}<p><strong>Stable Integration:</strong> +2 circumstance bonus to the next Work Block.</p>{{/if}}
           {{#if masterstrokes.length}}<details open><summary>Masterstrokes</summary><ul>
@@ -322,12 +322,7 @@
             {{#each conservationCredits}}<li><span>{{itemName}} · up to 10% of one Resource Unit’s consumable value. Non-sellable. {{#if used}}Used{{else}}Available{{/if}}</span>{{#unless used}}{{#if ../canManage}}<button type="button" data-cmt-use-credit="{{id}}">Use Credit</button>{{/if}}{{/unless}}</li>{{/each}}
           </ul></details>{{/if}}
           {{#if contributorSummary}}<p class="cmt-workbench-project-artisans"><strong>Artisans:</strong> {{contributorSummary}}</p>{{/if}}
-          {{#if artisanMarks.length}}
-            <details open>
-              <summary>Artisan Marks</summary>
-              <ul>
-                {{#each artisanMarks}}
-                  <li><button type="button" data-cmt-mark-detail="{{definitionId}}" title="{{effectSummary}}">{{name}} — {{maker.name}}<small>{{profession}} — {{#if specialisation}}{{specialisation}}{{else}}Universal{{/if}}</small></button><strong>{{capacityCost}} Capacity</strong></li>
+</small></button><strong>{{capacityCost}} Capacity</strong></li>
                 {{/each}}
               </ul>
             </details>

@@ -24,6 +24,7 @@ export function registerGMItemCreator() {
     async _prepareContext(options) {
       requireGM();
       const config = getRulesConfig();
+      this.draft.marks = [];
       const context = { ...(await super._prepareContext(options)), draft: this.draft, base: this.base,
         marks: this.draft.marks.map((mark, index) => ({ name: mark.id, makerName: mark.maker, index })) };
       if (!this.base) return context;
@@ -116,6 +117,7 @@ export function registerGMItemCreator() {
           const draft = structuredClone(this.draft);
           const base = this.base;
           const config = getRulesConfig();
+      this.draft.marks = [];
           const plan = gmItemPlan(base, draft, config);
           const override = plan.capacity.overCapacity && await DialogV2.confirm({
             window: { title: "Exceed Artisan Capacity?" },

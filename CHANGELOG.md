@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.35.5 — Equipment Preview & Omnipotassium (2026-09-24)
+
+- Add a GM-controlled experimental equipment panel, off by default, in individual character inventories. Support multiple rings and configurable worn spell focuses.
+- Add a separate six-tier Omnipotassium ingot family: Omni Iron, Omni Steel, Creation Steel, Fate Steel, Eternal Steel and Iron's Blood. Every weapon and armour recipe can use it as an alternative core. Compatible focus frames also support it at all tiers; ingots are GM-awarded rather than gathered.
+- Weapon materials grant attack bonuses only. Preserve native Striking runes as the source of additional base weapon damage dice, including when migrating saved material settings.
+- Retire Artisan Mark selection, passive bonuses and timed effects. Preserve legacy records; release unspent Mark reservations and remove Mark work from active projects. Crafting Edges and Masterstrokes remain available.
+- Add the selectable Voidborn creature trait to enable Void Protection in both damage directions; existing Void Protection effects remain compatible. Weapon and spell damage is halved unless the weapon or active focus uses Omnipotassium. Equipped Omnipotassium armour halves incoming damage from protected creatures.
+- Apply the adjustment to sourced damage through PF2e’s normal damage application before resistances and Shield Block. Healing and final damage corrections are unchanged. Source-free manual HP edits cannot identify a weapon or attacker.
+- Provide a GM frame override for existing focuses, and create missing world reference items for the GM without overwriting existing copies.
+
 ## 0.35.4 — Shield Damage & Artisan Selection (2026-09-20)
 
 - Accept artisan drops from Actor documents and scene Tokens, including linked characters and unlinked NPCs. Add a character/NPC selector to each slot, filtered by ownership, profession, specialization, and duplicate assignments.

@@ -20,8 +20,8 @@ function resourceData(item) {
 }
 
 test("the resource catalogue includes every base material tier and dragon color tier", () => {
-  assert.equal(CRAFTING_RESOURCE_SOURCES.length, 66);
-  assert.equal(new Set(CRAFTING_RESOURCE_SOURCES.map((item) => item._id)).size, 66);
+  assert.equal(CRAFTING_RESOURCE_SOURCES.length, 72);
+  assert.equal(new Set(CRAFTING_RESOURCE_SOURCES.map((item) => item._id)).size, 72);
 
   for (const item of CRAFTING_RESOURCE_SOURCES) {
     const resource = resourceData(item);

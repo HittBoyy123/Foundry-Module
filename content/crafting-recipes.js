@@ -147,13 +147,19 @@ export const CRAFTING_RECIPE_BANDS = Object.freeze([
   recipe("focus-jewellery", "Focus Jewellery", "spellFocus", ["spell-focus"], 2, ["metal", "stone"], [secondary("catalyst", "Mana catalyst", 1, ["mana-crystals"])]),
 ]);
 
+function withUniqueMetal(entry) {
+  const copy = JSON.parse(JSON.stringify(entry));
+  if (["weapon", "armor"].includes(copy.group) || copy.coreMaterialIds.includes("metal")) copy.coreMaterialIds.push("omnipotisium");
+  for (const part of copy.secondaries) if (part.materialIds.includes("metal")) part.materialIds.push("omnipotisium");
+  return copy;
+}
 export function listCraftingRecipeBands(group = "") {
   return CRAFTING_RECIPE_BANDS
     .filter((entry) => !group || entry.group === group)
-    .map((entry) => JSON.parse(JSON.stringify(entry)));
+    .map(withUniqueMetal);
 }
 
 export function getCraftingRecipeBand(id) {
   const band = CRAFTING_RECIPE_BANDS.find((entry) => entry.id === id);
-  return band ? JSON.parse(JSON.stringify(band)) : null;
+  return band ? withUniqueMetal(band) : null;
 }

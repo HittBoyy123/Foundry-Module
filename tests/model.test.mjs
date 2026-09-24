@@ -30,12 +30,12 @@ test("default tiers resolve from +0 through +5", () => {
   for (let tier = 1; tier <= 6; tier += 1) {
     const result = calculate({ material: "metal", tier });
     assert.equal(result.tierBonus, tier - 1);
-    assert.equal(result.rules.length, tier === 1 ? 0 : 2);
+    assert.equal(result.rules.length, tier === 1 ? 0 : 1);
     if (tier > 1) {
       const attack = result.rules.find((rule) => rule.selector.includes("{item|_id}-attack"));
       const damage = result.rules.find((rule) => rule.selector.includes("{item|_id}-damage"));
       assert.equal(attack.value, tier - 1);
-      assert.equal(damage.diceNumber, [0, 1, 2, 2, 3, 4][tier - 1]);
+      assert.equal(damage, undefined);
     }
   }
 });
@@ -101,9 +101,7 @@ test("weapon rule is item-specific, untyped, and leaves input config unchanged",
   assert.equal(attack.type, "untyped");
   assert.equal(attack.value, 3);
   assert.match(attack.label, /Wood/);
-  assert.deepEqual(damage.selector, ["{item|_id}-damage"]);
-  assert.equal(damage.key, "DamageDice");
-  assert.equal(damage.diceNumber, 2);
+  assert.equal(damage, undefined);
   assert.equal(JSON.stringify(config), before);
 });
 
@@ -367,7 +365,7 @@ test("version 3 weapon-only rules migrate to item-scoped weapon and armor effect
   assert.deepEqual(metal.itemTypes, ["weapon", "armor", "spellFocus", "shield"]);
   assert.deepEqual(weaponEffect.itemTypes, ["weapon"]);
   assert.deepEqual(armorEffect.itemTypes, ["armor"]);
-  assert.equal(metal.effects.some((effect) => effect.id === "weapon-damage"), true);
+  assert.equal(metal.effects.some((effect) => effect.id === "weapon-damage"), false);
   assert.equal(metal.effects.some((effect) => effect.id === "spell-focus-potency"), true);
   assert.deepEqual(migrated.flanking.penalties, { 2: -2, 3: -3, 4: -4 });
   assert.equal(migrated.flanking.pf2eHandlesTwoSidedFlanking, true);
@@ -476,7 +474,7 @@ test("version 9 materials migrate to weapon damage and metal or wood spell focus
   assert.equal(migrated.schemaVersion, RULES_SCHEMA_VERSION);
   for (const [materialId, material] of Object.entries(migrated.materials)) {
     if (material.augmentation) continue;
-    assert.equal(material.effects.some((effect) => effect.id === "weapon-damage"), true, materialId);
+    assert.equal(material.effects.some((effect) => effect.id === "weapon-damage"), false, materialId);
     assert.equal(material.effects.some((effect) => effect.id === "spell-focus-potency"), true, materialId);
   }
   for (const materialId of ["metal", "wood"]) {

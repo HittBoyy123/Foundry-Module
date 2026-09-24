@@ -47,30 +47,16 @@ export async function injectItemChatMarks(message, html, getConfig) {
     const row = document.createElement("section");
     row.className = "tags cmt-chat-make-marks";
     row.dataset.cmtChatMarks = "true";
-    row.setAttribute("aria-label", label("CMT.ItemSheet.MakeAndMarks", "Make & Marks"));
+    row.setAttribute("aria-label", "Crafted Material");
     const core = document.createElement("span");
     core.className = "tag cmt-chat-core";
     const type = { weapon: "Weapon", armor: "Armor", shield: "Shield", spellFocus: "Spell Focus" }[summary.itemType] ?? "Item";
     core.textContent = `${summary.material} ${type} · T${summary.tier}`;
-    const marks = document.createElement("span");
-    marks.className = "tag cmt-chat-mark-count";
-    marks.tabIndex = 0;
-    marks.textContent = game.i18n.format("CMT.ItemSheet.ArtisanMarksCount", { count: summary.marks.length });
-    const tooltip = document.createElement("div");
-    for (const mark of summary.marks) {
-      const line = document.createElement("div");
-      line.textContent = `${mark.name} — ${mark.maker || label("CMT.ItemSheet.UnknownMaker", "Unknown maker")}`;
-      tooltip.append(line);
-    }
-    if (!summary.marks.length) tooltip.textContent = label("CMT.ItemSheet.NoArtisanMarks", "No Artisan Marks");
-    marks.dataset.tooltip = tooltip.innerHTML;
-    marks.dataset.tooltipClass = "pf2e cmt-chat-mark-tooltip";
-    marks.setAttribute("aria-label", [marks.textContent, ...summary.marks.map(mark => `${mark.name} — ${mark.maker || "Unknown maker"}`)].join(". "));
-    row.append(core, marks);
+    row.append(core);
     const nativeTag = card.querySelector(".tags .tag");
     if (nativeTag) {
       const style = getComputedStyle(nativeTag);
-      for (const chip of [core, marks]) {
+      for (const chip of [core]) {
         for (const key of ["fontFamily", "fontSize", "fontWeight", "lineHeight", "padding", "borderRadius", "textTransform"]) {
           chip.style[key] = style[key];
         }

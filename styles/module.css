@@ -12,8 +12,19 @@
 .cmt-nephilim-bonds > .details-label { grid-column: 1 / -1; }
 .cmt-nephilim-bonds .detail { min-width: 0; }
 .cmt-nephilim-bonds .value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmt-inline-field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cmt-inline-field > label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .cmt-inline-field > select {
   margin: 0;
+  margin-left: auto;
   min-width: 0;
 }
 
@@ -2880,3 +2891,35 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 
 .cmt-artisan-select-label { display: grid; gap: 0.2rem; margin: 0.5rem 0; font-weight: 600; }
 .cmt-artisan-select-label select { width: 100%; min-width: 0; }
+/* Visual equipment preview: scoped to avoid changing native sheet controls. */
+.cmt-equipment-panel { color: #33271f; background: #f5efe5; border: 1px solid #ad9078; border-radius: 9px; padding: 9px; margin-top: 12px; }
+.cmt-equipment-panel summary { color: #780b05; font-weight: 700; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.cmt-equipment-panel summary button { flex: 0 0 26px; width: 26px; height: 26px; padding: 0; }
+.cmt-equipment-layout { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 9px 30px; padding: 12px 0; }
+.cmt-equipment-figure { position: absolute; z-index: -1; inset: 15px 10%; display: flex; justify-content: center; pointer-events: none; }
+.cmt-equipment-figure svg { height: 100%; max-width: 100%; fill: #c8af85; stroke: #977346; stroke-width: 2; opacity: .45; }
+.cmt-equipment-slot { min-width: 0; border: 1px dashed #b79870; border-radius: 8px; background: #fffaf0e8; padding: 7px; min-height: 66px; box-shadow: 0 2px 3px #0000000d; }
+.cmt-equipment-slot:hover { border-color: #830d06; background: #f4e4b7; }
+.cmt-equipment-slot > strong { display: block; color: #780b05; font-size: 11px; margin-bottom: 5px; }
+.cmt-equipment-panel button { color: #780b05; background: #ead99e; border: 1px solid #b59148; border-radius: 5px; box-shadow: none; }
+.cmt-equipment-panel .cmt-equipment-add { width: 100%; font-size: 10px; min-height: 24px; line-height: 1.2; padding: 3px; height: auto; }
+.cmt-equipment-entry { display: flex; align-items: center; gap: 3px; margin: 4px 0; }
+.cmt-equipment-entry > button:first-child { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; padding: 2px; background: transparent; border: 0; font-size: 11px; text-align: left; height: auto; line-height: 1.2; }
+.cmt-equipment-entry span { overflow-wrap: anywhere; }
+.cmt-equipment-entry img { width: 28px; height: 28px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.cmt-equipment-panel .cmt-equipment-remove { flex: 0 0 18px; width: 18px; height: 22px; padding: 0; line-height: 1; }
+.cmt-equipment-note { font-size: 10px; line-height: 1.4; color: #675344; margin: 4px 0; }
+.cmt-equipment-window .window-content { overflow: auto; padding: 12px; }
+.cmt-equipment-window .cmt-equipment-layout { gap: 12px 110px; }
+.cmt-equipment-window .cmt-equipment-slot { min-height: 88px; }
+.cmt-equipment-window .cmt-equipment-slot > strong { font-size: 14px; }
+.cmt-equipment-window .cmt-equipment-note { font-size: 12px; }
+.cmt-equipment-inventory { width: 100%; box-sizing: border-box; }
+.cmt-equipment-inventory .cmt-equipment-layout { gap: 12px 100px; }
+.cmt-equipment-inventory .cmt-equipment-slot > strong { font-size: 14px; }
+.cmt-equipment-inventory .cmt-equipment-entry > button:first-child { font-size: 13px; }
+.cmt-equipment-inventory .cmt-equipment-add { font-size: 12px; }
+.cmt-equipment-member { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.cmt-equipment-member select { flex: 1; min-width: 0; }
+.cmt-void-control, .cmt-focus-frame { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; color: #650600; background: #ead99e; border: 1px solid #b59148; border-radius: 5px; }
+.cmt-void-control input, .cmt-focus-frame input { flex: 0 0 auto; }

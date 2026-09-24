@@ -38,6 +38,6 @@ test('tier 4 scales on tier 3 full plate preserve preview and permit crafting wi
  assert.equal(team.valid, true);
  assert.equal(team.slots[1].required, true);
  assert.match(team.slots[1].requirement, /Wyrmcraft/);
- assert.equal(team.slots[2].role, 'Mark Artisan');
+ assert.equal(team.slots[2].role, 'Assistant Artisan');
  assert.equal(team.slots[2].required, false);
 });

@@ -2,7 +2,7 @@ import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 18;
+export const RULES_SCHEMA_VERSION = 19;
 export const ITEM_SCHEMA_VERSION = 4;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -36,17 +36,6 @@ const defaultWeaponEffect = () => ({
     mode: "tierBonus",
     multiplier: 1,
     offset: 0,
-  },
-});
-
-const defaultWeaponDamageEffect = () => ({
-  id: "weapon-damage",
-  kind: "damageDice",
-  label: "{tierLabel} Core Material",
-  itemTypes: ["weapon"],
-  selectors: ["{item|_id}-damage"],
-  value: {
-    mode: "coreWeaponDice",
   },
 });
 
@@ -94,7 +83,6 @@ const defaultSpellFocusEffect = () => ({
 
 const defaultEffects = () => Object.freeze([
   Object.freeze(defaultWeaponEffect()),
-  Object.freeze(defaultWeaponDamageEffect()),
   Object.freeze(defaultArmorEffect()),
   Object.freeze(defaultArmorSaveEffect()),
   Object.freeze(defaultSpellFocusEffect()),
@@ -282,6 +270,14 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: METAL_TIER_LABELS,
+      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+    }),
+    omnipotisium: Object.freeze({
+      label: "Omnipotassium", enabled: true,
+      itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
+      effects: defaultEffects(),
+      tierLabels: Object.freeze({ 1: "Omni Iron", 2: "Omni Steel", 3: "Creation Steel", 4: "Fate Steel", 5: "Eternal Steel", 6: "Iron's Blood" }),
+      tierRarities: Object.freeze(Object.fromEntries([1,2,3,4,5,6].map(t => [t, "unique"]))),
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     wood: Object.freeze({

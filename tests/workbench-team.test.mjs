@@ -136,7 +136,7 @@ test("Workbench prepares six qualified slots, Mark choices, and embedded Gatheri
   assert.deepEqual(context.teamReasons, []);
   assert.equal(context.artisanSlots[0].qualified, true);
   assert.equal(context.artisanSlots[1].qualified, true);
-  assert.ok(context.markTrays[0].availableMarks.length);
+  assert.deepEqual(context.markTrays, []);
   app.workbenchState.tab = "gather";
   const gathering = JSON.parse((await app._prepareContext({})).gatheringHtml);
   assert.equal(gathering.embedded, true);

@@ -39,7 +39,7 @@ export function getArtisanProfile(actor) {
   const professions = getActorProfessions(actor).map((profession) => ({
     id: profession.id,
     name: profession.name,
-    materialIds: [...(profession.materialIds ?? [])],
+    materialIds: [...(profession.materialIds ?? []), ...(profession.materialIds?.includes("metal") ? ["omnipotisium"] : [])],
   }));
   const specializations = getActorProfessionSpecialties(actor).map((specialty) => ({
     professionId: specialty.professionId,

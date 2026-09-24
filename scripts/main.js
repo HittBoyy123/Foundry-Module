@@ -1,3 +1,5 @@
+import { registerVoidProtection } from "./void-protection.js";
+import { registerEquipmentPanel } from "./equipment-panel.js";
 import { ensureCraftingRollTables, registerCraftingTableControls } from "./crafting-roll-tables.js";
 import { registerMasterstrokeWarnings } from "./masterstrokes.js";
 import { MODULE_ID, MODULE_TITLE } from "./constants.js";
@@ -16,8 +18,6 @@ import { registerProfessionHooks } from "./professions.js";
 import { registerNephilimBonds } from "./nephilim-bonds.js";
 import { registerWorkbench } from "./workbench.js";
 import { registerGMItemCreator } from "./gm-item-creator.js";
-import { registerMarkActionHooks } from "./mark-actions.js";
-import { registerTimedMarkControls } from "./mark-activation-runtime.js";
 
 let bridgeInstalled = false;
 let abilityBoostsInstalled = false;
@@ -62,8 +62,6 @@ Hooks.once("init", () => {
   });
   workbenchInstalled = true;
   registerGMItemCreator();
-  registerMarkActionHooks();
-  registerTimedMarkControls();
   registerMasterstrokeWarnings();
   registerCraftingTableControls();
 
@@ -79,6 +77,8 @@ Hooks.once("init", () => {
   registerItemChatHooks(getRulesConfig);
   professionsInstalled = registerProfessionHooks();
   registerNephilimBonds();
+  registerEquipmentPanel();
+  registerVoidProtection();
 
   const module = game.modules.get(MODULE_ID);
   if (module) module.api = createPublicApi();

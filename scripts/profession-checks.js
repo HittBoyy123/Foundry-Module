@@ -6,7 +6,7 @@ import { getActorProfessions, getProfessionGrant } from "./professions.js";
 export function professionSkillChoices(actor, defaultSkill, materialIds = []) {
   const choices = [{ id: defaultSkill, label: actor?.getStatistic?.(defaultSkill)?.label ?? defaultSkill }];
   const professions = getActorProfessions(actor).filter(profession =>
-    profession.materialIds.some(materialId => materialIds.includes(materialId)));
+    profession.materialIds.some(materialId => materialIds.map(id => id === "omnipotisium" ? "metal" : id).includes(materialId)));
   for (const item of Array.from(actor?.items ?? [])) {
     const grant = getProfessionGrant(item);
     if (item.type !== "lore" || grant?.kind !== "lore"

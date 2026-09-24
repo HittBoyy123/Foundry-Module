@@ -23,13 +23,14 @@ test("the crafting compendium provides one configurable held spell focus", () =>
   assert.deepEqual(focus.flags[MODULE_ID].crafting.core, { materialId: "mana-crystals", tier: 1 });
   assert.deepEqual(focus.flags[MODULE_ID].crafting.artisanMarks, []);
   assert.match(focus.system.description.value, /spell attack and spell DC bonuses/i);
-  assert.match(focus.system.description.value, /Artisan Marks/i);
+  assert.doesNotMatch(focus.system.description.value, /Artisan Marks/i);
 });
 
 test("the generated crafting pack and manifest match the catalogue", async () => {
   const pack = await readFile(path.join(projectRoot, "packs", "crafting-items.db"), "utf8");
   const entries = pack.trim().split(/\r?\n/u).map((line) => JSON.parse(line));
-  assert.deepEqual(entries, CRAFTING_ITEM_SOURCES);
+  assert.deepEqual(entries.filter(item => item._id !== "wmVoidProtect001"), CRAFTING_ITEM_SOURCES);
+  assert.equal(entries.find(item => item._id === "wmVoidProtect001").name, "Void Protection");
 
   const manifest = JSON.parse(await readFile(path.join(projectRoot, "module.json"), "utf8"));
   assert.deepEqual(manifest.packs.find((entry) => entry.name === "crafting-items"), {
