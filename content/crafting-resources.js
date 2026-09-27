@@ -126,7 +126,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
   const rarity = material.tierRarities?.[tier] ?? DEFAULT_RULES_CONFIG.tierRarities[tier];
   const otherTags = ["wrathmaker-resource", `material-${materialId}`, `material-tier-${tier}`];
   const craftingDC = calculateCraftingDC(tier);
-  const priceGp = RESOURCE_UNIT_PRICES_GP[tier] * (materialId === "dragon-scale" ? 1.5 : 1);
+  const priceGp = materialId === "omnipotisium" ? 0 : RESOURCE_UNIT_PRICES_GP[tier] * (materialId === "dragon-scale" ? 1.5 : 1);
   if (variantId) otherTags.push(`material-variant-${variantId}`);
 
   return Object.freeze({
@@ -139,7 +139,7 @@ function createResourceSource({ index, materialId, tier, name, img, unit, unitsP
       bulk: { value: 0.2, heldOrStowed: 0.2 },
       containerId: null,
       description: {
-        value: resourceDescription({
+        value: materialId === "omnipotisium" ? "<p>An exceptionally rare, GM-awarded crafting material. It cannot be obtained through gathering and has no standard market or sale value.</p><p>Weapons made with this Core bypass Voidborn half-damage protection. Armour made with it halves damage received from Voidborn attackers while worn. Each ingot is one Resource Unit.</p>" : resourceDescription({
           familyLabel: material.label,
           tier,
           tierLabel,

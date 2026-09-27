@@ -29,8 +29,10 @@ test("the crafting compendium provides one configurable held spell focus", () =>
 test("the generated crafting pack and manifest match the catalogue", async () => {
   const pack = await readFile(path.join(projectRoot, "packs", "crafting-items.db"), "utf8");
   const entries = pack.trim().split(/\r?\n/u).map((line) => JSON.parse(line));
-  assert.deepEqual(entries.filter(item => item._id !== "wmVoidProtect001"), CRAFTING_ITEM_SOURCES);
-  assert.equal(entries.find(item => item._id === "wmVoidProtect001").name, "Void Protection");
+  assert.deepEqual(entries, CRAFTING_ITEM_SOURCES);
+  const effect = JSON.parse((await readFile(path.join(projectRoot, "packs", "void-protection.db"), "utf8")).trim());
+  assert.equal(effect._id, "wmVoidProtect001");
+  assert.equal(effect.name, "Void Protection");
 
   const manifest = JSON.parse(await readFile(path.join(projectRoot, "module.json"), "utf8"));
   assert.deepEqual(manifest.packs.find((entry) => entry.name === "crafting-items"), {

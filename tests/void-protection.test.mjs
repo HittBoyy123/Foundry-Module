@@ -11,7 +11,7 @@ const actor = (entries = []) => ({ items: entries });
 const omni = (type = "weapon") => ({ type, isEquipped: true, flags: { [MODULE_ID]: { material: "omnipotisium", tier: 6 } } });
 const protectedActor = () => actor([structuredClone(VOID_PROTECTION_SOURCE)]);
 
-test("Void Protection halves ordinary weapons and spells but not Omnipotassium weapons or healing", () => {
+test("Void Protection halves ordinary weapons and spells but not Omnipotentium weapons or healing", () => {
  const target = protectedActor();
  assert.equal(hasVoidProtection(target), true);
  for (const type of ["weapon", "melee", "spell"]) assert.equal(voidDamageAdjustment(target, { item: { type }, damage: 21 }, config).length, 1);
@@ -23,7 +23,7 @@ test("Void Protection halves ordinary weapons and spells but not Omnipotassium w
  assert.equal(hasVoidProtection(target), false);
 });
 
-test("worn Omnipotassium armour reduces damage from void creatures only", () => {
+test("worn Omnipotentium armour reduces damage from void creatures only", () => {
  const armor = omni("armor"); const target = actor([armor]);
  assert.equal(voidDamageAdjustment(target, { item: { type: "melee", actor: protectedActor() }, damage: 30 }, config).length, 1);
  assert.equal(voidDamageAdjustment(target, { item: { type: "melee", actor: actor() }, damage: 30 }, config).length, 0);
@@ -31,7 +31,7 @@ test("worn Omnipotassium armour reduces damage from void creatures only", () => 
  assert.equal(voidDamageAdjustment(target, { item: { type: "melee", actor: protectedActor() }, damage: 30 }, config).length, 0);
 });
 
-test("ring focus with an Omnipotassium frame bypasses protection only while active", () => {
+test("ring focus with an Omnipotentium frame bypasses protection only while active", () => {
  const focus = { id: "focus", type: "equipment", isEquipped: true, flags: { [MODULE_ID]: { material: "mana-crystals", tier: 6, crafting: { omnipotisiumFrame: true } } }, system: { traits: { otherTags: ["spell-focus"] }, usage: { type: "worn", value: "wornring" }, equipped: { carryType: "worn", inSlot: true } } };
  const caster = actor([focus]); focus.actor = caster;
  const attack = { item: { type: "spell", actor: caster }, damage: 40 };
@@ -93,12 +93,12 @@ test("Voidborn is a selectable distinct trait driving both damage directions", (
 });
 
 
-test("Omnipotassium ingots reserve and consume as a separate Tier 6 weapon core", async () => {
+test("Omnipotentium ingots reserve and consume as a separate Tier 6 weapon core", async () => {
  const { createCraftingProject, reserveCraftingProject, advanceCraftingProject, buildConsumptionPlan } = await import("../scripts/crafting-projects.js");
  const { buildCompletedItemSource } = await import("../scripts/workbench.js");
  const base = { name: "Longsword", type: "weapon", system: { category: "martial", group: "sword", traits: { value: [] } } };
  const recipe = buildCraftingRecipeFromBand("weapon-sword", { targetItem: base, tier: 6, coreMaterialId: "omnipotisium" });
- const project = createCraftingProject({ id: "omni-sword", name: "Omnipotassium Longsword", recipe, coreMaterialId: "omnipotisium", coreTier: 6, requiredProgress: 1 });
+ const project = createCraftingProject({ id: "omni-sword", name: "Omnipotentium Longsword", recipe, coreMaterialId: "omnipotisium", coreTier: 6, requiredProgress: 1 });
  const stack = (id, materialId, quantity) => ({ id, type: "equipment", system: { quantity }, flags: { [MODULE_ID]: { resource: { materialId, tier: 6, unitsPerItem: 1 } } } });
  const inventory = [stack("omni", "omnipotisium", 10), stack("dark", "metal", 10), stack("hide", "leather", 10)];
  const reserved = reserveCraftingProject(project, { inventoryItems: inventory });

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.35.6 — Workbench & Material Clarity (2026-09-27)
+
+- Place Void Protection in its own compendium. Archive redundant stock world references after verifying the pack; preserve effects already applied to creatures.
+
+- Move all six Omni ingots into a dedicated Omnipotisium Ingots compendium in the Wrathmaker folder; stop automatically creating loose ingot references.
+
+- Omnipotentium is exclusively GM-awarded, cannot be gathered, and has no standard sale value. Remove legacy ingot prices and material value premiums.
+
+- Show a live material-effects summary in crafting and upgrades, including tier bonuses and Omnipotentium Voidborn effects.
+
+- Fix the Workbench failing to open after Artisan Marks were retired by removing unmatched template blocks.
+
+- Rename the Omnipotassium material family to Omnipotentium. Preserve the six tier names and saved item/project identifiers; existing default material labels update automatically.
+
 ## 0.35.5 — Equipment Preview & Omnipotassium (2026-09-24)
 
 - Add a GM-controlled experimental equipment panel, off by default, in individual character inventories. Support multiple rings and configurable worn spell focuses.

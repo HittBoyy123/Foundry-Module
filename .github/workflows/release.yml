@@ -56,8 +56,11 @@ jobs:
           ARCHIVE_NAME: ${{ steps.package.outputs.archive }}
         shell: bash
         run: |
+          NOTES_FILE="release-notes/${GITHUB_REF_NAME}.md"
+          test -f "${NOTES_FILE}"
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release upload "${GITHUB_REF_NAME}" "${ARCHIVE_NAME}" release/module.json --clobber
+            gh release edit "${GITHUB_REF_NAME}" --notes-file "${NOTES_FILE}"
           else
-            gh release create "${GITHUB_REF_NAME}" "${ARCHIVE_NAME}" release/module.json --generate-notes --title "Wrathmaker ${GITHUB_REF_NAME}"
+            gh release create "${GITHUB_REF_NAME}" "${ARCHIVE_NAME}" release/module.json --notes-file "${NOTES_FILE}" --title "Wrathmaker ${GITHUB_REF_NAME}"
           fi

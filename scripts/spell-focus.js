@@ -48,7 +48,7 @@ export function insertFocusSlotControl(item, root) {
     const frame = document.createElement("label"); frame.className = "cmt-focus-frame";
     const checkbox = document.createElement("input"); checkbox.type = "checkbox";
     checkbox.checked = item.flags?.[MODULE_ID]?.crafting?.omnipotisiumFrame === true;
-    frame.append(checkbox, document.createTextNode("GM: Omnipotassium frame"));
+    frame.append(checkbox, document.createTextNode("GM: Omnipotentium frame"));
     checkbox.addEventListener("change", async event => {
       event.stopPropagation(); checkbox.disabled = true;
       try { if (game.user.isGM) await item.update({ [`flags.${MODULE_ID}.crafting.omnipotisiumFrame`]: checkbox.checked }); }

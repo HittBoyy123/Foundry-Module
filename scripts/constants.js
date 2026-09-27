@@ -273,12 +273,12 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       tierPricesGp: DEFAULT_TIER_PRICES_GP,
     }),
     omnipotisium: Object.freeze({
-      label: "Omnipotassium", enabled: true,
+      label: "Omnipotentium", enabled: true,
       itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
       effects: defaultEffects(),
       tierLabels: Object.freeze({ 1: "Omni Iron", 2: "Omni Steel", 3: "Creation Steel", 4: "Fate Steel", 5: "Eternal Steel", 6: "Iron's Blood" }),
       tierRarities: Object.freeze(Object.fromEntries([1,2,3,4,5,6].map(t => [t, "unique"]))),
-      tierPricesGp: DEFAULT_TIER_PRICES_GP,
+      tierPricesGp: Object.freeze({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }),
     }),
     wood: Object.freeze({
       label: "Wood",

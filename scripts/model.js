@@ -505,7 +505,8 @@ export function normalizeRulesConfig(input) {
     }
     if (materialId === "omnipotisium") {
       material = { ...material,
-        label: material.label === "Omnipotisium" ? "Omnipotassium" : material.label,
+        tierPricesGp: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+        label: ["Omnipotisium", "Omnipotassium"].includes(material.label) ? "Omnipotentium" : material.label,
         tierLabels: Object.fromEntries(Object.entries(material.tierLabels ?? {}).map(([tier, label]) => [tier, ["Omnipotisium", "Omnipotassium"].includes(label) ? DEFAULT_RULES_CONFIG.materials.omnipotisium.tierLabels[tier] : label])),
       };
     }

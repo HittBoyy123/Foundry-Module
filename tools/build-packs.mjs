@@ -17,8 +17,10 @@ const outputDirectory = path.join(projectRoot, "packs");
 const packs = Object.freeze({
   "crafting-tables.db": CRAFTING_ROLL_TABLES,
   "apex-items.db": APEX_ITEM_SOURCES,
-  "crafting-items.db": [...CRAFTING_ITEM_SOURCES, { ...VOID_PROTECTION_SOURCE, _id: "wmVoidProtect001" }],
-  "crafting-resources.db": CRAFTING_RESOURCE_SOURCES,
+  "crafting-items.db": CRAFTING_ITEM_SOURCES,
+  "void-protection.db": [{ ...VOID_PROTECTION_SOURCE, _id: "wmVoidProtect001" }],
+  "crafting-resources.db": CRAFTING_RESOURCE_SOURCES.filter(item => item.flags["pf2e-crafting-material-tiers"].resource.materialId !== "omnipotisium"),
+  "omnipotisium-ingots.db": CRAFTING_RESOURCE_SOURCES.filter(item => item.flags["pf2e-crafting-material-tiers"].resource.materialId === "omnipotisium"),
   "professions.db": PROFESSION_ITEM_SOURCES,
   "artisan-marks.db": [...ARTISAN_MARK_JOURNAL_SOURCES, CRAFTING_GUIDE],
   "player-guide.db": [WRATHMAKER_PLAYER_GUIDE],

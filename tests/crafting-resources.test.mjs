@@ -33,7 +33,7 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.equal(resource.schemaVersion, CRAFTING_RESOURCE_SCHEMA_VERSION);
     assert.equal(resource.tier >= 1 && resource.tier <= 6, true);
     assert.equal(resource.unitsPerItem >= 1, true);
-    const expectedPrice = TIER_PRICES_GP[resource.tier - 1] * (resource.materialId === "dragon-scale" ? 1.5 : 1);
+    const expectedPrice = resource.materialId === "omnipotisium" ? 0 : TIER_PRICES_GP[resource.tier - 1] * (resource.materialId === "dragon-scale" ? 1.5 : 1);
     assert.deepEqual(item.system.price.value, { gp: expectedPrice });
     assert.equal(item.system.bulk.value, 0.2);
     assert.equal(item.system.bulk.heldOrStowed, 0.2);
@@ -45,7 +45,8 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.equal(resource.pricePerUnitGp, expectedPrice);
     assert.equal(resource.bundleSize, 1);
     assert.equal(item.system.level.value, TIER_LEVELS[resource.tier - 1]);
-    assert.match(item.system.description.value, new RegExp(`crafting DC is <strong>${TIER_DCS[resource.tier - 1]}</strong>`, "iu"));
+    if (resource.materialId === "omnipotisium") assert.match(item.system.description.value, /GM-awarded.*no standard market or sale value/);
+    else assert.match(item.system.description.value, new RegExp(`crafting DC is <strong>${TIER_DCS[resource.tier - 1]}</strong>`, "iu"));
   }
 
   for (const materialId of ["metal", "wood", "stone", "leather", "herbs", "mana-crystals"]) {
@@ -79,7 +80,10 @@ test("resource names and bundle quantities remain useful in a PF2e inventory", (
 test("the generated resource pack and manifest match the catalogue", async () => {
   const pack = await readFile(path.join(projectRoot, "packs", "crafting-resources.db"), "utf8");
   const entries = pack.trim().split(/\r?\n/u).map((line) => JSON.parse(line));
-  assert.deepEqual(entries, CRAFTING_RESOURCE_SOURCES);
+  assert.deepEqual(entries, CRAFTING_RESOURCE_SOURCES.filter(item => resourceData(item).materialId !== "omnipotisium"));
+  const omni = (await readFile(path.join(projectRoot, "packs", "omnipotisium-ingots.db"), "utf8")).trim().split(/\r?\n/u).map(JSON.parse);
+  assert.deepEqual(omni, CRAFTING_RESOURCE_SOURCES.filter(item => resourceData(item).materialId === "omnipotisium"));
+  assert.equal(omni.length, 6);
 
   const manifest = JSON.parse(await readFile(path.join(projectRoot, "module.json"), "utf8"));
   assert.deepEqual(manifest.packs.find((entry) => entry.name === "crafting-resources"), {
@@ -95,4 +99,5 @@ test("the generated resource pack and manifest match the catalogue", async () =>
     },
   });
   assert.equal(manifest.packFolders[0].packs.includes("crafting-resources"), true);
+  assert.equal(manifest.packFolders[0].packs.includes("omnipotisium-ingots"), true);
 });

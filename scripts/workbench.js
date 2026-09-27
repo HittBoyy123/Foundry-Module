@@ -1,3 +1,4 @@
+import { materialBenefits } from "./material-benefits.js";
 import { retireProjectMarks } from "./retired-marks.js";
 import { artisanSlotChoices, availableArtisanProfiles, canControlArtisan, resolveDroppedArtisan, slotAllowsArtisan, requestArtisanAssignment, installArtisanAssignmentSocket } from "./artisan-selection.js";
 import { craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
@@ -468,6 +469,7 @@ async function workbenchContext(application) {
       traitSummary: itemTraitSummary(baseItem),
       categoryLabel: evaluation?.targetCategory?.label ?? localize("CMT.Workbench.EligibleItem", "Eligible PF2e item"),
     } : null,
+    materialBenefits: materialBenefits(baseItem, application.workbenchState.materialId, tier, config, application.workbenchState.upgradeDragon),
     recipeBands: recipeBands.map((entry) => ({ ...entry, selected: entry.id === selectedBand?.id })),
     selectedBand,
     coreMaterials: (selectedBand?.coreMaterialIds ?? []).map((materialId) => ({

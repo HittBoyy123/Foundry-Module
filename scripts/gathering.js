@@ -164,6 +164,7 @@ async function attemptGathering(application, formData, event) {
   }
 
   const documents = await resourceDocuments();
+  if (taskSource.materialId === "omnipotisium") throw new Error("Omnipotentium is awarded only by the GM and cannot be gathered.");
   const materialEnabled = config.materials?.[taskSource.materialId]?.enabled !== false;
   const evaluation = evaluateGatheringTask(groupGatheringTask(taskSource, participantCount), {
     environment: environmentSource,

@@ -2923,3 +2923,17 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .cmt-equipment-member select { flex: 1; min-width: 0; }
 .cmt-void-control, .cmt-focus-frame { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; color: #650600; background: #ead99e; border: 1px solid #b59148; border-radius: 5px; }
 .cmt-void-control input, .cmt-focus-frame input { flex: 0 0 auto; }
+
+.cmt-workbench-app .cmt-material-benefits {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #ab8979;
+  border-left: 4px solid #5e0000;
+  border-radius: 8px;
+  background: #e7d9cf;
+}
+.cmt-workbench-app .cmt-material-benefits h4 { margin: 0 0 6px; color: #5e0000; }
+.cmt-workbench-app .cmt-material-benefits p { margin: 4px 0; }
+
+.cmt-crafting-readouts { display: grid; gap: 0.8rem; min-width: 0; }
+.cmt-workbench-app .cmt-crafting-readouts .cmt-material-benefits { margin-top: 0; }
