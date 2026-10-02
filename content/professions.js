@@ -2,7 +2,7 @@ import { getSpecialisationFeaturesByName } from "./artisan-marks.js";
 
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
-export const PROFESSION_SCHEMA_VERSION = 4;
+export const PROFESSION_SCHEMA_VERSION = 5;
 
 export const PF2E_PROFESSION_FEAT_UUIDS = Object.freeze({
   additionalLore: "Compendium.pf2e.feats-srd.Item.BocFD2KV0qgUC76x",
@@ -366,13 +366,11 @@ function professionDescription(profession) {
     "<ul>",
     `<li><strong>Profession Lore:</strong> ${profession.loreName}</li>`,
     "<li><strong>Lore Proficiency:</strong> trained at level 1, expert at level 3, master at level 7, and legendary at level 15.</li>",
-    "<li><strong>Profession Development:</strong> at levels 4, 10, and 16, choose a specialty of the starting profession or learn a new profession.</li>",
+    "<li><strong>Profession Development:</strong> you have one profession and can retrain it into a different profession. No additional professions are gained with level.</li>",
     `<li><strong>Relevant Checks:</strong> +${profession.checkBonus} ${profession.checkBonusType} bonus.</li>`,
     bonusFeat,
     "</ul>",
-    "<p><strong>Specialisations</strong></p>",
-    `<ol>${specialties}</ol>`,
-    "<p><em>Your specialisation provides Signature, Mastery, and Legacy benefits. Select Artisan Marks and assign them to compatible item anchors in the Workbench.</em></p>",
+    "<p>Specializations are optional and disabled by default. Your profession grants Additional Lore and its +2 circumstance bonus, with no other bonus feats.</p>",
   ].join("\n");
 }
 

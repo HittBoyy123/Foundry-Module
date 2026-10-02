@@ -18,6 +18,7 @@
           {{/each}}
         </select>
       </label>
+      <button type="button" data-cmt-workbench-action="enchant" {{#unless party}}disabled{{/unless}}><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Enchant</button>
       <button type="button" data-cmt-workbench-action="open-stash" {{#unless party}}disabled{{/unless}}>
         <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
         {{localize "CMT.Workbench.OpenStash"}}
@@ -220,13 +221,30 @@
             {{#if upgradeError}}<p class="cmt-workbench-notice is-warning">{{upgradeError}}</p>{{else}}<p>Drop an item to see its material requirements.</p>{{/if}}
           {{/if}}
         </section>
+        </div>
+      {{#if enchantments.length}}
+        <section class="cmt-planned-runes" aria-label="Planned property runes">
+          <h4>Planned Property Runes</h4>
+          <div class="cmt-planned-runes-list" tabindex="0" aria-label="Scroll planned property runes">
+            {{#each enchantments}}
+              <article>
+                <header><strong>{{name}}</strong><div class="cmt-planned-rune-actions">
+                  <button type="button" data-cmt-planned-rune-details="{{uuid}}" title="Read {{name}}" aria-label="Read {{name}}"><i class="fa-solid fa-bookmark" aria-hidden="true"></i></button>
+                  <button type="button" data-cmt-remove-rune="{{@index}}" title="Remove {{name}}" aria-label="Remove {{name}}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                </div></header>
+                <small>Mana Gem tier {{tier}} · 1 unit</small>
+                <p>{{summary}}</p>
+              </article>
+            {{/each}}
+          </div>
+        </section>
+      {{/if}}
           {{#if materialBenefits}}
             <section class="cmt-material-benefits" aria-live="polite">
               <h4>{{materialBenefits.title}}</h4>
               {{#each materialBenefits.lines}}<p>{{this}}</p>{{/each}}
             </section>
           {{/if}}
-        </div>
       </div>
 
 
@@ -255,6 +273,7 @@
                     {{#if specializationSummary}}<small>{{specializationSummary}}</small>{{/if}}
                   </div>
                 </div>
+                {{#if isEnchanter}}{{#if ../canPlanEnchantments}}<button type="button" class="cmt-enchant-item" data-cmt-plan-rune><i class="fa-solid fa-wand-magic-sparkles"></i> Enchant Item</button>{{/if}}{{/if}}
                 <div class="cmt-slot-actions">
                 <button type="button" data-cmt-slot-remove="{{index}}" {{#unless canAssign}}disabled{{/unless}} title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
                 <div class="cmt-mark-badges">
@@ -267,6 +286,7 @@
           {{/each}}
         </div>
       </section>
+
       {{#each teamReasons}}<p class="cmt-workbench-notice is-warning">{{this}}</p>{{/each}}
     </section>
   {{/if}}
@@ -322,6 +342,7 @@
             <span><strong>{{reservationCount}}</strong> {{localize "CMT.Workbench.ReservedStacks"}}</span>
 
           </div>
+          {{#if teamworkBonus}}<p><strong>Artisan teamwork:</strong> +{{teamworkBonus}} to Work Block rolls.</p>{{/if}}
           {{#if nextWorkBonus}}<p><strong>Stable Integration:</strong> +2 circumstance bonus to the next Work Block.</p>{{/if}}
           {{#if masterstrokes.length}}<details open><summary>Masterstrokes</summary><ul>
             {{#each masterstrokes}}<li><span><strong>{{name}}</strong> — {{description}}</span></li>{{/each}}
@@ -329,6 +350,7 @@
           {{#if conservationCredits.length}}<details><summary>Workshop Conservation Credits</summary><ul>
             {{#each conservationCredits}}<li><span>{{itemName}} · up to 10% of one Resource Unit’s consumable value. Non-sellable. {{#if used}}Used{{else}}Available{{/if}}</span>{{#unless used}}{{#if ../canManage}}<button type="button" data-cmt-use-credit="{{id}}">Use Credit</button>{{/if}}{{/unless}}</li>{{/each}}
           </ul></details>{{/if}}
+          {{#if enchantments.length}}<p><strong>Property runes:</strong> {{#each enchantments}}{{name}}{{#unless @last}} · {{/unless}}{{/each}}</p>{{/if}}
           {{#if contributorSummary}}<p class="cmt-workbench-project-artisans"><strong>Artisans:</strong> {{contributorSummary}}</p>{{/if}}
           {{#if reservations.length}}
             <details open>

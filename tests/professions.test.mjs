@@ -147,9 +147,9 @@ test("profession feat groups keep each profession as the parent of only its modu
   };
   const actor = { level: 10, items: [blacksmith, alchemist, specialty, additionalLore, alchemyCrafting, loreSkill] };
   const groups = getActorProfessionFeatGroups(actor);
-  assert.deepEqual(groups.map((group) => group.professionId), ["blacksmithing", "alchemy"]);
+  assert.deepEqual(groups.map((group) => group.professionId), ["blacksmithing"]);
   assert.deepEqual(groups[0].children.map((item) => item.id), ["BlacksmithSpecialty", "BlacksmithAdditionalLore"]);
-  assert.deepEqual(groups[1].children.map((item) => item.id), ["AlchemySpecialtyCrafting"]);
+  assert.equal(groups.length, 1);
 });
 
 test("profession hierarchy writes native PF2e nested grant links without replacing unrelated grants", async () => {
@@ -191,23 +191,17 @@ test("profession checks activate only for related Wrathmaker materials", () => {
   assert.equal(professionCheckRollOptions(leatherworker, { materialId: "dragon-scale" }).length, 1);
 });
 
-test("milestone professions remain active together and are limited by character level", () => {
+test("only the primary profession remains active at every character level", () => {
   const primary = selectedProfessionItem("blacksmithing", "primary", 1);
   const second = selectedProfessionItem("alchemy", "milestone", 4);
   const third = selectedProfessionItem("carpentry", "milestone", 10);
   const actor = { level: 9, items: [primary, second, third] };
-  assert.deepEqual(getActorProfessions(actor).map((profession) => profession.id), ["blacksmithing", "alchemy"]);
+  assert.deepEqual(getActorProfessions(actor).map((profession) => profession.id), ["blacksmithing"]);
   assert.equal(getActorProfession(actor).id, "blacksmithing");
-  assert.deepEqual(professionCheckRollOptions(actor, { materialId: "herbs" }), [
-    "wrathmaker:profession-check:alchemy",
-  ]);
+  assert.deepEqual(professionCheckRollOptions(actor, { materialId: "herbs" }), []);
   assert.deepEqual(professionCheckRollOptions(actor, { materialId: "wood" }), []);
   actor.level = 10;
-  assert.deepEqual(getActorProfessions(actor).map((profession) => profession.id), [
-    "blacksmithing",
-    "alchemy",
-    "carpentry",
-  ]);
+  assert.deepEqual(getActorProfessions(actor).map((profession) => profession.id), ["blacksmithing"]);
 });
 
 test("profession plans distinguish a starting profession from level 4, 10, and 16 choices", () => {
@@ -217,11 +211,7 @@ test("profession plans distinguish a starting profession from level 4, 10, and 1
   specialty.id = "SpecialtyChoice1";
   const plan = getActorProfessionPlan({ level: 10, items: [primary, second, specialty] });
   assert.equal(plan.primary.id, "blacksmithing");
-  assert.deepEqual(plan.milestones, [
-    { milestoneLevel: 4, kind: "profession", professionId: "alchemy", specialtyId: "" },
-    { milestoneLevel: 10, kind: "specialty", professionId: "blacksmithing", specialtyId: "specialty-2" },
-    { milestoneLevel: 16, kind: "", professionId: "", specialtyId: "" },
-  ]);
+  assert.deepEqual(plan.milestones, []);
 });
 
 test("the five determined professions reference the correct current PF2e feats", () => {
@@ -321,7 +311,7 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     const lore = grants.find((item) => item.type === "lore");
     assert.equal(lore.system.proficient.value, 2);
     assert.equal(lore.name, "Blacksmithing");
-    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 4);
+    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 5);
     assert.match(profession.system.description.value, /expert at level 3/i);
     assert.equal(grants.some(item => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting"), false);
     assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 1);
@@ -341,7 +331,7 @@ test("profession synchronization creates PF2e-visible grants and advances only i
   }
 });
 
-test("a level 10 character can combine a starting profession, a new profession, and a specialty", async () => {
+test("a level 10 character has only one profession and can retrain it", async () => {
   const originalGame = globalThis.game;
   const originalFromUuid = globalThis.fromUuid;
   globalThis.game = {
@@ -413,15 +403,18 @@ test("a level 10 character can combine a starting profession, a new profession, 
       ],
     });
 
-    assert.deepEqual(getActorProfessions(actor).map((profession) => profession.id), ["blacksmithing", "alchemy"]);
+    assert.deepEqual(getActorProfessions(actor).map((profession) => profession.id), ["blacksmithing"]);
     const specialty = items.find((item) => getProfessionSpecialty(item));
-    assert.equal(getProfessionSpecialty(specialty).milestoneLevel, 10);
+    assert.equal(specialty, undefined);
     const loreNames = items
       .filter((item) => item.type === "lore")
       .map((item) => item.name)
       .sort();
-    assert.deepEqual(loreNames, ["Alchemy", "Blacksmithing", "Blacksmithing: Hellforging"]);
-    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 5);
+    assert.deepEqual(loreNames, ["Blacksmithing"]);
+    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 2);
+    await setActorProfessionPlan(actor, { primaryProfessionId: "alchemy" });
+    assert.deepEqual(getActorProfessions(actor).map(p => p.id), ["alchemy"]);
+    assert.deepEqual(items.filter(item => item.type === "lore").map(item => item.name), ["Alchemy"]);
   } finally {
     globalThis.game = originalGame;
     globalThis.fromUuid = originalFromUuid;
@@ -478,7 +471,7 @@ test("the PF2e character overview exposes the profession picker and gathering us
   assert.match(pickerTemplate, /name="professionId"/);
   assert.match(pickerTemplate, /data-cmt-milestone="\{\{level\}\}"/);
   assert.match(pickerTemplate, /milestone\{\{level\}\}Specialty/);
-  assert.match(pickerTemplate, /milestone\{\{level\}\}Profession/);
+  assert.doesNotMatch(pickerTemplate, /milestone\{\{level\}\}Profession/);
   assert.match(pickerTemplate, /data-action="removeProfession"/);
   assert.match(gatheringScript, /professionCheckRollOptions/);
   assert.match(gatheringTemplate, /professionBonus/);

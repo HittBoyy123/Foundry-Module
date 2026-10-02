@@ -1,3 +1,4 @@
+import { specializationsEnabled } from "./profession-options.js";
 import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 export function materialDisplayName(id) {
@@ -22,7 +23,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
     )));
     return {
       index,
-      role: wyrmSlot && index > 1 ? "Wyrmcraft Specialist" : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Assistant Artisan",
+      role: wyrmSlot && index > 1 ? (specializationsEnabled() ? "Wyrmcraft Specialist" : "Leatherwork Specialist") : index === 0 ? "Core Artisan" : index === 1 && secondary ? "Component Specialist" : "Assistant Artisan",
       required: index === 0 || (wyrmSlot && dragonResistance),
       materialIds,
       requiresWyrmcraft: wyrmSlot,
@@ -39,14 +40,15 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
 }
 
 export function hasWyrmcraft(profile) {
+  if (!specializationsEnabled()) return profile?.professions?.some(p => p.id === "leatherwork" || p.materialIds?.includes("leather")) === true;
   return profile?.specializations?.some(s => s.professionId === "leatherwork" && s.specializationId === "specialty-1") === true;
 }
 
 export function validateArtisanTeam(recipe, slotUuids, profiles, options = {}) {
   const slots = buildArtisanSlots(recipe, slotUuids, profiles, options);
-  const reasons = slots[0].actorUuid ? [] : ["Choose a lead artisan. Material specialists unlock Marks but are not required to craft the base item."];
+  const reasons = slots[0].actorUuid ? [] : ["Choose a lead artisan. Additional artisans can assist with the work."];
   if (options.dragonResistance && !profiles.some(hasWyrmcraft)) {
-    reasons.push("Add a Leatherwork artisan with Wyrmcraft to apply dragon-scale resistance.");
+    reasons.push(specializationsEnabled() ? "Add a Leatherwork artisan with Wyrmcraft to apply dragon-scale resistance." : "Add a Leatherwork artisan to apply dragon-scale resistance.");
   }
   const uuids = slotUuids.filter(Boolean);
   if (uuids.length > 6 || new Set(uuids).size !== uuids.length) {

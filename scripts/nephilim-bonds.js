@@ -142,11 +142,17 @@ export function injectNephilimBondBar(application, html) {
   title.className = "details-label";
   title.textContent = "Nephilim Bonds";
   section.append(title);
+  const field = document.createElement("div");
+  field.className = "cmt-nephilim-bonds-field";
+  const value = document.createElement("strong");
+  value.className = "value";
+  value.textContent = bondSummary(actor);
+  value.title = value.textContent;
   const button = document.createElement("button");
   button.type = "button";
   button.className = "cmt-nephilim-bonds-open";
-  button.textContent = bondSummary(actor);
-  button.title = button.textContent;
+  button.innerHTML = '<i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>';
+  button.title = "Open Nephilim Bonds";
   const refreshAttention = () => {
     const pending = bondMilestones(actor).filter(slot => slot.unlocked && !slot.selected).length;
     button.classList.toggle("has-unallocated-bonds", pending > 0);
@@ -162,13 +168,14 @@ export function injectNephilimBondBar(application, html) {
     try { await openNephilimBonds(actor); }
     catch (error) { ui.notifications.error(error.message); }
     finally {
-      button.textContent = bondSummary(actor);
-      button.title = button.textContent;
+      value.textContent = bondSummary(actor);
+      value.title = value.textContent;
       refreshAttention();
       button.disabled = false;
     }
   });
-  section.append(button);
+  field.append(value, button);
+  section.append(field);
   identity.append(section);
 }
 

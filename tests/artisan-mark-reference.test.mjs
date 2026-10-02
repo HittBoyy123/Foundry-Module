@@ -15,7 +15,7 @@ test("all 253 Marks have searchable source names and a description in the refere
   const serialized = (await readFile(new URL("../packs/artisan-marks.db", import.meta.url), "utf8")).trim().split("\n").map(JSON.parse);
   assert.deepEqual(serialized.slice(0, 253), ARTISAN_MARK_JOURNAL_SOURCES);
   assert.equal(new Set(serialized.map(entry => entry._id)).size, 254);
-  assert.equal(serialized[253].pages.length, 254);
+  assert.equal(serialized[253].pages.length, 1); // Current handbook excludes the separate legacy references.
   for (const [index, entry] of serialized.slice(0, 253).entries()) {
     const mark = ARTISAN_MARK_DEFINITIONS[index];
     assert.match(entry._id, /^[A-Za-z0-9]{16}$/);

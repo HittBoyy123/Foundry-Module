@@ -1,3 +1,6 @@
+import { refreshGuideCompendiums } from "./guide-refresh.js";
+import { installMaterialRuneSlots } from "./property-runes.js";
+import { registerEnchanting } from "./enchanting.js";
 import { registerVoidProtection } from "./void-protection.js";
 import { registerEquipmentPanel } from "./equipment-panel.js";
 import { ensureCraftingRollTables, registerCraftingTableControls } from "./crafting-roll-tables.js";
@@ -65,6 +68,8 @@ Hooks.once("init", () => {
   registerMasterstrokeWarnings();
   registerCraftingTableControls();
 
+  installMaterialRuneSlots();
+  registerEnchanting();
   bridgeInstalled = installRuleElementBridge(getRulesConfig);
   abilityBoostsInstalled = installAbilityBoostBridge();
   registerAbilityBoostSheetHooks();
@@ -86,6 +91,7 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   if (game.system.id !== "pf2e") return;
+  void refreshGuideCompendiums().catch(error => console.error(`${MODULE_ID} | Guide refresh failed`, error));
   void ensureCraftingRollTables().catch(error => console.error(`${MODULE_ID} | Crafting tables could not be installed.`, error));
   if (bridgeInstalled || abilityBoostsInstalled || campaignResourcesInstalled || flankingInstalled || hexplorationInstalled) {
     refreshPreparedData();

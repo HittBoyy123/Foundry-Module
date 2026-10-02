@@ -1,3 +1,4 @@
+globalThis.game = { settings: { get: (_module, key) => key === "professionSpecializations" } };
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MODULE_ID, cloneDefaultRulesConfig } from "../scripts/constants.js";

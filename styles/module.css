@@ -2759,17 +2759,33 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .pf2e-crafting-material-tiers .cmt-workbench-tabs { overflow-x: auto; }
 .pf2e-crafting-material-tiers .cmt-workbench-tabs button { min-width: 0; white-space: nowrap; padding-inline: 0.25rem; }
 
-.cmt-nephilim-bonds-open {
+.cmt-nephilim-bonds-field {
   grid-column: 1 / -1;
-  text-align: left;
-  white-space: normal;
-  height: auto;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  background: #d8d4d1;
+  padding-left: 6px;
+}
+.cmt-nephilim-bonds-field .value { flex: 1; font-weight: 700; }
+.cmt-nephilim-bonds-field .cmt-nephilim-bonds-open {
+  flex: 0 0 26px;
+  width: 26px;
   min-height: 2rem;
-  line-height: 1.4;
-  padding: 4px 8px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+.cmt-nephilim-bonds-field .cmt-nephilim-bonds-open:hover,
+.cmt-nephilim-bonds-field .cmt-nephilim-bonds-open:focus-visible {
+  border-color: #9f8036;
+  box-shadow: 0 0 5px #ffb351;
 }
 
-/* Match PF2e's unallocated ability-boost control across the entire bond field. */
+/* Match PF2e's unallocated ability-boost control on the bond details control. */
 .cmt-nephilim-bonds-open.has-unallocated-bonds {
   animation: glow 0.75s infinite alternate;
 }
@@ -2937,3 +2953,30 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 
 .cmt-crafting-readouts { display: grid; gap: 0.8rem; min-width: 0; }
 .cmt-workbench-app .cmt-crafting-readouts .cmt-material-benefits { margin-top: 0; }
+.cmt-rune-choices { max-height: 55vh; overflow-y: auto; display: grid; gap: 10px; padding: 2px; }
+.cmt-rune-choice { background: #f4eee4; color: #261d18; border: 1px solid #ac917d; border-radius: 8px; padding: 12px; }
+.cmt-rune-choice:has(input:checked) { border-color: #790000; box-shadow: inset 0 0 0 1px #790000; background: #eee0bf; }
+.cmt-rune-heading { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+.cmt-rune-heading label { display: flex; align-items: center; gap: 8px; color: #790000; cursor: pointer; }
+.cmt-rune-heading button { flex: 0 0 32px; width: 32px; height: 32px; background: #ead69c; color: #790000; border: 1px solid #ab8529; }
+.cmt-rune-choice p { margin: 8px 0 0; line-height: 1.4; }
+
+.cmt-workbench-app .cmt-planned-runes { margin-top: 12px; padding: 14px 16px; border: 1px solid #b89442; border-left: 5px solid #b89442; border-radius: 8px; background: #ead9a2; color: #302718; }
+.cmt-workbench-app .cmt-planned-runes h4 { margin: 0 0 8px; color: #654510; }
+.cmt-planned-runes-list { height: 150px; overflow-y: auto; scrollbar-gutter: stable; }
+.cmt-planned-runes-list article { padding: 0 6px 10px 0; }
+.cmt-planned-runes-list article + article { padding-top: 10px; border-top: 1px solid #b89442; }
+.cmt-planned-runes-list header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cmt-planned-rune-actions { display: flex; gap: 5px; }
+.cmt-workbench-app .cmt-planned-rune-actions button { width: 30px; height: 30px; flex: 0 0 30px; padding: 0; background: #f4e4b5; color: #654510; border: 1px solid #b89442; }
+.cmt-planned-runes-list p { margin: 6px 0 0; line-height: 1.4; }
+
+/* Shared second row keeps both descriptions aligned as requirements change. */
+.cmt-workbench-app .cmt-crafting-summary > .cmt-planned-runes { grid-column: 1; grid-row: 2; margin: 0; align-self: stretch; }
+.cmt-workbench-app .cmt-crafting-summary > .cmt-material-benefits { grid-column: 2; grid-row: 2; margin: 0; align-self: stretch; }
+.cmt-workbench-app button.cmt-enchant-item { background: #ead69c; color: #790000; border: 1px solid #ab8529; border-radius: 6px; padding: 7px 12px; font-weight: 700; box-shadow: 0 2px 3px #0002; }
+.cmt-workbench-app button.cmt-enchant-item:hover:not(:disabled), .cmt-workbench-app button.cmt-enchant-item:focus-visible { background: #f6e5b3; border-color: #790000; box-shadow: 0 0 5px #ab852980; }
+@media (max-width: 650px) {
+  .cmt-workbench-app .cmt-crafting-summary > .cmt-planned-runes,
+  .cmt-workbench-app .cmt-crafting-summary > .cmt-material-benefits { grid-column: 1; grid-row: auto; }
+}

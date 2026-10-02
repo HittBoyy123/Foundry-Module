@@ -1,4 +1,5 @@
 import { insertFocusSlotControl } from "./spell-focus.js";
+import { materialRuneSlots } from "./property-runes.js";
 import { insertMasterstrokeControls } from "./masterstrokes.js";
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
@@ -207,6 +208,14 @@ function createMakeAndMarksStrip(item, flags, config, craftingItemType) {
     return row;
   };
   addRow(localize("CMT.ItemSheet.Material", "Material"), `${result.presentation.label} · T${result.flags.tier}`);
+  if (["weapon", "armor"].includes(craftingItemType)) {
+    const runes = item.system.runes?.property ?? [];
+    addRow("Property rune slots", `${runes.length} / ${materialRuneSlots(item, config)}`);
+    for (const slug of runes) {
+      const name = slug.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, letter => letter.toUpperCase());
+      addRow("Property rune", name);
+    }
+  }
 
   return strip;
 }

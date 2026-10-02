@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.35.7 — Professions & Enchanting (2026-10-02)
+
+- Place new GM custom items in GM crafted items with player access disabled.
+- Refresh the Player Guide, GM Companion and Crafting Handbook for current professions, enchanting, teamwork and material rules; remove retired specialization and Mark chapters from those guides.
+
+- Move planned property runes beneath the crafting controls in a compact yellow panel with descriptions, full-detail bookmarks and a fixed-height scrolling list.
+
+- Assign an Enchanting artisan to choose property runes during crafting. Reserve one Mana Gem per rune with the project and apply the runes on completion; finished-item enchanting remains available.
+
+- Each additional artisan grants +1 to crafting Work Block rolls, up to +5 with six artisans, alongside the existing teamwork time reduction.
+
+- Fix the Enchant equipment selection error and show eligible runes as selectable cards with descriptions and bookmarks opening their full item sheets.
+
+- Choose one retrainable profession with normal Additional Lore progression and the existing +2 circumstance bonus. Additional profession milestones are removed; optional specializations are disabled by default.
+- Add Workbench enchanting: one unreserved Mana Gem unit per native property rune, gated by Mana Gem tier. Material bonuses provide up to three rune slots without an additional potency bonus.
+- Require ordinary Leatherwork for dragon-scale reinforcement unless optional specializations are enabled.
+
+- Match Nephilim Bonds to character identity fields with a bold selected bond and a three-dot details button. Hover and unchosen-bond attention highlight the button.
+
 ## 0.35.6 — Workbench & Material Clarity (2026-09-27)
 
 - Place Void Protection in its own compendium. Archive redundant stock world references after verifying the pack; preserve effects already applied to creatures.

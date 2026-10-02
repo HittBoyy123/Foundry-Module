@@ -1,3 +1,4 @@
+import { createPrivateGMItem } from "../scripts/gm-item-creator.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MODULE_ID, cloneDefaultRulesConfig } from "../scripts/constants.js";
@@ -65,4 +66,20 @@ test("invalid material and tier choices cannot create items", () => {
   assert.throws(() => gmItemPlan(base, { ...state(), materialId: "herbs" }, config), /compatible Core/);
   assert.throws(() => gmItemPlan(base, { ...state(), tier: 7 }, config), /Tier from 1/);
   assert.throws(() => gmItemPlan(base, { ...state(), components: { grip: { tier: 1, materialId: "wood" } } }, config), /Secondary materials/);
+});
+
+
+test("GM creator reuses its folder and removes inherited player permissions", async () => {
+  const created = [];
+  globalThis.game = { user: { isGM: true }, folders: [] };
+  globalThis.Folder = { create: async source => { const folder = { ...source, id: "private" }; game.folders.push(folder); return folder; } };
+  globalThis.Item = { create: async source => { created.push(source); return source; } };
+  await createPrivateGMItem({ name: "Test", ownership: { default: 2, player: 3 }, folder: "old" });
+  await createPrivateGMItem({ name: "Second" });
+  assert.equal(game.folders.length, 1);
+  assert.equal(game.folders[0].name, "GM crafted items");
+  assert.equal(created[0].folder, "private");
+  assert.deepEqual(created[0].ownership, { default: 0 });
+  game.user.isGM = false;
+  await assert.rejects(createPrivateGMItem({}), /Only a GM/);
 });

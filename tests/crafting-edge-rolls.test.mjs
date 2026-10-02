@@ -92,3 +92,16 @@ test("roll permissions are checked before opening the dice prompt", async () => 
   await assert.rejects(rollWorkBlock(context.app, "project", 1), /NotEditable/);
   assert.equal(context.rollCalls.length, 0);
 });
+
+
+test("each additional artisan adds a stacking roll bonus while retaining faster work", async () => {
+  for (let count = 1; count <= 6; count++) {
+    const context = setup({ degree: 2 });
+    context.saved().contributors = Array.from({ length: count }, (_, i) => ({ actorUuid: i === 0 ? "Actor.maker" : `Actor.helper${i}`, name: `Artisan ${i}` }));
+    await rollWorkBlock(context.app, "project", 4);
+    const modifier = context.rollCalls[0].modifiers.find(m => m.label === "Artisan teamwork");
+    assert.equal(modifier?.modifier ?? 0, count - 1);
+    if (modifier) assert.equal(modifier.type, "untyped");
+    assert.equal(context.saved().currentProgress, count >= 6 ? 6 : count >= 3 ? 5 : 4);
+  }
+});

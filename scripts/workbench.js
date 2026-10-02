@@ -1,3 +1,5 @@
+import { plannedEquipment, validateCraftingEnchantments, addEnchantmentCosts, selectCraftingRune } from "./crafting-enchantments.js";
+import { openEnchanting, runeSummary } from "./enchanting.js";
 import { materialBenefits } from "./material-benefits.js";
 import { retireProjectMarks } from "./retired-marks.js";
 import { artisanSlotChoices, availableArtisanProfiles, canControlArtisan, resolveDroppedArtisan, slotAllowsArtisan, requestArtisanAssignment, installArtisanAssignmentSocket } from "./artisan-selection.js";
@@ -338,6 +340,8 @@ async function workbenchContext(application) {
         if (application.workbenchState.upgradeDragon?.color) requiredProgress += dragonScaleUnits(recipe);
       }
       recipe = scaleEquipmentRecipe(recipe, application.workbenchState.tab === "upgrade" ? baseItem.system?.size : application.workbenchState.equipmentSize);
+      await validateCraftingEnchantments(baseItem, application.workbenchState, profiles);
+      addEnchantmentCosts(recipe, application.workbenchState.enchantments);
       evaluation = evaluateCraftingRecipe(recipe, {
         targetItem: baseItem,
         inventoryItems: virtualUnreservedInventory(party, workbench.projects),
@@ -372,6 +376,7 @@ async function workbenchContext(application) {
       reservationCount: project.reservations.filter((entry) => entry.state === "reserved").length,
       contributorSummary: project.contributors.map((entry) => entry.name).join(", "),
       teamSize: projectArtisanCount(project),
+      teamworkBonus: projectArtisanCount(project) - 1,
       estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress - project.teamworkRemainder) / artisanWorkRate(projectArtisanCount(project))),
       markCount: project.artisanMarks.length,
       canWork: craftingEnabled && canEdit && ["reserved", "active"].includes(project.status),
@@ -435,11 +440,16 @@ async function workbenchContext(application) {
         catch (error) { return { projectId: project.id, itemName: item.name, error: error.message, canDisassemble: false }; }
       }).filter(Boolean),
     gatheringHtml,
+    enchantments: await Promise.all((application.workbenchState.enchantments ?? []).map(async rune => {
+      try { return { ...rune, summary: await runeSummary(rune.uuid) }; }
+      catch { return { ...rune, summary: "Open the rune details to read its effects." }; }
+    })),
+    canPlanEnchantments: application.workbenchState.tab === "craft" && ["weapon", "armor"].includes(baseItem?.type),
     teamReasons: baseRecipe ? team.reasons : [],
     artisanSlots: team.slots.map((slot) => {
       const choices = artisanSlotChoices(slot, artisanChoices, application.workbenchState.artisanSlots);
       const canAssign = !slot.actorUuid || canEdit || canControlArtisan(profiles.find(profile => profile.actorUuid === slot.actorUuid)?.actor, game.user);
-      return { ...slot, choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
+      return { ...slot, isEnchanter: profiles.find(p => p.actorUuid === slot.actorUuid)?.professions.some(p => p.id === "enchanting"), choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
         marks: markPlan.assignments.filter(mark => mark.maker.actorUuid === slot.actorUuid) };
     }),
     secondaryMaterials: (selectedBand?.secondaries ?? []).filter((entry) => !entry.optional).map((entry) => ({
@@ -572,7 +582,10 @@ async function createAndReserve(application) {
   }
   const equipmentSize = normalizeEquipmentSize(upgrading ? baseItem.system?.size : application.workbenchState.equipmentSize);
   recipe = scaleEquipmentRecipe(recipe, equipmentSize);
+  await validateCraftingEnchantments(baseItem, application.workbenchState, profiles);
+  addEnchantmentCosts(recipe, application.workbenchState.enchantments);
   let project = createCraftingProject({
+    enchantments: application.workbenchState.enchantments ?? [],
     equipmentSize,
     upgrade,
     name: application.workbenchState.projectName || `${materialLabel(application.workbenchState.materialId, application.workbenchState.tier)} ${baseItem.name}`,
@@ -619,6 +632,7 @@ async function createAndReserve(application) {
   application.workbenchState.tab = "projects";
   application.workbenchState.projectName = "";
   application.workbenchState.selectedMarks = [];
+  application.workbenchState.enchantments = [];
   ui.notifications.info(format("CMT.Workbench.ProjectCreated", { project: project.name }, `${project.name} was created and its resources were reserved.`));
 }
 
@@ -665,6 +679,9 @@ async function resolveWorkBlock(application, projectId, days, event) {
   const openedChannels = normalizeMasterstrokes(upgradeItem?.flags?.[MODULE_ID]?.crafting?.masterstrokes)
     .filter(entry => entry.result === 3 && !entry.used);
   const modifiers = [];
+  const teamworkBonus = projectArtisanCount(project) - 1;
+  // This house-rule benefit stacks with profession and other typed bonuses.
+  if (teamworkBonus) modifiers.push(new game.pf2e.Modifier({ label: "Artisan teamwork", modifier: teamworkBonus, type: "untyped" }));
   if (project.nextWorkBonus) modifiers.push(new game.pf2e.Modifier({ label: "Stable Integration", modifier: 2, type: "circumstance" }));
   if (openedChannels.length) modifiers.push(new game.pf2e.Modifier({ label: "Opened Channel", modifier: 2, type: "circumstance" }));
   const roll = await statistic.roll({
@@ -763,6 +780,10 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
   const source = cloneItemSource(baseItem);
   source.system ??= {};
   source.system.quantity = current.recipe.result.quantity;
+  if (current.enchantments?.length) {
+    source.system.runes ??= {};
+    source.system.runes.property = plannedEquipment(baseItem, { materialId: current.coreMaterialId, tier: current.coreTier }, current.enchantments).system.runes.property;
+  }
   if (current.equipmentSize) source.system.size = current.equipmentSize;
   source.flags ??= {};
   const priorFlags = source.flags[MODULE_ID] ?? {};
@@ -1271,6 +1292,7 @@ export function createWorkbenchApplication() {
         showArchived: false,
         expandedProjectIds: [],
         selectedMarks: [],
+        enchantments: [],
         disassemblyItemUuid: "",
         projectName: "",
         requiredProgress: 0,
@@ -1487,6 +1509,36 @@ export function createWorkbenchApplication() {
         }
       });
 
+      for (const button of root.querySelectorAll("[data-cmt-plan-rune]")) button.addEventListener("click", async event => {
+        event.stopPropagation(); button.disabled = true;
+        try {
+          const base = await resolveBaseItem(this.workbenchState.baseItemUuid);
+          const party = game.actors.get(this.workbenchState.partyId);
+          const profiles = await contributorProfiles(this);
+          if (!profiles.some(p => p.professions.some(profession => profession.id === "enchanting"))) throw new Error("Assign an Enchanting artisan first.");
+          if (!base || !party) throw new Error("Choose equipment and a party first.");
+          const rune = await selectCraftingRune(base, this.workbenchState, party);
+          if (rune) {
+            (this.workbenchState.enchantments ??= []).push(rune);
+            await publishSharedCraftDraft(this, party);
+            await this.render({ force: true });
+          }
+        } catch (error) { ui.notifications.error(error.message); }
+        finally { button.disabled = false; }
+      });
+      for (const button of root.querySelectorAll("[data-cmt-planned-rune-details]")) button.addEventListener("click", async event => {
+        event.stopPropagation();
+        try {
+          const rune = await fromUuid(button.dataset.cmtPlannedRuneDetails);
+          if (!rune?.sheet) throw new Error("The rune reference is unavailable.");
+          rune.sheet.render(true);
+        } catch (error) { ui.notifications.error(error.message); }
+      });
+      for (const button of root.querySelectorAll("[data-cmt-remove-rune]")) button.addEventListener("click", async () => {
+        this.workbenchState.enchantments.splice(Number(button.dataset.cmtRemoveRune), 1);
+        await publishSharedCraftDraft(this, game.actors.get(this.workbenchState.partyId));
+        await this.render({ force: true });
+      });
       const assignArtisan = async (index, actor) => {
         if (actor) {
           if (!canControlArtisan(actor, game.user)) throw new Error("Choose a character or NPC you control.");
@@ -1540,6 +1592,10 @@ export function createWorkbenchApplication() {
         this.workbenchState.baseItemUuid = "";
         this.workbenchState.bandId = "";
         await this.render({ force: true });
+      });
+      root.querySelector('[data-cmt-workbench-action="enchant"]')?.addEventListener("click", async () => {
+        try { await openEnchanting(game.actors.get(this.workbenchState.partyId)); }
+        catch (error) { ui.notifications.error(error.message); }
       });
       root.querySelector('[data-cmt-workbench-action="open-stash"]')?.addEventListener("click", () => {
         const party = partyActors().find((entry) => entry.id === this.workbenchState.partyId);

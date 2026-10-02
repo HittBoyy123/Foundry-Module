@@ -190,6 +190,7 @@ export function normalizeCraftingProject(source) {
     leadArtisanUuid: text(source.leadArtisanUuid),
     leadArtisanName: text(source.leadArtisanName),
     contributors,
+    enchantments: Array.isArray(source.enchantments) ? clone(source.enchantments) : [],
     artisanMarks: (Array.isArray(source.artisanMarks) ? source.artisanMarks : [])
       .map((mark, index) => normalizeProjectMark(mark, index, integer(source.coreTier, recipe.tier, 1, 6))),
     status,

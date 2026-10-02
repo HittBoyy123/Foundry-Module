@@ -5,6 +5,19 @@ import { markConfigurationChoices } from "./artisan-mark-effects.js";
 
 function requireGM() { if (!game.user.isGM) throw new Error("Only a GM can use the item creator."); }
 
+let folderCreation;
+export async function createPrivateGMItem(source) {
+  requireGM();
+  let folder = game.folders.find(entry => entry.type === "Item" && entry.name === "GM crafted items");
+  if (!folder) {
+    folderCreation ??= Folder.create({ name: "GM crafted items", type: "Item", sorting: "a" }).finally(() => { folderCreation = null; });
+    folder = await folderCreation;
+  }
+  if (!folder) throw new Error("The GM crafted items folder could not be created.");
+  // Foundry folders inherit visibility from contents; restrict the actual item.
+  return Item.create({ ...source, folder: folder.id, ownership: { default: 0 } });
+}
+
 export function registerGMItemCreator() {
   const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
   class GMItemCreator extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -126,9 +139,9 @@ export function registerGMItemCreator() {
           if (plan.capacity.overCapacity && !override) return;
           requireGM();
           const source = buildGMItemSource(base, draft, config, { isGM: game.user.isGM, allowOverCapacity: override });
-          const item = await Item.create(source);
+          const item = await createPrivateGMItem(source);
           if (!item) throw new Error("The item was not created.");
-          ui.notifications.info("Custom item created in the Items Directory.");
+          ui.notifications.info("Custom item created in GM crafted items.");
           item.sheet?.render(true);
         } catch (error) { ui.notifications.error(error.message); }
         finally { this.creating = false; }
@@ -136,7 +149,7 @@ export function registerGMItemCreator() {
     }
   }
   game.settings.registerMenu(MODULE_ID, "gmItemCreator", {
-    name: "Wrathmaker GM Item Creator", label: "Create Custom Item", hint: "Create world items with named makers and Artisan Marks. No materials or downtime required.",
+    name: "Wrathmaker GM Item Creator", label: "Create Custom Item", hint: "Create private custom items with named makers and Core materials. No materials or downtime required.",
     icon: "fa-solid fa-wand-magic-sparkles", type: GMItemCreator, restricted: true,
   });
   Hooks.on("renderItemDirectory", (_app, element) => {

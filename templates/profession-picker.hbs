@@ -22,13 +22,14 @@
           <strong>{{name}}</strong>
           <small>{{loreName}}</small>
           <small>{{localize "CMT.Profession.CraftingCoverage" categories=materialLabel}}</small>
-          <small>{{localize "CMT.Profession.Specialisations" names=specialisationSummary}}</small>
+          {{#if ../specializationsEnabled}}<small>{{localize "CMT.Profession.Specialisations" names=specialisationSummary}}</small>{{/if}}
         </span>
         <span class="cmt-profession-bonus">+{{checkBonus}}</span>
       </label>
     {{/each}}
   </div>
 
+  {{#if specializationsEnabled}}
   <section class="cmt-profession-milestones">
     <header>
       <div>
@@ -48,7 +49,6 @@
             <select name="milestone{{level}}Kind" data-cmt-milestone-kind>
               <option value="" {{#if noneSelected}}selected{{/if}}>{{localize "CMT.Profession.NoChoice"}}</option>
               <option value="specialty" {{#if specialtySelected}}selected{{/if}}>{{localize "CMT.Profession.SpecialtyChoice"}}</option>
-              <option value="profession" {{#if professionSelected}}selected{{/if}}>{{localize "CMT.Profession.NewProfessionChoice"}}</option>
             </select>
           </label>
           <label data-cmt-specialty-field>
@@ -60,20 +60,13 @@
               {{/each}}
             </select>
           </label>
-          <label data-cmt-profession-field-choice>
-            <span>{{localize "CMT.Profession.NewProfession"}}</span>
-            <select name="milestone{{level}}Profession" data-cmt-milestone-profession>
-              <option value="">{{localize "CMT.Profession.ChooseNewProfession"}}</option>
-              {{#each professionOptions}}
-                <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
-              {{/each}}
-            </select>
-          </label>
+
         </fieldset>
       {{/each}}
     </div>
   </section>
 
+  {{/if}}
   <footer class="cmt-profession-actions">
     {{#if hasProfession}}
       <button type="button" data-action="removeProfession">

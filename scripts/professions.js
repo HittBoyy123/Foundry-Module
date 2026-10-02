@@ -1,3 +1,4 @@
+import { specializationsEnabled } from "./profession-options.js";
 import {
   PF2E_PROFESSION_FEAT_UUIDS,
   PROFESSION_DEFINITIONS,
@@ -270,15 +271,7 @@ export function getActorProfessions(actor) {
   const entries = professionEntries(actor);
   if (entries.length === 0) return [];
   const primary = entries.find((entry) => entry.selection?.role === PROFESSION_SELECTION_ROLES.primary) ?? entries[0];
-  const level = actorLevel(actor);
-  const milestones = entries
-    .filter((entry) => (
-      entry !== primary
-      && entry.selection?.role === PROFESSION_SELECTION_ROLES.milestone
-      && level >= entry.selection.milestoneLevel
-    ))
-    .sort((left, right) => left.selection.milestoneLevel - right.selection.milestoneLevel);
-  return [primary, ...milestones];
+  return [primary];
 }
 
 export function getActorProfession(actor) {
@@ -554,6 +547,7 @@ function professionSpecialtyEntries(actor) {
 
 /** Return every currently active Wrathmaker specialisation owned by an actor. */
 export function getActorProfessionSpecialties(actor) {
+  if (!specializationsEnabled()) return [];
   return professionSpecialtyEntries(actor).map((entry) => ({
     professionId: entry.professionId,
     specialtyId: entry.specialtyId,
@@ -612,23 +606,9 @@ function resolveActorProfessionSelections(actor) {
     });
   }
 
-  const explicitProfessionEntries = entries
-    .filter((entry) => entry !== primary && entry.selection?.role === PROFESSION_SELECTION_ROLES.milestone)
-    .sort((left, right) => left.selection.milestoneLevel - right.selection.milestoneLevel);
-  for (const entry of explicitProfessionEntries) {
-    const milestoneLevel = entry.selection.milestoneLevel;
-    if (!unlocked.includes(milestoneLevel)) continue;
-    if (usedMilestones.has(milestoneLevel) || usedProfessionIds.has(entry.id)) {
-      obsoleteSelections.push(entry.item);
-      continue;
-    }
-    usedMilestones.add(milestoneLevel);
-    usedProfessionIds.add(entry.id);
-    activeProfessions.push(entry);
-  }
-
+  obsoleteSelections.push(...entries.filter(entry => entry !== primary).map(entry => entry.item));
   for (const entry of specialtyEntries.sort((left, right) => left.milestoneLevel - right.milestoneLevel)) {
-    if (entry.professionId !== primary.id) {
+    if (!specializationsEnabled() || entry.professionId !== primary.id) {
       obsoleteSelections.push(entry.item);
       continue;
     }
@@ -642,34 +622,6 @@ function resolveActorProfessionSelections(actor) {
     activeSpecialties.push(entry);
   }
 
-  const unassignedProfessions = entries.filter((entry) => (
-    entry !== primary && entry.selection?.role !== PROFESSION_SELECTION_ROLES.milestone
-  ));
-  for (const entry of unassignedProfessions) {
-    const milestoneLevel = unlocked.find((candidate) => !usedMilestones.has(candidate));
-    if (!milestoneLevel || usedProfessionIds.has(entry.id)) {
-      obsoleteSelections.push(entry.item);
-      continue;
-    }
-    usedMilestones.add(milestoneLevel);
-    usedProfessionIds.add(entry.id);
-    activeProfessions.push({
-      ...entry,
-      selection: {
-        schemaVersion: PROFESSION_SELECTION_SCHEMA_VERSION,
-        role: PROFESSION_SELECTION_ROLES.milestone,
-        milestoneLevel,
-      },
-    });
-    selectionUpdates.push({
-      _id: itemId(entry.item),
-      [`flags.${MODULE_ID}.professionSelection`]: {
-        schemaVersion: PROFESSION_SELECTION_SCHEMA_VERSION,
-        role: PROFESSION_SELECTION_ROLES.milestone,
-        milestoneLevel,
-      },
-    });
-  }
 
   return {
     activeProfessions,
@@ -693,6 +645,9 @@ export async function synchronizeActorProfession(actor, _options = {}) {
   try {
     let changed = false;
     const plan = resolveActorProfessionSelections(actor);
+    if (plan.obsoleteSelections.length && actor.setFlag && !actor.getFlag?.(MODULE_ID, "legacyProfessionBackup")) {
+      await actor.setFlag(MODULE_ID, "legacyProfessionBackup", actorItems(actor).filter(item => getProfessionData(item) || getProfessionGrant(item) || getProfessionSpecialty(item)).map(item => item.toObject ? item.toObject() : clone(item)));
+    }
     await deleteItems(actor, plan.obsoleteSelections);
     changed ||= plan.obsoleteSelections.length > 0;
     const itemUpdates = new Map(plan.selectionUpdates.map((update) => [update._id, update]));
@@ -887,8 +842,8 @@ export function getActorProfessionPlan(actor) {
     .map((entry) => [entry.milestoneLevel, entry]));
   return {
     primary,
-    milestones: PROFESSION_MILESTONE_LEVELS.map((milestoneLevel) => {
-      const profession = professionChoices.get(milestoneLevel);
+    milestones: (specializationsEnabled() ? PROFESSION_MILESTONE_LEVELS : []).map((milestoneLevel) => {
+      const profession = null;
       const specialty = specialtyChoices.get(milestoneLevel);
       if (profession) {
         return {
@@ -912,6 +867,7 @@ export function getActorProfessionPlan(actor) {
 }
 
 function normalizeSubmittedMilestones(actor, primary, milestones) {
+  if (!specializationsEnabled()) return [];
   const unlocked = unlockedProfessionMilestones(actorLevel(actor));
   const supplied = new Map((Array.isArray(milestones) ? milestones : [])
     .map((entry) => [Math.trunc(Number(entry?.milestoneLevel) || 0), entry]));
@@ -925,15 +881,7 @@ function normalizeSubmittedMilestones(actor, primary, milestones) {
     if (!unlocked.includes(milestoneLevel)) {
       throw new Error(localize("CMT.Profession.MilestoneLocked", `The level ${milestoneLevel} profession choice is not unlocked.`));
     }
-    if (kind === PROFESSION_MILESTONE_KINDS.profession) {
-      const professionId = String(entry?.professionId ?? "").trim().toLowerCase();
-      if (!PROFESSION_BY_ID.has(professionId) || usedProfessionIds.has(professionId)) {
-        throw new Error(localize("CMT.Profession.InvalidMilestoneProfession", "Choose a different valid profession for each milestone."));
-      }
-      usedProfessionIds.add(professionId);
-      normalized.push({ milestoneLevel, kind, professionId, specialtyId: "" });
-      continue;
-    }
+    if (kind === PROFESSION_MILESTONE_KINDS.profession) throw new Error("Choose one profession. Retrain your current profession to change it.");
     if (kind === PROFESSION_MILESTONE_KINDS.specialty) {
       const specialtyId = String(entry?.specialtyId ?? "").trim().toLowerCase();
       if (!primary.specialties.some((specialty) => specialty.id === specialtyId) || usedSpecialtyIds.has(specialtyId)) {
@@ -1208,6 +1156,7 @@ function createProfessionPickerApplication() {
       }));
       return {
         ...context,
+        specializationsEnabled: specializationsEnabled(),
         actorName: this.actor.name,
         actorLevel: actorLevel(this.actor),
         hasProfession: Boolean(current),
@@ -1298,6 +1247,10 @@ export function openProfessionPicker(actor) {
 }
 
 export function registerProfessionHooks() {
+  game.settings.register(MODULE_ID, "professionSpecializations", {
+    name: "Optional profession specializations", hint: "Enable specialization choices for the selected profession. Off by default; characters always have one retrainable profession.",
+    scope: "world", config: true, type: Boolean, default: false, requiresReload: true,
+  });
   ProfessionPickerApplication = createProfessionPickerApplication();
   for (const hook of ["renderActorSheet", "renderActorSheetV2", "renderCharacterSheetPF2e"]) {
     Hooks.on(hook, (application, html) => {

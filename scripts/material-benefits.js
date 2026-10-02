@@ -1,3 +1,4 @@
+import { materialRuneSlots } from "./property-runes.js";
 import { calculateItemEffects, getCraftingItemType } from "./model.js";
 
 /** Describe the same configured effects that the finished item receives. */
@@ -7,6 +8,8 @@ export function materialBenefits(item, material, tier, config, dragonScale = nul
   const result = calculateItemEffects({ itemType, itemId: "preview", itemName: item.name, flags: { material, tier, dragonScale }, config });
   if (!result.active) return null;
   const lines = [];
+  const slots = materialRuneSlots({ type: item.type, name: item.name, system: item.system, flags: { ["pf2e-crafting-material-tiers"]: { material, tier } } }, config);
+  if (["weapon", "armor"].includes(itemType)) lines.push(`${slots} property-rune ${slots === 1 ? "slot" : "slots"} from this material (maximum 3).`);
   for (const rule of result.rules) {
     if (rule.key === "Resistance") { lines.push(`${rule.value} resistance to ${rule.type} while equipped.`); continue; }
     if (rule.key !== "FlatModifier") continue;

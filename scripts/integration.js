@@ -73,8 +73,6 @@ function suppressPf2eRuneProgression(item) {
   const runes = item.system?.runes;
   if (!runes || typeof runes !== "object") return;
   if (Object.hasOwn(runes, "potency")) runes.potency = 0;
-  if (Array.isArray(runes.property)) runes.property = [];
-  if (Array.isArray(runes.propertyRunes)) runes.propertyRunes = [];
   if (Object.hasOwn(runes, "resilient")) runes.resilient = 0;
   if (Object.hasOwn(runes, "reinforcing")) runes.reinforcing = 0;
   if (Object.hasOwn(runes, "reinforcingRune")) runes.reinforcingRune = 0;
