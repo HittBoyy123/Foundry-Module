@@ -568,6 +568,7 @@ function expectedStandardGrantKinds(actor, profession) {
   const kinds = [
     PROFESSION_GRANT_KINDS.lore,
     PROFESSION_GRANT_KINDS.additionalLore,
+    PROFESSION_GRANT_KINDS.specialtyCrafting,
   ];
   return kinds;
 }
@@ -654,7 +655,7 @@ export async function synchronizeActorProfession(actor, _options = {}) {
     for (const profession of plan.activeProfessions) {
       const storedSchema = Math.trunc(Number(moduleFlags(profession.item)?.profession?.schemaVersion) || 1);
       const currentSource = PROFESSION_SOURCE_BY_ID.get(profession.id);
-      if (storedSchema >= PROFESSION_SCHEMA_VERSION || !currentSource) continue;
+      if ((!_options.force && storedSchema >= PROFESSION_SCHEMA_VERSION) || !currentSource) continue;
       const id = itemId(profession.item);
       itemUpdates.set(id, {
         ...(itemUpdates.get(id) ?? { _id: id }),
@@ -760,6 +761,14 @@ export async function synchronizeActorProfession(actor, _options = {}) {
 
     const sources = [];
     for (const profession of plan.activeProfessions) {
+      const specialty = grantsByKind.get(grantKey({ kind: PROFESSION_GRANT_KINDS.specialtyCrafting, professionId: profession.id }));
+      if (!specialty || _options.force) {
+        const source = await createSpecialtyCraftingSource(profession);
+        if (!source) throw new Error(`Specialty Crafting could not be loaded for ${profession.name}.`);
+        if (specialty) await actor.updateEmbeddedDocuments("Item", [{ _id: itemId(specialty), name: source.name,
+          "system.rules": source.system.rules, "system.description.value": source.system.description?.value ?? "" }], { render: false });
+        else sources.push(source);
+      }
       if (!grantsByKind.has(grantKey({ kind: PROFESSION_GRANT_KINDS.lore, professionId: profession.id }))) {
         sources.push(createProfessionLoreSource(profession, actorLevel(actor)));
       }

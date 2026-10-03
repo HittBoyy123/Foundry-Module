@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.35.8 — Masterstrokes & Refresh All (2026-10-03)
+
+- Add stronger weapon and equipment Masterstroke tables, with automatic eligibility rerolls and one permanent Masterstroke per item, retained through upgrades.
+- Automate Masterstroke bonuses, damage protection, roll outcomes and limited uses. Overwhelming Impact offers a choice of prone or a 10-foot push.
+- Restore profession-linked Specialty Crafting alongside Additional Lore and the existing +2 profession bonus.
+- Add GM Refresh All with a private pre-refresh backup and a completion report showing additions, removals, changes, skipped entries and failures.
+- Update reference guides and rollable tables for the revised rules.
+
 ## 0.35.7 — Professions & Enchanting (2026-10-02)
 
 - Place new GM custom items in GM crafted items with player access disabled.

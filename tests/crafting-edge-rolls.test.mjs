@@ -48,7 +48,7 @@ test("final opportunity automatically rolls d8 and puts the Masterstroke in chat
   await rollWorkBlock(context.app, "project", 5);
   assert.deepEqual(context.formulas, ["1d4", "1d8"]);
   assert.equal(context.saved().masterstrokes[0].result, 5);
-  assert.equal(context.rendered[0].masterstroke.name, "Hidden Detail");
+  assert.equal(context.rendered[0].masterstroke.name, "Guardian’s Weapon");
   assert.equal(context.saved().currentProgress, 5);
 });
 test("opportunity fallback accelerates without rolling d8", async () => {

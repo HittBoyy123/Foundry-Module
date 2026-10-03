@@ -1,4 +1,6 @@
 import { refreshGuideCompendiums } from "./guide-refresh.js";
+import { registerRefreshAll } from "./refresh-all.js";
+import { registerMasterstrokeAutomation } from "./masterstroke-automation.js";
 import { installMaterialRuneSlots } from "./property-runes.js";
 import { registerEnchanting } from "./enchanting.js";
 import { registerVoidProtection } from "./void-protection.js";
@@ -38,6 +40,8 @@ Hooks.once("init", () => {
   }
 
   registerRulesSetting();
+  registerRefreshAll();
+  registerMasterstrokeAutomation();
   // Make the resource classification visible even on PF2e versions without this trait label.
   if (CONFIG.PF2E.equipmentTraits) CONFIG.PF2E.equipmentTraits.precious ??= "Precious";
   if (CONFIG.PF2E.traitsDescriptions) CONFIG.PF2E.traitsDescriptions.precious ??= "A valuable crafting resource. This tag does not change its listed price.";

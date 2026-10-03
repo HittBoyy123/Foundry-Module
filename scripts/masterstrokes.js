@@ -4,7 +4,7 @@ import { lighterBulk, normalizeMasterstrokes } from "./crafting-edges.js";
 
 const preparedBulk = new WeakSet();
 const benefitLocks = new Set();
-const strokes = item => normalizeMasterstrokes(item?.flags?.[MODULE_ID]?.crafting?.masterstrokes);
+const strokes = item => normalizeMasterstrokes(item?.flags?.[MODULE_ID]?.crafting?.masterstrokes).filter(entry => entry.edition !== "chad");
 
 export function applyMasterstrokeBulk(item) {
   if (!strokes(item).some(entry => entry.result === 6) || !item.system?.bulk || preparedBulk.has(item.system.bulk)) return;
@@ -106,7 +106,7 @@ async function useBenefit(item, entry, action) {
 }
 
 export function insertMasterstrokeControls(item, root) {
-  const entries = strokes(item);
+  const entries = normalizeMasterstrokes(item?.flags?.[MODULE_ID]?.crafting?.masterstrokes);
   if (!entries.length || item.isIdentified === false || root.querySelector("[data-cmt-masterstrokes]")) return;
   const host = root.querySelector('[data-cmt-make-marks="true"]');
   if (!host) return;
@@ -120,10 +120,13 @@ export function insertMasterstrokeControls(item, root) {
     const description = document.createElement("p"); description.textContent = entry.description;
     details.append(summary, description);
     const maker = document.createElement("p"); maker.textContent = `Maker: ${entry.maker || "Unknown"}`; details.append(maker);
-    if (entry.result === 5) {
+    if (entry.edition !== "chad" && entry.result === 5) {
       const dc = document.createElement("p"); dc.textContent = `Current Crafting DC: ${calculateCraftingDC(item.flags?.[MODULE_ID]?.tier ?? 1)?.dc ?? "—"}`; details.append(dc);
     }
-    if (item.isOwner && !entry.used) {
+    if (entry.edition === "chad") {
+      const note = document.createElement("p"); note.textContent = "Automatically applied to eligible rolls and damage. Limited uses stay with this item; daily uses reset with the in-game day."; details.append(note);
+    }
+    if (entry.edition !== "chad" && item.isOwner && !entry.used) {
       const actions = entry.result === 2 ? [["repair", "Roll Repair (+2)"], ["use", "Mark Used"]]
         : entry.result === 4 ? [["use", "Use Maintenance Benefit"]] : entry.result === 8 ? [["presence", "Roll Diplomacy (+1)"]] : [];
       for (const [action, label] of actions) {

@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig } from "./config-store.js";
 import { calculateItemEffects } from "./model.js";
+import { currentMasterstroke } from "./masterstroke-rules.js";
 
 export const MANA_RUNE_LEVELS = [1, 4, 8, 12, 16, 20];
 export function materialRuneSlots(item, config = getRulesConfig()) {
@@ -9,7 +10,7 @@ export function materialRuneSlots(item, config = getRulesConfig()) {
   if (!flags?.material) return 0;
   const result = calculateItemEffects({ itemType: item.type, itemId: item.id ?? "preview", itemName: item.name, flags, config });
   const effect = result.previews.find(effect => effect.selectors?.includes(item.type === "armor" ? "ac" : "{item|_id}-attack"));
-  return result.active ? Math.min(3, Math.max(0, Math.floor(effect?.value ?? 0))) : 0;
+  return result.active ? Math.min(3, Math.max(0, Math.floor(effect?.value ?? 0))) + (currentMasterstroke(item)?.id === "limitless-channel" ? 1 : 0) : 0;
 }
 
 /** Supply slots during native preparation, then remove the temporary potency bonus. */

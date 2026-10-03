@@ -2,7 +2,7 @@ import { getSpecialisationFeaturesByName } from "./artisan-marks.js";
 
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
-export const PROFESSION_SCHEMA_VERSION = 5;
+export const PROFESSION_SCHEMA_VERSION = 6;
 
 export const PF2E_PROFESSION_FEAT_UUIDS = Object.freeze({
   additionalLore: "Compendium.pf2e.feats-srd.Item.BocFD2KV0qgUC76x",
@@ -362,7 +362,7 @@ function professionDescription(profession) {
 
   return [
     `<p><strong>${profession.name} Profession</strong></p>`,
-    "<p>You can choose this profession at 1st level. You gain a +2 circumstance bonus to relevant checks and Additional Lore for your profession. This profession does not grant Specialty Crafting.</p>",
+    "<p>You can choose this profession at 1st level. You gain a +2 circumstance bonus to relevant checks, Additional Lore for your profession, and Specialty Crafting for its craft. Specialty Crafting improves from +1 to +2 when you become a master in Crafting. Circumstance bonuses do not stack.</p>",
     "<ul>",
     `<li><strong>Profession Lore:</strong> ${profession.loreName}</li>`,
     "<li><strong>Lore Proficiency:</strong> trained at level 1, expert at level 3, master at level 7, and legendary at level 15.</li>",

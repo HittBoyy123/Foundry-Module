@@ -307,14 +307,15 @@ test("profession synchronization creates PF2e-visible grants and advances only i
     assert.deepEqual(grants.map((item) => item.flags[MODULE_ID].professionGrant.kind).sort(), [
       "additional-lore",
       "lore",
+      "specialty-crafting",
     ]);
     const lore = grants.find((item) => item.type === "lore");
     assert.equal(lore.system.proficient.value, 2);
     assert.equal(lore.name, "Blacksmithing");
-    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 5);
+    assert.equal(profession.flags[MODULE_ID].profession.schemaVersion, 6);
     assert.match(profession.system.description.value, /expert at level 3/i);
-    assert.equal(grants.some(item => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting"), false);
-    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 1);
+    assert.equal(grants.some(item => item.flags[MODULE_ID].professionGrant.kind === "specialty-crafting"), true);
+    assert.equal(Object.values(profession.flags.pf2e.itemGrants).length, 2);
     assert.equal(Object.values(profession.flags.pf2e.itemGrants).every((grant) => grant.nested === true), true);
 
     actor.level = 16;
@@ -411,7 +412,7 @@ test("a level 10 character has only one profession and can retrain it", async ()
       .map((item) => item.name)
       .sort();
     assert.deepEqual(loreNames, ["Blacksmithing"]);
-    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 2);
+    assert.equal(items.filter((item) => item.flags?.[MODULE_ID]?.professionGrant).length, 3);
     await setActorProfessionPlan(actor, { primaryProfessionId: "alchemy" });
     assert.deepEqual(getActorProfessions(actor).map(p => p.id), ["alchemy"]);
     assert.deepEqual(items.filter(item => item.type === "lore").map(item => item.name), ["Alchemy"]);

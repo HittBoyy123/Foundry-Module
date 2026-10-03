@@ -4,6 +4,7 @@ import { materialBenefits } from "./material-benefits.js";
 import { retireProjectMarks } from "./retired-marks.js";
 import { artisanSlotChoices, availableArtisanProfiles, canControlArtisan, resolveDroppedArtisan, slotAllowsArtisan, requestArtisanAssignment, installArtisanAssignmentSocket } from "./artisan-selection.js";
 import { craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
+import { eligibleMasterstroke, masterstrokeCategory } from "./masterstroke-rules.js";
 import { projectDayPips } from "./project-day-pips.js";
 import { itemTraitSummary } from "./item-trait-summary.js";
 import { EQUIPMENT_SIZES, normalizeEquipmentSize, scaleEquipmentRecipe } from "./equipment-size.js";
@@ -677,7 +678,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
   if (upgradeItem && project.upgrade.originalSnapshot && upgradeSnapshot(upgradeItem) !== project.upgrade.originalSnapshot)
     throw new Error("The original item changed. Cancel this upgrade and review a fresh project.");
   const openedChannels = normalizeMasterstrokes(upgradeItem?.flags?.[MODULE_ID]?.crafting?.masterstrokes)
-    .filter(entry => entry.result === 3 && !entry.used);
+    .filter(entry => entry.edition !== "chad" && entry.result === 3 && !entry.used);
   const modifiers = [];
   const teamworkBonus = projectArtisanCount(project) - 1;
   // This house-rule benefit stacks with profession and other typed bonuses.
@@ -711,9 +712,23 @@ async function resolveWorkBlock(application, projectId, days, event) {
       craftingEdge.reservationId = selected || resources[0]?.id;
     }
     if (craftingEdge.result === 4 && project.currentProgress + workYield(project, days) >= project.requiredProgress) {
-      const masterstrokeRoll = await new Roll("1d8").evaluate();
-      tableRolls.push(masterstrokeRoll);
-      craftingEdge.masterstrokeResult = Number(masterstrokeRoll.total);
+      const baseItem = await resolveBaseItem(project.baseItemUuid);
+      if (!baseItem) throw new Error("The original item is unavailable; restore it before rolling a Masterstroke.");
+      craftingEdge.hasMasterstroke = Boolean(project.masterstrokes?.length || (project.upgrade && baseItem.flags?.[MODULE_ID]?.crafting?.masterstrokes?.length));
+      if (!craftingEdge.hasMasterstroke) {
+        craftingEdge.masterstrokeCategory = masterstrokeCategory(baseItem);
+        if (![1,2,3,4,5,6,7,8].some(result => eligibleMasterstroke(baseItem, result))) throw new Error("No Masterstroke is compatible with this item.");
+        // Rejected dice remain visible in the crafting chat roll list.
+        for (let attempt = 0; attempt < 100; attempt++) {
+          const masterstrokeRoll = await new Roll("1d8").evaluate();
+          tableRolls.push(masterstrokeRoll);
+          if (eligibleMasterstroke(baseItem, Number(masterstrokeRoll.total))) {
+            craftingEdge.masterstrokeResult = Number(masterstrokeRoll.total);
+            break;
+          }
+        }
+        if (!craftingEdge.masterstrokeResult) throw new Error("No compatible Masterstroke was rolled; the project was not advanced. Retry the block.");
+      }
     }
   }
   const updated = advanceCraftingProject(project, {
@@ -826,7 +841,9 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
   const crafting = {
     ...(priorFlags.crafting ?? {}),
     ...(!current.upgrade ? { omnipotisiumFrame: false } : {}),
-    masterstrokes: [...(current.upgrade ? normalizeMasterstrokes(priorFlags.crafting?.masterstrokes) : []), ...normalizeMasterstrokes(current.masterstrokes)],
+    masterstrokes: [...(current.upgrade ? normalizeMasterstrokes(priorFlags.crafting?.masterstrokes) : []), ...normalizeMasterstrokes(current.masterstrokes)].slice(0, 1),
+    masterstrokeUses: current.upgrade ? priorFlags.crafting?.masterstrokeUses ?? {} : {},
+    masterstrokeClaims: {},
     core: {
       ...(priorFlags.crafting?.core ?? {}),
       materialId: current.coreMaterialId,

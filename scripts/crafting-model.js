@@ -128,6 +128,8 @@ export function normalizeCraftingState(source, { materialId = "metal", tier: cor
     artisanMarks: (Array.isArray(input.artisanMarks) ? input.artisanMarks : []).map(normalizeMark),
     synergies: Array.isArray(input.synergies) ? clone(input.synergies) : [],
     masterstrokes: normalizeMasterstrokes(input.masterstrokes),
+    masterstrokeUses: structuredClone(input.masterstrokeUses ?? {}),
+    masterstrokeClaims: structuredClone(input.masterstrokeClaims ?? {}),
     provenance: Array.isArray(input.provenance) ? clone(input.provenance) : [],
   };
 }

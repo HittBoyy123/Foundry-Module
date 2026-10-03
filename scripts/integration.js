@@ -1,5 +1,6 @@
 import { addItemHitPointBonus, preserveItemHitPointUpdate } from "./item-hit-points.js";
 import { applyMasterstrokeBulk } from "./masterstrokes.js";
+import { applyMasterstrokeStats } from "./masterstroke-automation.js";
 import { MODULE_ID } from "./constants.js";
 import { calculateItemEffects, getCraftingItemType, insertTierLabel } from "./model.js";
 import { toPF2eArtisanRule } from "./artisan-bonus.js";
@@ -102,6 +103,7 @@ export function applyPreparedItemPresentation(item, config) {
   suppressPf2eRuneProgression(item);
   applyShieldCoreProgression(item, result);
   applyMasterstrokeBulk(item);
+  applyMasterstrokeStats(item);
 
   if (item.isIdentified !== false) {
     const baseName = item._source?.name ?? item.name;

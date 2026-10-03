@@ -1,3 +1,4 @@
+import { masterstrokeTable } from "./masterstroke-rules.js";
 /** Crafting table results are separate from Artisan Marks and their capacity. */
 export const CRAFTING_EDGES = Object.freeze([
   { name: "Accelerated Work", description: "Generate 150% of committed days as work, rounded up. No additional effect." },
@@ -18,8 +19,11 @@ export const MASTERSTROKES = Object.freeze([
 
 export function normalizeMasterstrokes(entries) {
   return (Array.isArray(entries) ? entries : []).filter(e => MASTERSTROKES[Number(e?.result) - 1]).map(e => ({
-    id: String(e.id ?? `${e.projectId ?? "legacy"}-${e.result}`), result: Number(e.result),
-    ...MASTERSTROKES[Number(e.result) - 1], maker: String(e.maker ?? ""), projectId: String(e.projectId ?? ""),
+    result: Number(e.result),
+    ...(e.edition === "chad" ? masterstrokeTable(e.category)[Number(e.result) - 1] : MASTERSTROKES[Number(e.result) - 1]),
+    id: String(e.id ?? `${e.projectId ?? "legacy"}-${e.result}`),
+    ...(e.edition === "chad" ? { edition: "chad", category: e.category === "weapon" ? "weapon" : "equipment" } : {}),
+    maker: String(e.maker ?? ""), projectId: String(e.projectId ?? ""),
     used: e.used === true,
   }));
 }
@@ -35,16 +39,17 @@ export function craftingEdgeDie(project, days) {
   return project.currentProgress + workYield(project, days, 1.5) >= project.requiredProgress ? 4 : 3;
 }
 
-export function resolveCraftingEdge(project, { days, result, masterstrokeResult, reservationId, maker = "" }) {
+export function resolveCraftingEdge(project, { days, result, masterstrokeResult, masterstrokeCategory, hasMasterstroke = false, reservationId, maker = "" }) {
   if (!Number.isInteger(result) || result < 1 || result > craftingEdgeDie(project, days)) throw new Error("Invalid Crafting Edge roll.");
   const completes = project.currentProgress + workYield(project, days) >= project.requiredProgress;
-  const effectiveResult = result === 4 && !completes ? 1 : result;
+  const effectiveResult = result === 4 && (!completes || hasMasterstroke || project.masterstrokes?.length) ? 1 : result;
   const edge = { result, effectiveResult, ...CRAFTING_EDGES[effectiveResult - 1], fallback: result !== effectiveResult };
   let masterstroke = null;
   let conservationCredit = null;
   if (effectiveResult === 4) {
     if (!Number.isInteger(masterstrokeResult) || !MASTERSTROKES[masterstrokeResult - 1]) throw new Error("Roll a d8 for the Masterstroke.");
-    masterstroke = normalizeMasterstrokes([{ id: `${project.id}-masterstroke-${project.workBlocks.length + 1}`, result: masterstrokeResult, projectId: project.id, maker }])[0];
+    masterstroke = normalizeMasterstrokes([{ id: `${project.id}-masterstroke-${project.workBlocks.length + 1}`, result: masterstrokeResult, projectId: project.id, maker,
+      ...(masterstrokeCategory ? { edition: "chad", category: masterstrokeCategory } : {}) }])[0];
   }
   if (effectiveResult === 2) {
     const material = project.reservations.find(e => e.id === reservationId && e.units > 0);

@@ -101,7 +101,7 @@ test("Resonant Tell only warns for damage, newly dormant Marks, or exhausted tra
   assert.equal(resonantChanges(before, before).length, 0);
 });
 
-test("new copies do not inherit template Masterstrokes; upgrades retain earned and expended benefits", () => {
+test("new copies do not inherit template Masterstrokes; upgrades retain the first earned benefit without adding another", () => {
   const source = { ...target, flags: { [MODULE_ID]: { crafting: { core: { materialId: "metal", tier: 2 }, components: [],
     masterstrokes: [{ id: "old", result: 3, used: true }] } } } };
   const entry = project();
@@ -109,7 +109,7 @@ test("new copies do not inherit template Masterstrokes; upgrades retain earned a
   entry.upgrade = { replaced: ["core"] };
   entry.masterstrokes = normalizeMasterstrokes([{ id: "new", result: 5 }]);
   const result = buildCompletedItemSource(entry, source, cloneDefaultRulesConfig()).flags[MODULE_ID].crafting.masterstrokes;
-  assert.equal(result.length, 2);
+  assert.equal(result.length, 1);
   assert.equal(result[0].used, true);
-  assert.equal(result[1].result, 5);
+  assert.equal(result[0].result, 3);
 });

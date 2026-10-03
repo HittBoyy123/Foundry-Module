@@ -55,5 +55,5 @@ test("guide refresh removes obsolete pack pages and restores the pack lock", asy
   assert.equal(pages.has("obsolete"), false);
   assert.equal(pages.size, player.pages.length);
   assert.equal(lock, true);
-  assert.equal(revision, "2026-10-02-current");
+  assert.equal(revision, "2026-10-03-masterstrokes");
 });
