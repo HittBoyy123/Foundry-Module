@@ -450,7 +450,8 @@ async function workbenchContext(application) {
     artisanSlots: team.slots.map((slot) => {
       const choices = artisanSlotChoices(slot, artisanChoices, application.workbenchState.artisanSlots);
       const canAssign = !slot.actorUuid || canEdit || canControlArtisan(profiles.find(profile => profile.actorUuid === slot.actorUuid)?.actor, game.user);
-      return { ...slot, isEnchanter: profiles.find(p => p.actorUuid === slot.actorUuid)?.professions.some(p => p.id === "enchanting"), choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
+      const isEnchanter = profiles.find(p => p.actorUuid === slot.actorUuid)?.professions.some(p => p.id === "enchanting") === true;
+      return { ...slot, isEnchanter, canEnchant: isEnchanter && application.workbenchState.tab === "craft", choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
         marks: markPlan.assignments.filter(mark => mark.maker.actorUuid === slot.actorUuid) };
     }),
     secondaryMaterials: (selectedBand?.secondaries ?? []).filter((entry) => !entry.optional).map((entry) => ({
@@ -1534,6 +1535,7 @@ export function createWorkbenchApplication() {
           const profiles = await contributorProfiles(this);
           if (!profiles.some(p => p.professions.some(profession => profession.id === "enchanting"))) throw new Error("Assign an Enchanting artisan first.");
           if (!base || !party) throw new Error("Choose equipment and a party first.");
+          if (this.workbenchState.tab !== "craft" || !["weapon", "armor"].includes(base.type)) throw new Error("Property runes can be planned for a new weapon or armour. For existing equipment, use Enchant Existing Item.");
           const rune = await selectCraftingRune(base, this.workbenchState, party);
           if (rune) {
             (this.workbenchState.enchantments ??= []).push(rune);

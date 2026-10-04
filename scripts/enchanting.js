@@ -126,7 +126,9 @@ export async function openEnchanting(party) {
   const equipment = [...entries(party.items), ...entries(game.actors).filter(actor => actor.id !== party.id && owns(game.user, actor)).flatMap(actor => entries(actor.items))]
     .filter(item => ["weapon", "armor"].includes(item.type) && materialRuneSlots(item) > 0 && Number(item.system.quantity) === 1 && !item.flags?.[MODULE_ID]?.upgradeProject);
   const gems = availableGems(party);
-  if (!artisans.length || !equipment.length || !gems.length) throw new Error("Enchanting requires an Enchanting artisan, a single weapon or armour with material rune slots, and an unreserved Mana Gem in the Party Stash.");
+  if (!artisans.length) throw new Error("Choose the Enchanting profession for a character or NPC you control first. GMs can use any Enchanting artisan.");
+  if (!equipment.length) throw new Error("No eligible existing equipment. Place a single weapon or armour with material rune slots in the Party Stash or a character you control. To enchant an item before crafting it, assign an Enchanting artisan in Craft and click Enchant Item below that artisan.");
+  if (!gems.length) throw new Error("Add an unreserved Mana Gem to the Party Stash to enchant existing equipment.");
   const options = (list, value, label) => list.map(entry => `<option value="${esc(value(entry))}">${esc(label(entry))}</option>`).join("");
   const selected = await foundry.applications.api.DialogV2.wait({ window: { title: "Enchant Equipment" }, content:
     `<p>One Mana Gem unit per property rune. Material bonuses provide up to three slots.</p><label>Enchanter<select name="artisan">${options(artisans, a=>a.id, a=>a.name)}</select></label><label>Equipment<select name="item">${options(equipment, i=>i.uuid, i=>`${i.name} — ${i.actor?.name}`)}</select></label><label>Mana Gem<select name="gem">${options(gems, g=>g.id, g=>`${g.name} — runes up to level ${MANA_RUNE_LEVELS[g.flags[MODULE_ID].resource.tier-1]}`)}</select></label>`,

@@ -141,4 +141,24 @@ test("Workbench prepares six qualified slots, Mark choices, and embedded Gatheri
   const gathering = JSON.parse((await app._prepareContext({})).gatheringHtml);
   assert.equal(gathering.embedded, true);
   assert.equal(gathering.rewardRecipientName, "Party");
+  app.workbenchState.tab = "craft";
+  const enchanter = makeActor("enchanter", "enchanting");
+  party.testUserPermission = () => true;
+  actors.push(enchanter);
+  globalThis.fromUuid = async uuid => [a, b, enchanter, base].find(doc => doc.uuid === uuid);
+  app.workbenchState.artisanSlots = [a.uuid, b.uuid, enchanter.uuid];
+  for (const isGM of [true, false]) {
+    game.user = { isGM, id: isGM ? "gm" : "player" };
+    enchanter.testUserPermission = () => true;
+    const crafting = await app._prepareContext({});
+    assert.equal(crafting.canPlanEnchantments, true);
+    assert.equal(crafting.artisanSlots[2].canEnchant, true, "GM and player can enchant during crafting");
+    assert.equal(crafting.artisanSlots[0].canEnchant, false);
+  }
+  app.workbenchState.baseItemUuid = "";
+  assert.equal((await app._prepareContext({})).artisanSlots[2].canEnchant, true, "assigned enchanter remains discoverable before equipment is dropped");
+  app.workbenchState.baseItemUuid = base.uuid;
+  game.user = { isGM: true };
+  app.workbenchState.partyId = party.id;
+
 });

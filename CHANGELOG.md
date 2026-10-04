@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.35.10 — Crafting Enchantment Controls (2026-10-04)
+
+- Make the assigned enchanter's crafting button explicit for GM and player contexts, even before selecting equipment.
+- Add a top-level crafting enchantment action and distinguish existing-item enchanting.
+- Clarify missing-enchanter, equipment, and Mana Gem messages.
+- Verify crafting controls for GM and player contexts and preserve normal rune eligibility and costs.
+
 ## 0.35.9 — Striking Rune Sheet Fix (2026-10-04)
 
 - Keep the native Striking rune selector visible and editable beside Crafted Material on current PF2e weapon sheets. Material attack bonuses and Striking damage dice remain independent.

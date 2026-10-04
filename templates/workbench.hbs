@@ -18,7 +18,8 @@
           {{/each}}
         </select>
       </label>
-      <button type="button" data-cmt-workbench-action="enchant" {{#unless party}}disabled{{/unless}}><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Enchant</button>
+      {{#if canPlanEnchantments}}<button type="button" class="cmt-enchant-item" data-cmt-plan-rune><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Enchant Crafted Item</button>{{/if}}
+      <button type="button" data-cmt-workbench-action="enchant" {{#unless party}}disabled{{/unless}}><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Enchant Existing Item</button>
       <button type="button" data-cmt-workbench-action="open-stash" {{#unless party}}disabled{{/unless}}>
         <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
         {{localize "CMT.Workbench.OpenStash"}}
@@ -273,7 +274,7 @@
                     {{#if specializationSummary}}<small>{{specializationSummary}}</small>{{/if}}
                   </div>
                 </div>
-                {{#if isEnchanter}}{{#if ../canPlanEnchantments}}<button type="button" class="cmt-enchant-item" data-cmt-plan-rune><i class="fa-solid fa-wand-magic-sparkles"></i> Enchant Item</button>{{/if}}{{/if}}
+                {{#if canEnchant}}<button type="button" class="cmt-enchant-item" data-cmt-plan-rune><i class="fa-solid fa-wand-magic-sparkles"></i> Enchant Item</button>{{/if}}
                 <div class="cmt-slot-actions">
                 <button type="button" data-cmt-slot-remove="{{index}}" {{#unless canAssign}}disabled{{/unless}} title="Remove artisan" aria-label="Remove artisan"><i class="fa-solid fa-xmark"></i></button></div>
                 <div class="cmt-mark-badges">
