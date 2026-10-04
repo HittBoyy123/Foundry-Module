@@ -143,23 +143,32 @@ async function saveSelection(item, root, config) {
   }
 }
 
-function hideRuneControls(root) {
-  for (const control of root.querySelectorAll('[name^="system.runes."]')) {
-    if (control.name === "system.runes.striking") continue;
+const STRIKING_CONTROL = '[name="system.runes.striking"], [data-property="system.runes.striking"]';
+
+export function hideRuneControls(root) {
+  for (const control of root.querySelectorAll('[name^="system.runes."], [data-property^="system.runes."]')) {
+    if ((control.name || control.dataset.property) === "system.runes.striking") continue;
     const row = control.closest(".form-group, .form-field, .field, li");
-    if (row && !row.querySelector('[name="system.runes.striking"]')) {
+    if (row && !row.querySelector(STRIKING_CONTROL)) {
       row.hidden = true;
       row.dataset.cmtReplacedRuneControl = "true";
     }
   }
 }
 
-function placeMakeAndMarks(root, strip, fallback) {
+export function placeMakeAndMarks(root, strip, fallback) {
   const nativePanel = root.querySelector("fieldset.material-runes")
-    ?? root.querySelector('[data-property="system.material"], [name="system.material.type"], [name^="system.runes."]')?.closest("fieldset");
+    ?? root.querySelector('[data-property="system.material"], [name="system.material.type"], [name^="system.runes."], [data-property^="system.runes."]')?.closest("fieldset");
   if (nativePanel) {
     // Keep the native inputs and their values intact for PF2e form submission.
-    nativePanel.hidden = !nativePanel.querySelector('[name="system.runes.striking"]');
+    nativePanel.hidden = !nativePanel.querySelector(STRIKING_CONTROL);
+    if (!nativePanel.hidden) {
+      // Keep PF2e's Striking input and listeners; only replace its material display.
+      const materialRow = nativePanel.querySelector(".precious-material");
+      if (materialRow) materialRow.hidden = true;
+      const legend = nativePanel.querySelector("legend");
+      if (legend) legend.textContent = localize("PF2E.StrikingRuneLabel", "Striking Rune");
+    }
     nativePanel.dataset.cmtReplacedMaterialRunes = "true";
     strip.classList.add("cmt-make-marks-details");
     nativePanel.before(strip);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.35.9 — Striking Rune Sheet Fix (2026-10-04)
+
+- Keep the native Striking rune selector visible and editable beside Crafted Material on current PF2e weapon sheets. Material attack bonuses and Striking damage dice remain independent.
+
 ## 0.35.8 — Masterstrokes & Refresh All (2026-10-03)
 
 - Add stronger weapon and equipment Masterstroke tables, with automatic eligibility rerolls and one permanent Masterstroke per item, retained through upgrades.
