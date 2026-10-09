@@ -1,5 +1,5 @@
 import { MODULE_ID } from "./constants.js";
-import { currentMasterstroke, masterstrokeAvailable, usageKey } from "./masterstroke-rules.js";
+import { currentMasterstroke, masterstrokeAvailable, masterstrokeReady, CHOSEN_MASTERSTROKES, usageKey } from "./masterstroke-rules.js";
 
 const pending = new Map();
 let queue = Promise.resolve();
@@ -11,6 +11,13 @@ async function execute(request, user) {
   const item = await fromUuid(request.itemUuid);
   const roller = await fromUuid(request.rollerUuid);
   if (!user?.active || !item || !currentMasterstroke(item) || !owns(roller, user)) throw new Error("The Masterstroke or rolling character is unavailable.");
+  if (["arm", "disarm"].includes(request.action)) {
+    const stroke = currentMasterstroke(item);
+    if (item.actor?.uuid !== roller.uuid || !owns(item.actor, user) || !item.isEquipped || item.system?.containerId || !CHOSEN_MASTERSTROKES.has(stroke.id)) throw new Error("Equip this item on a character you control first.");
+    if (!masterstrokeAvailable(item)) throw new Error("This Masterstroke has already been used.");
+    await item.update({ [`flags.${MODULE_ID}.crafting.masterstrokeArmed`]: request.action === "arm" ? { instanceId: stroke.instanceId, actorUuid: roller.uuid, key: usageKey(stroke.frequency) } : null }, { wrathmakerUpgrade: true });
+    return true;
+  }
   if (request.action === "impact") {
     if (currentMasterstroke(item).id !== "overwhelming-impact" || item.actor?.uuid !== roller.uuid) throw new Error("This character cannot use Overwhelming Impact.");
     const claim = item.flags?.[MODULE_ID]?.crafting?.masterstrokeClaims?.turn;
@@ -53,7 +60,7 @@ async function execute(request, user) {
   const claims = item.flags?.[MODULE_ID]?.crafting?.masterstrokeClaims ?? {};
   const uses = item.flags?.[MODULE_ID]?.crafting?.masterstrokeUses ?? {};
   if (request.action === "reserve") {
-    if (!masterstrokeAvailable(item, frequency)) return null;
+    if (!masterstrokeReady(item)) return null;
     const token = foundry.utils.randomID();
     await item.update({ [`${path}.${frequency}`]: usageKey(frequency), [`${claimsPath}.${frequency}`]: { token, userId: user.id, previous: uses[frequency] ?? null } }, { wrathmakerUpgrade: true });
     return token;

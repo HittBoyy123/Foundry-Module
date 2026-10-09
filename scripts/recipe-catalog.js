@@ -92,7 +92,7 @@ export function buildCraftingRecipeFromBand(bandId, {
 export function defaultProjectProgress(recipe) {
   const normalized = normalizeCraftingRecipe(recipe);
   const firstSet = normalized.ingredientSets[0];
-  return Math.max(1, firstSet.groups.reduce((total, group) => (
+  return Math.max(1, Math.ceil(0.8 * firstSet.groups.reduce((total, group) => (
     total + Math.min(...group.options.map((option) => option.units))
-  ), 0));
+  ), 0)));
 }

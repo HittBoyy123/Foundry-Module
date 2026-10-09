@@ -45,3 +45,13 @@ test("compatible recipe selection follows the actual PF2e item category", () => 
     coreMaterialId: "metal",
   }), /not compatible/iu);
 });
+
+test("base crafting days are reduced by twenty percent, rounded up to at least one", () => {
+  const recipe = buildCraftingRecipeFromBand("weapon-sword", { targetItem: sword, tier: 2 });
+  recipe.ingredientSets[0].groups = [recipe.ingredientSets[0].groups[0]];
+  for (const [units, days] of [[1,1], [3,3], [5,4], [10,8], [15,12], [19,16]]) {
+    recipe.ingredientSets[0].groups[0].options[0].units = units;
+    assert.equal(defaultProjectProgress(recipe), days);
+    assert.equal(recipe.ingredientSets[0].groups[0].options[0].units, units);
+  }
+});

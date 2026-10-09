@@ -53,3 +53,13 @@ export function usageKey(frequency, world = globalThis.game) {
 export function masterstrokeAvailable(item, frequency = currentMasterstroke(item)?.frequency, world = globalThis.game) {
   return Boolean(currentMasterstroke(item)) && (!frequency || item.flags?.[MODULE_ID]?.crafting?.masterstrokeUses?.[frequency] !== usageKey(frequency, world));
 }
+
+export const CHOSEN_MASTERSTROKES = new Set(["unerring-strike", "relentless-assault", "overwhelming-impact", "artisans-triumph", "defy-death", "unbreakable-guard", "perfect-focus", "adamant-will"]);
+export function masterstrokeArmed(item) {
+  const stroke = currentMasterstroke(item);
+  const arm = item.flags?.[MODULE_ID]?.crafting?.masterstrokeArmed;
+  return Boolean(stroke && arm?.instanceId === stroke.instanceId && arm?.actorUuid === item.actor?.uuid && arm?.key === usageKey(stroke.frequency));
+}
+export function masterstrokeReady(item) {
+  return item?.isEquipped === true && !item.system?.containerId && masterstrokeAvailable(item) && (!CHOSEN_MASTERSTROKES.has(currentMasterstroke(item)?.id) || masterstrokeArmed(item));
+}

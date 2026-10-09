@@ -17,7 +17,7 @@ function setup({ degree = 3, dice = [3], required = 20, bonus = 0, upgrade = fal
   const messages = [], rendered = [], formulas = [], rollCalls = [];
   const party = { id: "party", name: "Party", type: "party", items: [], canUserModify: () => true,
     getFlag: () => saved, async setFlag(_id, _key, data) { if (failSave) throw new Error("save failed"); saved = data; } };
-  const artisan = { uuid: "Actor.maker", name: "Maker", items: [],
+  const artisan = { uuid: "Actor.maker", name: "Maker", type: "character", testUserPermission: user => user.id === "user", items: [],
     getStatistic: () => ({ label: "Crafting", async roll(args) { rollCalls.push(args); return cancel ? null : { degreeOfSuccess: degree, total: 30 }; } }) };
   const item = { ...base, flags: { [MODULE_ID]: { crafting: { masterstrokes: [{ id: "channel", result: 3, used: false }] } } },
     toObject() { return { ...base, flags: structuredClone(this.flags) }; },
@@ -104,4 +104,16 @@ test("each additional artisan adds a stacking roll bonus while retaining faster 
     if (modifier) assert.equal(modifier.type, "untyped");
     assert.equal(context.saved().currentProgress, count >= 6 ? 6 : count >= 3 ? 5 : 4);
   }
+});
+
+test("creating a project does not grant lead artisan roll permissions", async () => {
+  const context = setup({ degree: 2 });
+  game.user = { id: "other" };
+  context.saved().createdBy = "other";
+  await assert.rejects(rollWorkBlock(context.app, "project", 1), /Only the lead artisan/);
+  assert.equal(context.rollCalls.length, 0);
+  assert.equal(context.saved().workBlocks.length, 0);
+  game.user.isGM = true;
+  await rollWorkBlock(context.app, "project", 1);
+  assert.equal(context.rollCalls.length, 1);
 });

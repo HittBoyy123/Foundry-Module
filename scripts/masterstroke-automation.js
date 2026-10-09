@@ -1,6 +1,6 @@
 import { MODULE_ID } from "./constants.js";
 import { addItemHitPointBonus } from "./item-hit-points.js";
-import { currentMasterstroke, masterstrokeAvailable } from "./masterstroke-rules.js";
+import { currentMasterstroke, masterstrokeReady } from "./masterstroke-rules.js";
 import { masterstrokeRequest, registerMasterstrokeAuthority } from "./masterstroke-authority.js";
 
 const prepared = new WeakSet();
@@ -61,7 +61,7 @@ async function guardianEffect(actor, weapon) {
     flags: { [MODULE_ID]: { masterstrokeEffect: "guardian-ac" } }, system: { slug: "masterstroke-guardian-ac",
       duration: { value: 1, unit: "rounds", expiry: "turn-start" }, tokenIcon: { show: true },
       rules: [{ key: "FlatModifier", selector: "ac", type: "circumstance", value: 2, label: "Guardian’s Weapon" }] } }]);
-  const token = masterstrokeAvailable(weapon) ? await masterstrokeRequest("reserve", weapon, actor) : null;
+  const token = masterstrokeReady(weapon) ? await masterstrokeRequest("reserve", weapon, actor) : null;
   if (token) {
     try {
       await actor.createEmbeddedDocuments("Item", [{ name: "Guardian’s Weapon — Vitality", type: "effect", img: weapon.img,
@@ -121,7 +121,7 @@ export function installMasterstrokeChecks(Check = game.pf2e.Check) {
     let used = new Set();
     try {
       if (context.dc) for (const candidate of candidates) {
-        if (!masterstrokeAvailable(candidate.item)) continue;
+        if (!masterstrokeReady(candidate.item)) continue;
         const token = await masterstrokeRequest("reserve", candidate.item, actor);
         if (token) claims.push({ ...candidate, token });
       }
@@ -146,8 +146,8 @@ export function installMasterstrokeChecks(Check = game.pf2e.Check) {
       const outcome = next.outcome;
       try {
         if (attack && item?.type === "weapon" && ["success", "criticalSuccess"].includes(outcome) && stroke?.id === "guardians-weapon") await guardianEffect(await fromUuid(actor.uuid) ?? actor, item);
-        if (attack && item?.type === "weapon" && outcome === "criticalSuccess" && stroke?.id === "overwhelming-impact" && masterstrokeAvailable(item)) await impact(actor, item, next);
-        if (attack && item?.type === "weapon" && ["failure", "criticalFailure"].includes(outcome) && stroke?.id === "relentless-assault" && masterstrokeAvailable(item)) {
+        if (attack && item?.type === "weapon" && outcome === "criticalSuccess" && stroke?.id === "overwhelming-impact" && masterstrokeReady(item)) await impact(actor, item, next);
+        if (attack && item?.type === "weapon" && ["failure", "criticalFailure"].includes(outcome) && stroke?.id === "relentless-assault" && masterstrokeReady(item)) {
           const token = await masterstrokeRequest("reserve", item, actor);
           if (token) {
             let followup;
@@ -196,8 +196,8 @@ export function installMasterstrokeDamage(ActorClass = CONFIG.Actor.documentClas
       const shield = this.heldShield;
       const validShield = shield && this.attributes?.shield?.raised && !this.attributes.shield.broken && !this.attributes.shield.destroyed;
       const finish = !options.final && (options.item?.type === "weapon" || options.item?.type === "melee" || options.item?.type === "spell")
-        ? entries(this).find(item => equipped(item) && currentMasterstroke(item)?.id === "protective-finish" && (item.type === "armor" || validShield && item.id === shield.id) && masterstrokeAvailable(item)) : null;
-      const guard = !options.final && options.shieldBlockRequest && validShield && currentMasterstroke(shield)?.id === "unbreakable-guard" && masterstrokeAvailable(shield) ? shield : null;
+        ? entries(this).find(item => equipped(item) && currentMasterstroke(item)?.id === "protective-finish" && (item.type === "armor" || validShield && item.id === shield.id) && masterstrokeReady(item)) : null;
+      const guard = !options.final && options.shieldBlockRequest && validShield && currentMasterstroke(shield)?.id === "unbreakable-guard" && masterstrokeReady(shield) ? shield : null;
       const context = { finish, finishUsed: false, guard, guardUsed: false, shield };
       const claims = [];
       const attributes = this.attributes;

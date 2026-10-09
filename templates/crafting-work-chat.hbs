@@ -1,22 +1,10 @@
 <section class="cmt-crafting-chat cmt-crafting-work-readout">
   <h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{projectName}}</h3>
-  <p><strong>{{artisanName}}</strong> worked for {{days}} days.</p>
-  <dl>
-    <div><dt>{{skillLabel}}</dt><dd>{{rollTotal}} vs DC {{dc}}</dd></div>
-    <div><dt>Result</dt><dd>{{degreeLabel}}</dd></div>
-    <div><dt>Days earned</dt><dd>{{daysEarned}}</dd></div>
-  </dl>
+  <p><strong>{{artisanName}}</strong> · {{days}} days worked · <strong>{{daysEarned}} days earned</strong></p>
   {{#if craftingEdge}}
-    <h4>Crafting Edge · {{craftingEdge.name}}</h4>
-    <p>{{craftingEdge.description}}</p>
-    {{#if craftingEdge.fallback}}<p>Masterstroke Opportunity did not complete the work at 100%; Accelerated Work applies instead.</p>{{/if}}
+    <p class="cmt-work-effect"><strong>Crafting Edge — {{craftingEdge.name}}.</strong> {{craftingEdge.description}}</p>
+    {{#if craftingEdge.fallback}}<p>Accelerated Work applies instead of a Masterstroke.</p>{{/if}}
   {{/if}}
   {{#if conservationCredit}}<p><strong>Conservation credit:</strong> up to 10% of one {{conservationCredit.itemName}} Resource Unit. Workshop use only; cannot be sold.</p>{{/if}}
-  {{#if masterstroke}}<h4>Masterstroke · {{masterstroke.name}}</h4><p>{{masterstroke.description}}</p>{{/if}}
-  <h4>{{daysCompleted}} of {{daysTotal}} days completed</h4>
-  <p>{{daysRemaining}} days of work remaining.</p>
-  <div class="cmt-project-day-pips" role="img" aria-label="{{daysCompleted}} of {{daysTotal}} days completed">
-    {{#each dayPips}}<i class="{{#if completed}}is-complete{{/if}}" title="Day {{day}}{{#if completed}} completed{{/if}}" aria-hidden="true"></i>{{/each}}
-  </div>
-  {{#if ready}}<p><strong>Ready for final confirmation.</strong></p>{{/if}}
+  {{#if masterstroke}}<p class="cmt-work-effect"><strong>Masterstroke — {{masterstroke.name}}.</strong> {{masterstroke.description}}</p>{{/if}}
 </section>

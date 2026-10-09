@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.35.11 — Faster Crafting and Masterstroke Actions (2026-10-09)
+
+- Reduce new-project base crafting days by 20%, rounded up with a one-day minimum.
+- Restrict Work Block rolls to the lead artisan owner or GM.
+- Add equipped Masterstroke actions, optional arming, native supported frequency counters and daily rest refresh.
+- Standardize all current Masterstroke descriptions and preserve spent entries and item-bound usage.
+- Add styled crafting description boxes and compact native-colour crafting chat reports.
+- Fix repeated action synchronization and sheet refreshes caused by frequency field ordering.
+- Update player and GM guide compendiums.
+
 ## 0.35.10 — Crafting Enchantment Controls (2026-10-04)
 
 - Make the assigned enchanter's crafting button explicit for GM and player contexts, even before selecting equipment.

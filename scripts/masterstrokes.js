@@ -106,7 +106,7 @@ async function useBenefit(item, entry, action) {
 }
 
 export function insertMasterstrokeControls(item, root) {
-  const entries = normalizeMasterstrokes(item?.flags?.[MODULE_ID]?.crafting?.masterstrokes);
+  const entries = normalizeMasterstrokes(item?.flags?.[MODULE_ID]?.crafting?.masterstrokes).filter(entry => entry.edition !== "chad");
   if (!entries.length || item.isIdentified === false || root.querySelector("[data-cmt-masterstrokes]")) return;
   const host = root.querySelector('[data-cmt-make-marks="true"]');
   if (!host) return;

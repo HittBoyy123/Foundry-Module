@@ -361,6 +361,10 @@ async function workbenchContext(application) {
     completed: localize("CMT.Workbench.Status.Completed", "Completed"),
     cancelled: localize("CMT.Workbench.Status.Cancelled", "Cancelled"),
   };
+  const leadPermissions = new Map(await Promise.all([...new Set(workbench.projects.map(project => project.leadArtisanUuid).filter(Boolean))].map(async uuid => {
+    try { return [uuid, canControlArtisan(await fromUuid(uuid, { strict: false }), game.user)]; }
+    catch { return [uuid, false]; }
+  })));
   const projects = workbench.projects
     .slice()
     .sort((left, right) => right.updatedAt - left.updatedAt)
@@ -380,7 +384,7 @@ async function workbenchContext(application) {
       teamworkBonus: projectArtisanCount(project) - 1,
       estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress - project.teamworkRemainder) / artisanWorkRate(projectArtisanCount(project))),
       markCount: project.artisanMarks.length,
-      canWork: craftingEnabled && canEdit && ["reserved", "active"].includes(project.status),
+      canWork: craftingEnabled && canEdit && leadPermissions.get(project.leadArtisanUuid) === true && ["reserved", "active"].includes(project.status),
       canComplete: craftingEnabled && canEdit && project.status === "ready",
       canManage: canEdit,
       expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
@@ -655,6 +659,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
   if (!canEditParty(party)) throw new Error(localize("CMT.Workbench.NotEditable"));
   if (!["reserved", "active"].includes(project.status)) throw new Error("This project cannot receive another Work Block.");
   const artisan = await fromUuid(project.leadArtisanUuid);
+  if (!canControlArtisan(artisan, game.user)) throw new Error("Only the lead artisan's owner or a GM can roll this project's Work Blocks.");
   const materialIds = [...new Set([project.coreMaterialId,
     ...project.reservations.map(reservation => reservation.materialId)].filter(Boolean))];
   const choices = professionSkillChoices(artisan, "crafting", materialIds);
@@ -743,6 +748,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
     user: userAuditIdentity(),
   });
   const freshWorkbench = projectState(party);
+  if (!canControlArtisan(artisan, game.user)) throw new Error("You no longer have permission to roll for the lead artisan.");
   const freshProject = freshWorkbench.projects.find(entry => entry.id === projectId);
   if (!freshProject || JSON.stringify(freshProject) !== JSON.stringify(project))
     throw new Error("This project changed during the roll. Refresh the Workbench before continuing; this roll has not been applied.");

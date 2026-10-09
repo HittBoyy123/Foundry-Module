@@ -1,6 +1,7 @@
 import { insertFocusSlotControl } from "./spell-focus.js";
 import { materialRuneSlots } from "./property-runes.js";
 import { insertMasterstrokeControls } from "./masterstrokes.js";
+import { installCraftingDescription } from "./crafting-description.js";
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
 import {
@@ -341,6 +342,7 @@ export function injectItemSheet(application, html, getConfig) {
 }
 
 export function registerItemSheetHooks(getConfig) {
+  installCraftingDescription(getConfig);
   Hooks.on("renderApplicationV2", (application, element) => injectItemSheet(application, element, getConfig));
   Hooks.on("renderItemSheet", (application, html) => injectItemSheet(application, html, getConfig));
   Hooks.on("renderItemSheetPF2e", (application, html) => injectItemSheet(application, html, getConfig));

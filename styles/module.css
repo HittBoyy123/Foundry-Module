@@ -2980,3 +2980,48 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   .cmt-workbench-app .cmt-crafting-summary > .cmt-planned-runes,
   .cmt-workbench-app .cmt-crafting-summary > .cmt-material-benefits { grid-column: 1; grid-row: auto; }
 }
+
+/* Crafting addendum shared by item descriptions and expanded inventory entries. */
+.cmt-crafting-description {
+  margin: 1rem 0 .5rem;
+  padding: .75rem 1rem;
+  border: 3px solid transparent;
+  border-image: url("../../../systems/pf2e/assets/sheet/frame-elegant.svg") 11 / 14px / 0 repeat;
+  border-radius: 2px;
+  background: #4437301a;
+  color: inherit;
+}
+.cmt-crafting-description h3 {
+  text-align: center;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #690000;
+  margin: 0 0 .65rem;
+}
+.cmt-crafting-description h4 { color: #690000; font-weight: bold; margin: .5rem 0; }
+.cmt-crafting-description p { margin: .35rem 0; }
+.cmt-crafting-description .cmt-crafted-masterstroke { border-top: 1px solid #a99b88; margin-top: .65rem; padding-top: .25rem; }
+
+/* Work Block outcomes supplement the native PF2e check, without repeating its DC. */
+.chat-message .cmt-crafting-work-readout {
+  padding: .35rem .45rem;
+  background: transparent;
+  border-left: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.35;
+}
+.chat-message .cmt-crafting-work-readout h3 {
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 .3rem;
+  border: 0;
+}
+.chat-message .cmt-crafting-work-readout p { margin: .3rem 0; }
+.chat-message .cmt-crafting-work-readout .cmt-work-effect { border-top: 1px solid #b8afa3; padding-top: .3rem; }
+.chat-message .cmt-crafting-work-readout h3,
+.chat-message .cmt-crafting-work-readout h4,
+.chat-message .cmt-crafting-work-readout strong { color: inherit; }

@@ -69,6 +69,7 @@ test("outcome conversions leave critical failures intact and allow defensive can
 test("native checks receive outcome adjustments and spend only a triggered use", async () => {
   const actor = { uuid: "Actor.hero", isOwner: true }; const weapon = item("weapon", 2, actor);
   environment([actor, weapon]);
+  if (currentMasterstroke(weapon)?.frequency) await masterstrokeRequest("arm", weapon, actor);
   let natural = "failure", cancel = false, seen;
   const Check = { async roll(check, context, event, callback) {
     seen = context;
@@ -128,6 +129,7 @@ test("Unyielding Edge reduces only physical resistance and restores prepared dat
 test("concurrent reservations spend one use and a stale release cannot refund a newer claim", async () => {
   const actor = { uuid: "Actor.hero", isOwner: true }; const weapon = item("weapon", 2, actor);
   environment([actor, weapon]);
+  if (currentMasterstroke(weapon)?.frequency) await masterstrokeRequest("arm", weapon, actor);
   const claims = await Promise.all([masterstrokeRequest("reserve", weapon, actor), masterstrokeRequest("reserve", weapon, actor)]);
   assert.equal(claims.filter(Boolean).length, 1);
   const token = claims.find(Boolean);
@@ -143,6 +145,7 @@ test("concurrent reservations spend one use and a stale release cannot refund a 
 test("Relentless Assault uses the native Strike at the original MAP only once", async () => {
   const actor = { uuid: "Actor.hero", isOwner: true }; const weapon = item("weapon", 4, actor);
   environment([actor, weapon]);
+  if (currentMasterstroke(weapon)?.frequency) await masterstrokeRequest("arm", weapon, actor);
   let invoked = 0;
   actor.system = { actions: [{ item: weapon, variants: [{}, {}, { roll: async options => {
     invoked++; assert.ok(options.options.includes("masterstroke:relentless-assault")); return {};
