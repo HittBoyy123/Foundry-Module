@@ -1,3 +1,4 @@
+import { PROFESSION_EXAMPLE_MACROS } from "../content/profession-examples.js";
 import { VOID_PROTECTION_SOURCE } from "../content/void-protection.js";
 import { CRAFTING_ROLL_TABLES } from "../content/crafting-roll-tables.js";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -15,6 +16,7 @@ import { WRATHMAKER_PLAYER_GUIDE, WRATHMAKER_GM_GUIDE } from "../content/wrathma
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = path.join(projectRoot, "packs");
 const packs = Object.freeze({
+  "demo-tools.db": PROFESSION_EXAMPLE_MACROS,
   "crafting-tables.db": CRAFTING_ROLL_TABLES,
   "apex-items.db": APEX_ITEM_SOURCES,
   "crafting-items.db": CRAFTING_ITEM_SOURCES,

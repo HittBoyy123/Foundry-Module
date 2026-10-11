@@ -45,7 +45,13 @@ function recipe(id, label, group, categoryIds, coreUnits, coreMaterialIds, secon
  * entry. A dropped base item supplies its normal PF2e data and category.
  */
 export const CRAFTING_RECIPE_BANDS = Object.freeze([
-  ...["potion", "oil", "elixir"].map(category => recipe(`consumable-${category}`, `${category[0].toUpperCase()}${category.slice(1)} (One Dose)`, "consumable", [`consumable.${category}`], 1, ["herbs"], [secondary("container", "Glass container stock", 1, ["stone"])])),
+  recipe("consumable-scroll", "Spell Scroll", "consumable", ["consumable.scroll"], 1, ["wood"], [secondary("inscription", "Magical inscription", 1, ["mana-crystals"])]),
+  recipe("ammo-arrows", "Arrows", "ammunition", ["ammunition"], 1, ["wood"], [secondary("tips", "Arrowheads", 1, ["metal"])]),
+  recipe("ammo-bolts", "Bolts", "ammunition", ["ammunition"], 1, ["wood"], [secondary("tips", "Bolt heads", 1, ["metal"])]),
+  recipe("ammo-bullets", "Firearm ammunition", "ammunition", ["ammunition"], 1, ["metal"], [secondary("propellant", "Propellant ingredients", 1, ["herbs"], { structural: false })]),
+  recipe("ammo-sling", "Sling ammunition", "ammunition", ["ammunition"], 1, ["stone", "metal"]),
+  recipe("ammo-darts", "Blowgun darts", "ammunition", ["ammunition"], 1, ["wood"], [secondary("tips", "Dart tips", 1, ["metal"])]),
+  ...["potion", "oil", "elixir", "bomb"].map(category => recipe(`consumable-${category}`, `${category[0].toUpperCase()}${category.slice(1)}`, "consumable", [`consumable.${category}`], 1, ["herbs"], [secondary("container", "Glass container stock", 1, ["stone"])])),
   recipe("equipment-jewellery", "Jewellery or Accessory", "equipment", ["equipment"], 2, ["metal", "stone"]),
   recipe("equipment-garment", "Robe or Cloak", "equipment", ["equipment"], 3, ["herbs"], [secondary("lining", "Lining", 1, ["herbs", "leather"])]),
   recipe("equipment-leather", "Boots, Gloves or Belt", "equipment", ["equipment"], 2, ["leather", "herbs"], [secondary("fittings", "Fittings", 1, ["metal"])]),

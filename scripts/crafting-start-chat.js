@@ -1,4 +1,4 @@
-import { artisanWorkRate, projectArtisanCount } from "./crafting-projects.js";
+import { projectWorkRate } from "./crafting-projects.js";
 const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
 export function craftingStartContent(project, partyName) {
@@ -11,7 +11,7 @@ export function craftingStartContent(project, partyName) {
     totals.set(key, total);
   }
   const materials = [...totals.values()].map(row => `<li>${escape(row.name)} — Tier ${escape(row.tier)}: <strong>${row.units} units</strong></li>`).join("");
-  const days = Math.ceil(project.requiredProgress / artisanWorkRate(projectArtisanCount(project)));
+  const days = Math.ceil(project.requiredProgress / projectWorkRate(project));
   return `<section class="cmt-disassembly-chat"><h3>${project.upgrade ? "Upgrade Started" : "Crafting Started"}</h3><p>Now ${project.upgrade ? "upgrading" : "crafting"} <strong>${escape(project.name)}</strong>.</p><p>Materials reserved in ${escape(partyName)}.</p><h4>Materials Required</h4><ul>${materials}</ul><p>Days required: <strong>${days}</strong> on successful checks.</p></section>`;
 }
 

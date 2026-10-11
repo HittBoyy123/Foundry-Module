@@ -152,6 +152,10 @@ export function projectArtisanCount(project) {
     .map(entry => entry.actorUuid).filter(Boolean)).size));
 }
 
+export function projectWorkRate(project) {
+  return project.teamworkRate === 1.25 ? 1.25 : project.teamworkRate === 1 ? 1 : artisanWorkRate(projectArtisanCount(project));
+}
+
 export function artisanWorkRate(count) {
   return count >= 6 ? 1.5 : count >= 3 ? 1.25 : 1;
 }
@@ -184,6 +188,8 @@ export function normalizeCraftingProject(source) {
     baseItemName: text(source.baseItemName, recipe.name),
     baseItemImg: text(source.baseItemImg, "icons/svg/item-bag.svg"),
     recipeBandId: text(source.recipeBandId),
+    scrollSpell: source.scrollSpell && typeof source.scrollSpell === "object" ? clone(source.scrollSpell) : null,
+    teamworkRate: [1, 1.25].includes(source.teamworkRate) ? source.teamworkRate : null,
     recipe,
     coreMaterialId: text(source.coreMaterialId),
     coreTier: integer(source.coreTier, recipe.tier, 1, 6),
@@ -375,6 +381,7 @@ export function reserveCraftingProject(source, { inventoryItems = [], otherProje
   const evaluation = evaluateCraftingRecipe(project.recipe, {
     targetItem: {
       type: project.recipe.categoryId.startsWith("weapon.") ? "weapon"
+        : project.recipe.categoryId === "ammunition" ? "ammo"
         : project.recipe.categoryId.startsWith("consumable.") ? "consumable"
         : project.recipe.categoryId.startsWith("armor.") || project.recipe.categoryId === "shield" ? "armor"
         : "equipment",
@@ -428,7 +435,7 @@ export function advanceCraftingProject(source, {
   const artisanCount = projectArtisanCount(project);
   const resolvedEdge = degree === "criticalSuccess" && craftingEdge
     ? resolveCraftingEdge(project, { ...craftingEdge, days: committedDays, maker: artisanName || project.leadArtisanName }) : null;
-  const earned = progressForWorkBlock(committedDays, resolvedEdge?.progressDegree ?? degree) * artisanWorkRate(artisanCount) + project.teamworkRemainder;
+  const earned = progressForWorkBlock(committedDays, resolvedEdge?.progressDegree ?? degree) * projectWorkRate(project) + project.teamworkRemainder;
   project.nextWorkBonus = resolvedEdge?.nextWorkBonus ?? 0;
   if (resolvedEdge?.masterstroke) project.masterstrokes.push(resolvedEdge.masterstroke);
   if (resolvedEdge?.conservationCredit) project.conservationCredits.push(resolvedEdge.conservationCredit);

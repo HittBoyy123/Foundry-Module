@@ -1,3 +1,4 @@
+import { isAlchemicalBomb } from "./alchemical-crafting.js";
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig } from "./config-store.js";
 import { calculateItemEffects } from "./model.js";
@@ -5,7 +6,7 @@ import { currentMasterstroke } from "./masterstroke-rules.js";
 
 export const MANA_RUNE_LEVELS = [1, 4, 8, 12, 16, 20];
 export function materialRuneSlots(item, config = getRulesConfig()) {
-  if (!["weapon", "armor"].includes(item?.type) || item.system?.grade) return 0;
+  if (isAlchemicalBomb(item) || !["weapon", "armor"].includes(item?.type) || item.system?.grade) return 0;
   const flags = item.flags?.[MODULE_ID];
   if (!flags?.material) return 0;
   const result = calculateItemEffects({ itemType: item.type, itemId: item.id ?? "preview", itemName: item.name, flags, config });
@@ -21,7 +22,7 @@ export function installMaterialRuneSlots(classes = CONFIG.PF2E.Item.documentClas
     const original = prototype?.prepareBaseData;
     if (!original || original[marker]) continue;
     const wrapper = function(...args) {
-      if (!this.flags?.[MODULE_ID]?.material) return original.apply(this, args);
+      if (isAlchemicalBomb(this) || !this.flags?.[MODULE_ID]?.material) return original.apply(this, args);
       const slots = materialRuneSlots(this);
       if (!this.system.runes) return original.apply(this, args);
       this.system.runes.potency = slots;

@@ -1,3 +1,4 @@
+import { isAlchemicalBomb } from "./alchemical-crafting.js";
 import {
   DEFAULT_ITEM_FLAGS,
   DEFAULT_FLANKING_CONFIG,
@@ -733,6 +734,7 @@ export function itemTypeIsSupported(config, itemType) {
 }
 
 export function getCraftingItemType(item) {
+  if (isAlchemicalBomb(item)) return "consumable";
   if (item?.type === "armor" && item.system?.category === "shield") return "shield";
   if (item?.type !== "equipment") return item?.type ?? null;
   const otherTags = item.system?.traits?.otherTags;

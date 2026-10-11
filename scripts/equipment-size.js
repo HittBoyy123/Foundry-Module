@@ -7,6 +7,7 @@ export function normalizeEquipmentSize(size) {
   return EQUIPMENT_SIZES.some(entry => entry.id === size) ? size : "med";
 }
 export function scaleEquipmentRecipe(recipe, size) {
+  if (recipe.categoryId === "ammunition" || recipe.categoryId?.startsWith("consumable.")) return structuredClone(recipe);
   const factor = EQUIPMENT_SIZES.find(entry => entry.id === normalizeEquipmentSize(size)).factor;
   const scaled = structuredClone(recipe);
   for (const set of scaled.ingredientSets) for (const group of set.groups) for (const option of group.options) {

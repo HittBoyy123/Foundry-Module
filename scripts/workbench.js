@@ -1,3 +1,6 @@
+import { isAlchemicalBomb } from "./alchemical-crafting.js";
+import { isScroll, knownCraftingSpells, validateScrollSpell, scrollSpellSnapshot, applyScrollSpell, chooseScrollSpell } from "./scroll-crafting.js";
+import { isAmmunition, isMagicalAmmunition } from "./ammunition.js";
 import { plannedEquipment, validateCraftingEnchantments, addEnchantmentCosts, selectCraftingRune } from "./crafting-enchantments.js";
 import { openEnchanting, runeSummary } from "./enchanting.js";
 import { materialBenefits } from "./material-benefits.js";
@@ -26,7 +29,7 @@ import { evaluateCraftingRecipe } from "./crafting-recipes.js";
 import {
   advanceCraftingProject,
   projectArtisanCount,
-  artisanWorkRate,
+  projectWorkRate,
   buildConsumptionPlan,
   completeCraftingProject,
   createCraftingProject,
@@ -39,6 +42,7 @@ import {
 import {
   buildCraftingRecipeFromBand,
   compatibleRecipeBands,
+  consumableMinimumTier,
   defaultProjectProgress,
   getCraftingRecipeBand,
 } from "./recipe-catalog.js";
@@ -192,7 +196,7 @@ async function contributorProfiles(application) {
     ? application.workbenchState.contributorUuids.filter(Boolean)
     : [])];
   const actors = (await Promise.all(uuids.map(resolveActor))).filter(Boolean);
-  const profiles = actors.map(getArtisanProfile).filter((profile) => profile?.professions.length > 0);
+  const profiles = actors.map(getArtisanProfile).filter((profile) => profile?.professions.length > 0 || knownCraftingSpells(profile?.actor).length > 0);
   application.workbenchState.contributorUuids = profiles.map((profile) => profile.actorUuid);
   application.workbenchState.leadArtisanUuid = application.workbenchState.artisanSlots?.[0] ?? "";
   return profiles;
@@ -305,10 +309,16 @@ async function workbenchContext(application) {
   application.workbenchState.materialId = selectedBand?.coreMaterialIds.includes(application.workbenchState.materialId)
     ? application.workbenchState.materialId
     : selectedBand?.coreMaterialIds[0] ?? "";
-  const tier = Math.min(6, Math.max(1, Math.trunc(Number(application.workbenchState.tier) || 1)));
+  const tier = isAmmunition(baseItem) && !isMagicalAmmunition(baseItem) ? 1 : Math.min(6, Math.max(consumableMinimumTier(baseItem), Math.trunc(Number(application.workbenchState.tier) || 1)));
+  application.workbenchState.tier = isAmmunition(baseItem) && !isMagicalAmmunition(baseItem) ? 1 : Math.max(consumableMinimumTier(baseItem), Number(application.workbenchState.tier) || 1);
   application.workbenchState.artisanSlots ??= Array.from({ length: 6 }, (_, i) => application.workbenchState.contributorUuids?.[i] ?? "");
   application.workbenchState.contributorUuids = application.workbenchState.artisanSlots.filter(Boolean);
   const profiles = await contributorProfiles(application);
+  let scrollError = "";
+  if (isScroll(baseItem)) {
+    try { await validateScrollSpell(application.workbenchState.scrollSpell, profiles.map(p => p.actorUuid)); }
+    catch (error) { scrollError = error.message; }
+  }
 
   let recipe = null;
   let baseRecipe = null;
@@ -320,6 +330,7 @@ async function workbenchContext(application) {
     try {
       baseRecipe = buildCraftingRecipeFromBand(selectedBand.id, {
         targetItem: baseItem,
+        batchQuantity: application.workbenchState.batchQuantity ?? 1,
         tier,
         coreMaterialId: application.workbenchState.materialId,
       });
@@ -382,7 +393,7 @@ async function workbenchContext(application) {
       contributorSummary: project.contributors.map((entry) => entry.name).join(", "),
       teamSize: projectArtisanCount(project),
       teamworkBonus: projectArtisanCount(project) - 1,
-      estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress - project.teamworkRemainder) / artisanWorkRate(projectArtisanCount(project))),
+      estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress - project.teamworkRemainder) / projectWorkRate(project)),
       markCount: project.artisanMarks.length,
       canWork: craftingEnabled && canEdit && leadPermissions.get(project.leadArtisanUuid) === true && ["reserved", "active"].includes(project.status),
       canComplete: craftingEnabled && canEdit && project.status === "ready",
@@ -449,13 +460,15 @@ async function workbenchContext(application) {
       try { return { ...rune, summary: await runeSummary(rune.uuid) }; }
       catch { return { ...rune, summary: "Open the rune details to read its effects." }; }
     })),
-    canPlanEnchantments: application.workbenchState.tab === "craft" && ["weapon", "armor"].includes(baseItem?.type),
-    teamReasons: baseRecipe ? team.reasons : [],
+    canPlanEnchantments: application.workbenchState.tab === "craft" && ["weapon", "armor"].includes(baseItem?.type) && !isAlchemicalBomb(baseItem),
+    teamReasons: baseRecipe ? [...team.reasons, ...(scrollError ? [scrollError] : [])] : [],
+    isScroll: isScroll(baseItem),
+    scrollSpellLabel: application.workbenchState.scrollSpell ? `${application.workbenchState.scrollSpell.name} — Rank ${application.workbenchState.scrollSpell.rank} · ${application.workbenchState.scrollSpell.actorName}` : "Choose a spell from a participating character.",
     artisanSlots: team.slots.map((slot) => {
       const choices = artisanSlotChoices(slot, artisanChoices, application.workbenchState.artisanSlots);
       const canAssign = !slot.actorUuid || canEdit || canControlArtisan(profiles.find(profile => profile.actorUuid === slot.actorUuid)?.actor, game.user);
       const isEnchanter = profiles.find(p => p.actorUuid === slot.actorUuid)?.professions.some(p => p.id === "enchanting") === true;
-      return { ...slot, isEnchanter, canEnchant: isEnchanter && application.workbenchState.tab === "craft", choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
+      return { ...slot, isEnchanter, canEnchant: isEnchanter && application.workbenchState.tab === "craft" && !isScroll(baseItem) && !isAlchemicalBomb(baseItem), choices, canAssign, selectedUnavailable: Boolean(slot.actorUuid) && !choices.some(choice => choice.selected),
         marks: markPlan.assignments.filter(mark => mark.maker.actorUuid === slot.actorUuid) };
     }),
     secondaryMaterials: (selectedBand?.secondaries ?? []).filter((entry) => !entry.optional).map((entry) => ({
@@ -488,12 +501,16 @@ async function workbenchContext(application) {
     materialBenefits: materialBenefits(baseItem, application.workbenchState.materialId, tier, config, application.workbenchState.upgradeDragon),
     recipeBands: recipeBands.map((entry) => ({ ...entry, selected: entry.id === selectedBand?.id })),
     selectedBand,
+    isConsumable: baseItem?.type === "consumable" || isAmmunition(baseItem) || isAlchemicalBomb(baseItem),
+    isAmmunition: isAmmunition(baseItem),
+    batchOptions: [1,2,3,4].map(value => ({ value, label: isAmmunition(baseItem) ? `${value} batch(es) — ${value * 10} pieces` : isScroll(baseItem) ? `${value} scroll(s)` : `${value} dose(s)`, selected: value === Number(application.workbenchState.batchQuantity ?? 1) })),
+    teamTimeBenefit: team.workRate > 1,
     coreMaterials: (selectedBand?.coreMaterialIds ?? []).map((materialId) => ({
       id: materialId,
       label: config.materials?.[materialId]?.label ?? materialId,
       selected: materialId === application.workbenchState.materialId,
     })),
-    tiers: [1, 2, 3, 4, 5, 6].map((value) => ({
+    tiers: [1, 2, 3, 4, 5, 6].filter(value => value >= consumableMinimumTier(baseItem) && (!isAmmunition(baseItem) || isMagicalAmmunition(baseItem) || value === 1)).map((value) => ({
       value,
       label: config.materials?.[application.workbenchState.materialId]?.tierLabels?.[value]
         ?? config.tierLabels?.[value]
@@ -517,7 +534,7 @@ async function workbenchContext(application) {
     },
     markLabourDays: calculateMarkLabourDays(markPlan.assignments, tier),
     teamSize: Math.max(1, new Set(profiles.map(profile => profile.actorUuid)).size),
-    estimatedDays: Math.ceil(requiredProgress / artisanWorkRate(new Set(profiles.map(profile => profile.actorUuid)).size)),
+    estimatedDays: Math.ceil(requiredProgress / team.workRate),
     draft: {
       name: application.workbenchState.projectName || (baseItem ? `${materialLabel(application.workbenchState.materialId, tier)} ${baseItem.name}` : ""),
       requiredProgress,
@@ -529,6 +546,7 @@ async function workbenchContext(application) {
       && baseItem
       && selectedBand
       && team.valid
+      && !scrollError
       && profiles.length
       && application.workbenchState.leadArtisanUuid
       && preview?.craftable
@@ -545,6 +563,7 @@ async function createAndReserve(application) {
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const baseItem = await resolveBaseItem(application.workbenchState.baseItemUuid);
   const band = getCraftingRecipeBand(application.workbenchState.bandId);
+  application.workbenchState.tier = isAmmunition(baseItem) && !isMagicalAmmunition(baseItem) ? 1 : Math.max(consumableMinimumTier(baseItem), Number(application.workbenchState.tier) || 1);
   application.workbenchState.artisanSlots ??= Array.from({ length: 6 }, (_, i) => application.workbenchState.contributorUuids?.[i] ?? "");
   application.workbenchState.contributorUuids = application.workbenchState.artisanSlots.filter(Boolean);
   const profiles = await contributorProfiles(application);
@@ -552,6 +571,7 @@ async function createAndReserve(application) {
   if (!party || !baseItem || !band || !lead) throw new Error(localize("CMT.Workbench.IncompleteProject"));
   const baseRecipe = buildCraftingRecipeFromBand(band.id, {
     targetItem: baseItem,
+    batchQuantity: application.workbenchState.batchQuantity ?? 1,
     tier: application.workbenchState.tier,
     coreMaterialId: application.workbenchState.materialId,
   });
@@ -573,6 +593,13 @@ async function createAndReserve(application) {
     upgrading && m.status === "completed" ? { ...m, materialUnits: 0 } : m));
   if (!upgrading) addArmorResistance(recipe, baseItem, application.workbenchState.upgradeDragon, getRulesConfig());
   const workbench = projectState(party);
+  let scrollSpell = null;
+  if (isScroll(baseItem)) {
+    const chosen = await validateScrollSpell(application.workbenchState.scrollSpell, profiles.map(p => p.actorUuid));
+    const templateUuid = CONFIG.PF2E.spellcastingItems.scroll.compendiumUuids[chosen.rank];
+    if (baseItem.uuid !== templateUuid) throw new Error("Choose the scroll spell again to match its rank and materials.");
+    scrollSpell = scrollSpellSnapshot(chosen.spell, chosen.actor, chosen.rank);
+  }
   let upgrade = null;
   if (upgrading) {
     validateUpgradeItem(baseItem, partyActors().flatMap(p => projectState(p).projects));
@@ -600,6 +627,8 @@ async function createAndReserve(application) {
     baseItemName: baseItem.name,
     baseItemImg: baseItem.img,
     recipeBandId: band.id,
+    teamworkRate: team.workRate,
+    scrollSpell,
     recipe,
     coreMaterialId: application.workbenchState.materialId,
     coreTier: application.workbenchState.tier,
@@ -660,9 +689,11 @@ async function resolveWorkBlock(application, projectId, days, event) {
   if (!["reserved", "active"].includes(project.status)) throw new Error("This project cannot receive another Work Block.");
   const artisan = await fromUuid(project.leadArtisanUuid);
   if (!canControlArtisan(artisan, game.user)) throw new Error("Only the lead artisan's owner or a GM can roll this project's Work Blocks.");
+  if (project.scrollSpell) await validateScrollSpell(project.scrollSpell, project.contributors.map(c => c.actorUuid));
+  const roleProfessions = project.recipe.categoryId === "consumable.scroll" ? ["bookmaking"] : [];
   const materialIds = [...new Set([project.coreMaterialId,
     ...project.reservations.map(reservation => reservation.materialId)].filter(Boolean))];
-  const choices = professionSkillChoices(artisan, "crafting", materialIds);
+  const choices = professionSkillChoices(artisan, "crafting", materialIds, roleProfessions);
   let selectedSkill = choices[0]?.id ?? "crafting";
   if (choices.length > 1) {
     selectedSkill = await foundry.applications.api.DialogV2.prompt({
@@ -674,7 +705,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
     });
     if (!selectedSkill) return;
   }
-  const { statistic, label: skillLabel } = resolveProfessionStatistic(artisan, "crafting", materialIds, selectedSkill);
+  const { statistic, label: skillLabel } = resolveProfessionStatistic(artisan, "crafting", materialIds, selectedSkill, roleProfessions);
   const dc = project.recipe.check ? evaluateCraftingRecipe(project.recipe, {
     targetItem: await resolveBaseItem(project.baseItemUuid),
     inventoryItems: party.items,
@@ -720,7 +751,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
     if (craftingEdge.result === 4 && project.currentProgress + workYield(project, days) >= project.requiredProgress) {
       const baseItem = await resolveBaseItem(project.baseItemUuid);
       if (!baseItem) throw new Error("The original item is unavailable; restore it before rolling a Masterstroke.");
-      craftingEdge.hasMasterstroke = Boolean(project.masterstrokes?.length || (project.upgrade && baseItem.flags?.[MODULE_ID]?.crafting?.masterstrokes?.length));
+      craftingEdge.hasMasterstroke = (baseItem.type === "consumable" || isAmmunition(baseItem) || isAlchemicalBomb(baseItem)) || Boolean(project.masterstrokes?.length || (project.upgrade && baseItem.flags?.[MODULE_ID]?.crafting?.masterstrokes?.length));
       if (!craftingEdge.hasMasterstroke) {
         craftingEdge.masterstrokeCategory = masterstrokeCategory(baseItem);
         if (![1,2,3,4,5,6,7,8].some(result => eligibleMasterstroke(baseItem, result))) throw new Error("No Masterstroke is compatible with this item.");
@@ -802,11 +833,16 @@ export function buildCompletedItemSource(current, baseItem, config = getRulesCon
   const source = cloneItemSource(baseItem);
   source.system ??= {};
   source.system.quantity = current.recipe.result.quantity;
+  if (source.type === "ammo" && !source.system.baseItem) {
+    const form = { "ammo-arrows": "arrows", "ammo-bolts": "bolts", "ammo-bullets": "rounds", "ammo-sling": "sling-bullets", "ammo-darts": "blowgun-darts" }[current.recipeBandId];
+    if (form) source.system.baseItem = form;
+  }
   if (current.enchantments?.length) {
     source.system.runes ??= {};
     source.system.runes.property = plannedEquipment(baseItem, { materialId: current.coreMaterialId, tier: current.coreTier }, current.enchantments).system.runes.property;
   }
-  if (current.equipmentSize) source.system.size = current.equipmentSize;
+  if (isScroll(source)) applyScrollSpell(source, current.scrollSpell);
+  if (current.equipmentSize && !current.recipe.categoryId.startsWith("consumable.")) source.system.size = current.equipmentSize;
   source.flags ??= {};
   const priorFlags = source.flags[MODULE_ID] ?? {};
   const componentGroups = new Map();
@@ -948,6 +984,7 @@ async function completeProjectTransaction(party, projectId, auditUser) {
     }));
     if (!artisans.some(hasWyrmcraft)) throw new Error("A participating artisan must still have Wyrmcraft to complete dragon-scale resistance.");
   }
+  if (current.scrollSpell) await validateScrollSpell(current.scrollSpell, current.contributors.map(c => c.actorUuid));
   const freshPlan = buildConsumptionPlan(current, party.items);
   const baseItem = await resolveBaseItem(current.baseItemUuid);
   if (!baseItem) throw new Error(localize("CMT.Workbench.BaseItemMissing"));
@@ -1307,6 +1344,8 @@ export function createWorkbenchApplication() {
         bandId: options.bandId ?? "",
         materialId: options.materialId ?? "",
         tier: Number(options.tier) || 1,
+        batchQuantity: 1,
+        scrollSpell: null,
         contributorUuids: Array.isArray(options.contributorUuids)
           ? [...options.contributorUuids]
           : options.artisanId ? [`Actor.${options.artisanId}`] : [],
@@ -1475,11 +1514,12 @@ export function createWorkbenchApplication() {
           tier: "tier",
           "project-name": "projectName",
           "equipment-size": "equipmentSize",
+          "batch-quantity": "batchQuantity",
         }[field.dataset.cmtWorkbenchField];
         if (!stateKey) continue;
         const eventName = field.dataset.cmtWorkbenchField === "project-name" ? "input" : "change";
         field.addEventListener(eventName, async () => {
-          this.workbenchState[stateKey] = ["tier", "requiredProgress"].includes(stateKey)
+          this.workbenchState[stateKey] = ["tier", "requiredProgress", "batchQuantity"].includes(stateKey)
             ? Number(field.value)
             : field.value;
           if (stateKey === "partyId") {
@@ -1493,12 +1533,35 @@ export function createWorkbenchApplication() {
             this.workbenchState.upgradeDragon = null;
             this.workbenchState.baseItemUuid = "";
           }
-          if (["partyId", "bandId", "materialId", "tier"].includes(stateKey)) {
+          if (["partyId", "bandId", "materialId", "tier", "batchQuantity"].includes(stateKey)) {
             if (["bandId", "materialId", "tier"].includes(stateKey)) this.workbenchState.requiredProgress = 0;
             await this.render({ force: true });
           }
         });
       }
+      for (const button of root.querySelectorAll("[data-cmt-start-scroll]")) button.addEventListener("click", async () => {
+        try {
+          const uuid = CONFIG.PF2E.spellcastingItems?.scroll?.compendiumUuids?.[1];
+          const template = uuid ? await resolveBaseItem(uuid) : null;
+          if (!isScroll(template)) throw new Error("The PF2e scroll template is unavailable.");
+          Object.assign(this.workbenchState, { tab: "craft", baseItemUuid: uuid, bandId: "consumable-scroll", materialId: "wood", tier: 1, scrollSpell: null, batchQuantity: 1, projectName: "", enchantments: [], upgradeDragon: null, secondaryMaterials: {} });
+          await this.render({ force: true });
+          await publishSharedCraftDraft(this, partyActors().find(p => p.id === this.workbenchState.partyId));
+        } catch(error) { ui.notifications.error(error.message); }
+      });
+      for (const button of root.querySelectorAll("[data-cmt-scroll-spell]")) button.addEventListener("click", async () => {
+        try {
+          const selected = await chooseScrollSpell(await contributorProfiles(this));
+          if (!selected) return;
+          this.workbenchState.baseItemUuid = selected.template.uuid;
+          this.workbenchState.scrollSpell = selected.selection;
+          this.workbenchState.tier = consumableMinimumTier(selected.template);
+          this.workbenchState.bandId = "consumable-scroll";
+          this.workbenchState.projectName = `Scroll of ${selected.selection.name} (Rank ${selected.selection.rank})`;
+          await this.render({ force: true });
+          await publishSharedCraftDraft(this, partyActors().find(p => p.id === this.workbenchState.partyId));
+        } catch(error) { ui.notifications.error(error.message); }
+      });
       const drop = root.querySelector('[data-cmt-workbench-drop="base-item"]');
       drop?.addEventListener("dragover", (event) => {
         event.preventDefault();
@@ -1524,6 +1587,9 @@ export function createWorkbenchApplication() {
             this.workbenchState.selectedMarks = [];
           }
           this.workbenchState.baseItemUuid = item.uuid;
+          this.workbenchState.scrollSpell = null;
+          this.workbenchState.batchQuantity = 1;
+          if (item.type === "consumable" || isAmmunition(item) || isAlchemicalBomb(item)) this.workbenchState.tier = consumableMinimumTier(item);
           this.workbenchState.bandId = "";
           this.workbenchState.projectName = "";
           this.workbenchState.requiredProgress = 0;
@@ -1541,7 +1607,7 @@ export function createWorkbenchApplication() {
           const profiles = await contributorProfiles(this);
           if (!profiles.some(p => p.professions.some(profession => profession.id === "enchanting"))) throw new Error("Assign an Enchanting artisan first.");
           if (!base || !party) throw new Error("Choose equipment and a party first.");
-          if (this.workbenchState.tab !== "craft" || !["weapon", "armor"].includes(base.type)) throw new Error("Property runes can be planned for a new weapon or armour. For existing equipment, use Enchant Existing Item.");
+          if (this.workbenchState.tab !== "craft" || (!["weapon", "armor"].includes(base.type) || isAlchemicalBomb(base))) throw new Error("Property runes can be planned for a new weapon or armour. For existing equipment, use Enchant Existing Item.");
           const rune = await selectCraftingRune(base, this.workbenchState, party);
           if (rune) {
             (this.workbenchState.enchantments ??= []).push(rune);

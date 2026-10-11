@@ -1,3 +1,4 @@
+import { knownCraftingSpells } from "./scroll-crafting.js";
 import { getRulesConfig } from "./config-store.js";
 import { MODULE_ID } from "./constants.js";
 import { getArtisanProfile } from "./artisan-marks.js";
@@ -10,14 +11,15 @@ export function canControlArtisan(actor, user) {
     && (user?.isGM || actor.testUserPermission?.(user, "OWNER") === true));
 }
 export function slotAllowsArtisan(slot, profile) {
-  if (!profile?.professions?.length) return false;
+  if (!profile?.professions?.length) return Boolean(slot.allowsSpellContributor && knownCraftingSpells(profile?.actor).length);
+  if (slot.professionIds?.length) return profile.professions.some(p => slot.professionIds.includes(p.id));
   if (slot.requiresWyrmcraft && !hasWyrmcraft(profile)) return false;
   return !slot.materialIds?.length || profile.professions.some(profession => profession.materialIds.some(id => slot.materialIds.includes(id)));
 }
 export function artisanSlotChoices(slot, profiles, slots) {
   return profiles.filter(profile => slotAllowsArtisan(slot, profile)
     && !slots.some((uuid, index) => index !== slot.index && uuid === profile.actorUuid))
-    .map(profile => ({ uuid: profile.actorUuid, label: `${profile.name} — ${profile.professions.map(p => p.name).join(" / ")}`, selected: profile.actorUuid === slots[slot.index] }))
+    .map(profile => ({ uuid: profile.actorUuid, label: `${profile.name} — ${profile.professions.map(p => p.name).join(" / ") || "Spell contributor"}`, selected: profile.actorUuid === slots[slot.index] }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -32,7 +34,7 @@ export async function resolveDroppedArtisan(data, { resolve = globalThis.fromUui
 
 export function availableArtisanProfiles(world = globalThis.game, tokens = globalThis.canvas?.tokens?.placeables ?? []) {
   const actors = [...Array.from(world.actors ?? []), ...tokens.map(token => token.actor)].filter(actor => canControlArtisan(actor, world.user));
-  return [...new Map(actors.map(actor => [actor.uuid, actor])).values()].map(getArtisanProfile).filter(profile => profile?.professions.length);
+  return [...new Map(actors.map(actor => [actor.uuid, actor])).values()].map(getArtisanProfile).filter(profile => profile?.professions.length || knownCraftingSpells(profile?.actor).length);
 }
 
 /** Only the selected slot is written; the player cannot modify stash permissions or inventory. */

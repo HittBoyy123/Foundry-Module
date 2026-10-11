@@ -1,0 +1,24 @@
+**Wrathmaker v0.35.12**
+
+**Batch crafting**
+- Craft **1–4 identical potions, oils, elixirs or alchemical bombs** together. Materials multiply with quantity; base work stays the same as one item.
+- Craft arrows, bolts, firearm rounds, sling ammunition and blowgun darts in **batches of 10**, up to **40 pieces** per project.
+- Mundane ammunition uses **Tier 1** resources. Magical ammunition and consumable variants require materials matching their item level.
+
+**Spell scrolls**
+- **Bookmaking** leads scroll crafting; **Enchanting** fills the optional support role.
+- Someone involved must know the spell. No prepared spell or available spell slot is spent.
+- Browse a searchable spellbook with spell descriptions and material tiers. Use **+** to choose the scroll rank.
+- Scroll rank is capped by the **highest spell rank available among participating casters**. Cantrips, focus spells and rituals are excluded.
+- Each scroll costs **1 Wood + 1 Mana Gem** at the selected tier. Craft **1–4 identical scrolls** together.
+
+**Teamwork**
+- Filling the lead and all named support roles unlocks **25% faster work**. A generic assistant alone does not unlock this benefit.
+- Additional artisans still add **+1 to Work Block rolls**, up to **+5**.
+
+**Try the professions**
+- GMs can create **11 level-5 example characters**, one per profession, with a mix of spellcasters and non-spellcasters.
+- Use **Create Profession Example Characters** in **Wrathmaker Demo Tools**. The characters are also saved in a reusable world compendium.
+
+**After updating**
+- Restart and refresh Foundry, then use **Refresh All**.

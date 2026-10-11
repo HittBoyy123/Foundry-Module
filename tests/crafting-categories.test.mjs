@@ -32,7 +32,7 @@ test("weapons, shields, and spell focuses have their own future recipe groups", 
     system: { traits: { otherTags: ["spell-focus"] } },
   }).id, "spell-focus");
   assert.equal(categorizeCraftableItem({ type: "equipment", system: { traits: { otherTags: [] } } }).id, "equipment");
-  assert.equal(listCraftingCategories().length, 12);
+  assert.equal(listCraftingCategories().length, 15);
 });
 
 test("recipe keys combine the broad PF2e category with material and tier", () => {

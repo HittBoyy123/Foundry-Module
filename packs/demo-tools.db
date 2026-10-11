@@ -1,0 +1,1 @@
+{"_id":"wmDemoArtisans01","name":"Create Profession Example Characters","type":"script","img":"icons/skills/trades/academics-study-reading-book.webp","scope":"global","command":"const { createProfessionExamples } = await import(\"/modules/pf2e-crafting-material-tiers/scripts/profession-examples.js\"); await createProfessionExamples();","ownership":{"default":0}}

@@ -30,7 +30,7 @@ export function normalizeMasterstrokes(entries) {
 
 export function workYield(project, days, multiplier = 1) {
   const count = Math.max(1, new Set((project.contributors ?? []).map(e => e.actorUuid).filter(Boolean)).size);
-  const rate = count >= 6 ? 1.5 : count >= 3 ? 1.25 : 1;
+  const rate = [1, 1.25].includes(project.teamworkRate) ? project.teamworkRate : count >= 6 ? 1.5 : count >= 3 ? 1.25 : 1;
   const committed = Math.min(5, Math.max(1, Math.trunc(Number(days) || 1)));
   return Math.floor(Math.ceil(committed * multiplier) * rate + (project.teamworkRemainder || 0));
 }

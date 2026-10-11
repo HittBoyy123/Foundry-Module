@@ -18,6 +18,7 @@
           {{/each}}
         </select>
       </label>
+      <button type="button" class="cmt-enchant-item" data-cmt-start-scroll {{#unless party}}disabled{{/unless}}>Craft Scroll</button>
       {{#if canPlanEnchantments}}<button type="button" class="cmt-enchant-item" data-cmt-plan-rune><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Enchant Crafted Item</button>{{/if}}
       <button type="button" data-cmt-workbench-action="enchant" {{#unless party}}disabled{{/unless}}><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Enchant Existing Item</button>
       <button type="button" data-cmt-workbench-action="open-stash" {{#unless party}}disabled{{/unless}}>
@@ -140,6 +141,7 @@
         {{/if}}
       </div>
 
+      {{#if isScroll}}<p><strong>Scroll spell:</strong> {{scrollSpellLabel}}</p><button type="button" class="cmt-enchant-item" data-cmt-scroll-spell>Choose Scroll Spell</button>{{/if}}
       <div class="cmt-workbench-form-grid">
         <label>
           <span>{{localize "CMT.Workbench.ProjectName"}}</span>
@@ -175,12 +177,20 @@
 
 
       <div class="cmt-workbench-form-grid">
+        {{#if isConsumable}}
+        <label><span>Batch quantity</span><select data-cmt-workbench-field="batch-quantity">
+          {{#each batchOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select></label>
+        <p>{{#if isAmmunition}}10 identical projectiles per batch.{{else}}Identical items.{{/if}} Materials scale with quantity; crafting time stays the same.</p>
+        {{else}}
         <label><span>Equipment Size</span>
           <select data-cmt-workbench-field="equipment-size" {{#if tabs.upgrade}}disabled{{/if}}>
             {{#each equipmentSizes}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
           </select>
         </label>
+        {{/if}}
       </div>
+      <p>{{#if teamTimeBenefit}}Teamwork: all named roles filled — 25% faster work.{{else}}Fill the lead and named support roles for 25% faster work.{{/if}} Assistants add +1 to rolls each, up to +5.</p>
       <div class="cmt-workbench-form-grid">
         {{#each secondaryMaterials}}
           <label><span>{{label}} material</span><select data-cmt-secondary="{{id}}">

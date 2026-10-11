@@ -20,8 +20,8 @@ test("solo and mixed-profession teams are supported with six stable positions", 
   const profiles = [smith, carpenter, leather];
   assert.equal(buildArtisanSlots(plan, [], []).length, 6);
   assert.equal(validateArtisanTeam(plan, ["smith", "carpenter"], profiles).valid, true);
-  assert.equal(validateArtisanTeam(plan, ["carpenter", "smith"], profiles).valid, true);
-  assert.equal(validateArtisanTeam(plan, ["smith", "leather"], profiles).valid, true);
+  assert.equal(validateArtisanTeam(plan, ["carpenter", "smith"], profiles).valid, false);
+  assert.equal(validateArtisanTeam(plan, ["smith", "leather"], profiles).valid, false);
   assert.equal(validateArtisanTeam(plan, ["smith"], profiles).valid, true);
   assert.equal(validateArtisanTeam(plan, [], profiles).valid, false);
   assert.equal(validateArtisanTeam(plan, ["smith", "carpenter", "smith"], profiles).valid, false);

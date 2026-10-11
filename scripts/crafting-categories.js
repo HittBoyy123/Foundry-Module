@@ -1,3 +1,5 @@
+import { isAlchemicalBomb } from "./alchemical-crafting.js";
+import { isAmmunition } from "./ammunition.js";
 import { MODULE_ID } from "./constants.js";
 import { calculateCraftingDC } from "./crafting-dc.js";
 
@@ -5,7 +7,8 @@ export const CRAFTING_CATEGORY_SCHEMA_VERSION = 1;
 export const CRAFTING_RESOURCE_SCHEMA_VERSION = 2;
 
 const CATEGORY_LIST = Object.freeze([
-  ...["potion", "oil", "elixir"].map(category => Object.freeze({ id: `consumable.${category}`, group: "consumable", itemType: "consumable", pf2eCategory: category, label: `${category[0].toUpperCase()}${category.slice(1)} (One Dose)` })),
+  Object.freeze({ id: "ammunition", group: "ammunition", itemType: "ammo", pf2eCategory: null, label: "Ammunition" }),
+  ...["potion", "oil", "elixir", "scroll", "bomb"].map(category => Object.freeze({ id: `consumable.${category}`, group: "consumable", itemType: "consumable", pf2eCategory: category, label: `${category[0].toUpperCase()}${category.slice(1)} (One Dose)` })),
   Object.freeze({ id: "armor.light", group: "armor", itemType: "armor", pf2eCategory: "light", label: "Light Armor" }),
   Object.freeze({ id: "armor.medium", group: "armor", itemType: "armor", pf2eCategory: "medium", label: "Medium Armor" }),
   Object.freeze({ id: "armor.heavy", group: "armor", itemType: "armor", pf2eCategory: "heavy", label: "Heavy Armor" }),
@@ -37,6 +40,8 @@ function itemOtherTags(item) {
  */
 export function categorizeCraftableItem(item) {
   if (!item || typeof item !== "object") return null;
+  if (isAlchemicalBomb(item)) return clone(CRAFTING_CATEGORIES["consumable.bomb"]);
+  if (isAmmunition(item)) return clone(CRAFTING_CATEGORIES.ammunition);
   if (item.type === "consumable") return clone(CRAFTING_CATEGORIES[`consumable.${item.system?.category}`] ?? null);
 
   if (item.type === "armor") {

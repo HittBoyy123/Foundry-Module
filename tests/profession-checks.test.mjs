@@ -4,8 +4,8 @@ import { PROFESSION_ITEM_SOURCES } from "../content/professions.js";
 import { createProfessionLoreSource } from "../scripts/professions.js";
 import { professionSkillChoices, resolveProfessionStatistic } from "../scripts/profession-checks.js";
 
-function fixture() {
-  const profession = structuredClone(PROFESSION_ITEM_SOURCES[0]);
+function fixture(professionId = "blacksmithing") {
+  const profession = structuredClone(PROFESSION_ITEM_SOURCES.find(p => p.flags["pf2e-crafting-material-tiers"].profession.id === professionId));
   const data = profession.flags["pf2e-crafting-material-tiers"].profession;
   const lore = createProfessionLoreSource(data, 4);
   lore.id = "lore-item";
@@ -18,6 +18,13 @@ function fixture() {
   };
   return { actor, lore, statistic, material: data.materialIds[0] };
 }
+
+test("Bookmaking Lore is preferred for the named scroll lead despite having no material mapping", () => {
+  const {actor,statistic}=fixture("bookmaking");
+  assert.deepEqual(professionSkillChoices(actor,"crafting",["wood","mana-crystals"],["bookmaking"]).map(c=>c.id),["prepared-lore","crafting"]);
+  assert.equal(resolveProfessionStatistic(actor,"crafting",["wood"],"prepared-lore",["bookmaking"]).statistic,statistic);
+  assert.throws(()=>resolveProfessionStatistic(actor,"crafting",["wood"],"prepared-lore"),/eligible/);
+});
 
 test("relevant profession Lore is offered for crafting and gathering and uses its prepared statistic", () => {
   const { actor, material, statistic } = fixture();

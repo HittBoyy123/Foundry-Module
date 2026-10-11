@@ -3,10 +3,10 @@ import { getActorProfessions, getProfessionGrant } from "./professions.js";
 /** Only learned profession Lore associated with the actual materials is eligible.
  * Use the prepared PF2e statistic so proficiency and modifiers remain system-owned.
  */
-export function professionSkillChoices(actor, defaultSkill, materialIds = []) {
+export function professionSkillChoices(actor, defaultSkill, materialIds = [], professionIds = []) {
   const choices = [{ id: defaultSkill, label: actor?.getStatistic?.(defaultSkill)?.label ?? defaultSkill }];
   const professions = getActorProfessions(actor).filter(profession =>
-    profession.materialIds.some(materialId => materialIds.map(id => id === "omnipotisium" ? "metal" : id).includes(materialId)));
+    professionIds.includes(profession.id) || profession.materialIds.some(materialId => materialIds.map(id => id === "omnipotisium" ? "metal" : id).includes(materialId)));
   for (const item of Array.from(actor?.items ?? [])) {
     const grant = getProfessionGrant(item);
     if (item.type !== "lore" || grant?.kind !== "lore"
@@ -22,8 +22,8 @@ export function professionSkillChoices(actor, defaultSkill, materialIds = []) {
   return [...choices.slice(1), choices[0]];
 }
 
-export function resolveProfessionStatistic(actor, defaultSkill, materialIds, selectedSkill = defaultSkill) {
-  const choice = professionSkillChoices(actor, defaultSkill, materialIds).find(entry => entry.id === selectedSkill);
+export function resolveProfessionStatistic(actor, defaultSkill, materialIds, selectedSkill = defaultSkill, professionIds = []) {
+  const choice = professionSkillChoices(actor, defaultSkill, materialIds, professionIds).find(entry => entry.id === selectedSkill);
   if (!choice) throw new Error("That skill is no longer eligible for these materials. Select a relevant profession Lore or the standard skill.");
   const statistic = actor?.getStatistic?.(choice.id);
   if (!statistic?.roll) throw new Error("The selected skill is unavailable.");

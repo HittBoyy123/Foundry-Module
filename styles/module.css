@@ -3025,3 +3025,37 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .chat-message .cmt-crafting-work-readout h3,
 .chat-message .cmt-crafting-work-readout h4,
 .chat-message .cmt-crafting-work-readout strong { color: inherit; }
+
+/* Scroll selection follows the native spellbook's compact rank groups. */
+.cmt-scroll-picker { max-width: calc(100vw - 24px); }
+.cmt-scroll-picker .window-content { padding: 12px; }
+.cmt-scroll-picker .cmt-scroll-spellbook { min-width: 0; }
+.cmt-scroll-picker .cmt-spell-search { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.cmt-scroll-picker .cmt-spell-search input { flex: 1; min-width: 0; }
+.cmt-scroll-picker .cmt-spell-list { max-height: min(580px, 60vh); overflow-y: auto; scrollbar-gutter: stable; }
+.cmt-scroll-picker section + section { margin-top: 12px; }
+.cmt-scroll-picker .cmt-spell-rank,
+.cmt-scroll-picker .cmt-spell-row { display: grid; grid-template-columns: minmax(190px,1fr) 100px 100px 100px 28px 28px 32px; gap: 10px; align-items: center; padding: 3px 8px; }
+.cmt-scroll-picker .cmt-spell-rank { min-height: 32px; background: #343039; color: var(--color-light-1, #eee); font-size: 14px; }
+.cmt-scroll-picker .cmt-spell-row:nth-child(odd) { background: #8080802e; }
+.cmt-scroll-picker .cmt-spell-row.selected { background: #b9954c3b; box-shadow: inset 3px 0 #b9954c; }
+.cmt-scroll-picker .cmt-spell-name { display: flex; gap: 7px; align-items: center; margin: 0; min-width: 0; cursor: pointer; font-family: var(--font-primary, inherit); font-size: 16px; font-weight: 600; }
+.cmt-scroll-picker .cmt-spell-name { position: relative; }
+.cmt-scroll-picker .cmt-spell-name input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.cmt-scroll-picker .cmt-spell-square { display: inline-flex; flex: 0 0 18px; width: 18px; height: 18px; align-items: center; justify-content: center; border: 1px solid #9f9277; border-radius: 3px; box-sizing: border-box; }
+.cmt-scroll-picker input:checked + .cmt-spell-square::after { content: "✓"; font-size: 14px; }
+.cmt-scroll-picker input:focus-visible + .cmt-spell-square { outline: 2px solid #d7b76c; outline-offset: 2px; }
+.cmt-scroll-picker .cmt-spell-name img { flex: 0 0 30px; width: 30px; height: 30px; object-fit: cover; border: 1px solid #9f9277; border-radius: 3px; }
+.cmt-scroll-picker .cmt-spell-name > span:not(.cmt-spell-glyph) { overflow-wrap: anywhere; }
+.cmt-scroll-picker .cmt-spell-name.cmt-spell-reference { cursor: default; }
+.cmt-scroll-picker .cmt-spell-glyph { font-family: 'Pathfinder2eActions', sans-serif; font-weight: normal; white-space: nowrap; }
+.cmt-scroll-picker .cmt-spell-row button { background: none; border: 0; box-shadow: none; width: 28px; min-height: 28px; padding: 0; color: inherit; }
+.cmt-scroll-picker .cmt-spell-row button:hover { color: var(--color-text-hyperlink, #b9954c); }
+.cmt-scroll-picker .cmt-spell-defense,
+.cmt-scroll-picker .cmt-spell-range { font-size: 14px; }
+.cmt-scroll-picker .cmt-cantrip-note,
+.cmt-scroll-picker .cmt-spell-hint { font-size: 12px; margin: 7px 8px; opacity: .8; }
+.cmt-scroll-picker [hidden] { display: none !important; }
+@media (max-width: 620px) {
+  .cmt-scroll-picker .cmt-spell-rank, .cmt-scroll-picker .cmt-spell-row { grid-template-columns: minmax(140px,1fr) 65px 65px 80px 24px 24px 28px; gap: 5px; padding-inline: 4px; }
+}
