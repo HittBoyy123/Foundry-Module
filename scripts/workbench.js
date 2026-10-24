@@ -1,4 +1,6 @@
 import { isAlchemicalBomb } from "./alchemical-crafting.js";
+import { calculateWorkBlockDC } from "./crafting-dc.js";
+import { bestCraftingTool } from "./crafting-tools.js";
 import { isScroll, knownCraftingSpells, validateScrollSpell, scrollSpellSnapshot, applyScrollSpell, chooseScrollSpell } from "./scroll-crafting.js";
 import { isAmmunition, isMagicalAmmunition } from "./ammunition.js";
 import { plannedEquipment, validateCraftingEnchantments, addEnchantmentCosts, selectCraftingRune } from "./crafting-enchantments.js";
@@ -400,7 +402,7 @@ async function workbenchContext(application) {
       canResolveTables: craftingEnabled && canEdit && Boolean(project.pendingCraftingTables) && leadPermissions.get(project.leadArtisanUuid) === true && ["reserved", "active"].includes(project.status),
       canSetDC: game.user.isGM && canEdit && ["draft", "reserved", "active"].includes(project.status),
       dcLabel: project.dcOverride === null ? "Recipe default" : String(project.dcOverride),
-      recipeDC: game.user.isGM ? evaluateCraftingRecipe(project.recipe).check.dc : null,
+      recipeDC: game.user.isGM ? calculateWorkBlockDC(project.recipe.tier, project.recipe.check?.adjustment).dc : null,
       canComplete: craftingEnabled && canEdit && project.status === "ready",
       canManage: canEdit,
       expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
@@ -411,7 +413,7 @@ async function workbenchContext(application) {
 
   const preview = evaluation ? {
     craftable: evaluation.craftable,
-    check: evaluation.check,
+    check: calculateWorkBlockDC(evaluation.recipe.tier, evaluation.recipe.check?.adjustment),
     requiredProgress,
     groups: evaluation.ingredientSets[0].groups.map((group) => recipeGroupContext(group, config)),
     materials: craftingMaterialSummary(evaluation.ingredientSets[0].groups, config.materials),
@@ -773,10 +775,7 @@ async function resolveWorkBlock(application, projectId, days, event, manualEdge)
     if (!selectedSkill) return;
   }
   const { statistic, label: skillLabel } = resolveProfessionStatistic(artisan, "crafting", materialIds, selectedSkill, roleProfessions);
-  const dc = project.pendingCraftingTables ? project.pendingCraftingTables.dc : project.dcOverride ?? (project.recipe.check ? evaluateCraftingRecipe(project.recipe, {
-    targetItem: await resolveBaseItem(project.baseItemUuid),
-    inventoryItems: party.items,
-  }).check.dc : null);
+  const dc = project.pendingCraftingTables ? project.pendingCraftingTables.dc : project.dcOverride ?? calculateWorkBlockDC(project.recipe.tier, project.recipe.check?.adjustment)?.dc ?? null;
   const progressBefore = project.currentProgress;
   const upgradeItem = project.upgrade && project.workBlocks.length === 0 ? await resolveBaseItem(project.baseItemUuid) : null;
   if (upgradeItem && project.upgrade.originalSnapshot && upgradeSnapshot(upgradeItem) !== project.upgrade.originalSnapshot)
@@ -784,6 +783,8 @@ async function resolveWorkBlock(application, projectId, days, event, manualEdge)
   const openedChannels = normalizeMasterstrokes(upgradeItem?.flags?.[MODULE_ID]?.crafting?.masterstrokes)
     .filter(entry => entry.edition !== "chad" && entry.result === 3 && !entry.used);
   const modifiers = [];
+  const tool = bestCraftingTool(artisan, project.coreMaterialId, roleProfessions);
+  if (tool) modifiers.push(new game.pf2e.Modifier({ label: `${tool.item.name} — Tier ${tool.tier} tools`, modifier: tool.bonus, type: "item" }));
   const teamworkBonus = projectArtisanCount(project) - 1;
   // This house-rule benefit stacks with profession and other typed bonuses.
   if (teamworkBonus) modifiers.push(new game.pf2e.Modifier({ label: "Artisan teamwork", modifier: teamworkBonus, type: "untyped" }));

@@ -81,6 +81,14 @@ The supplied copy still needs the implemented categories marked as available in 
 
 The previous v0.35.12 review referred to the older (1) document and incorrectly treated all consumable durations as two base days. Use the current Workbench values and the time rule above; do not copy historical duration claims blindly.
 
+## 8. Crafting DC and tool amendment included in the refreshed release
+
+Crafting Work Blocks use base DC **10 × project material tier**, giving DC 10, 20, 30, 40, 50 and 60. Recipe difficulty adjustments still apply; a GM override replaces the calculated DC. Pending checks retain their recorded DC. Gathering and enchanting are unchanged.
+
+The lead crafter uses their best applicable carried tool set for a **+5 item bonus per tier of that tool**. A Tier 3 tool grants **+15**, regardless of the project tier. Multiple sets do not stack, and other item bonuses follow normal stacking rules. Dropped tools and zero-quantity items do not qualify.
+
+GMs configure equipment under **Details → Crafting Tools — GM**, selecting a profession and tool tier. The set must be carried in the lead crafter's inventory and match their relevant profession. Unconfigured equipment does not automatically grant this bonus. Update crafting DC tables and worked examples accordingly, retaining existing gathering DC tables.
+
 ## Verification and limits
 
-465 automated tests pass for this release. Local files were installed with backups. Recent UI changes have not yet been visually verified in a running Foundry world. This review supplies edits and replacement wording; it does not claim to be a reformatted or rendered replacement DOCX.
+468 automated tests pass for this release. Local files were installed with backups. Recent UI changes have not yet been visually verified in a running Foundry world. This review supplies edits and replacement wording; it does not claim to be a reformatted or rendered replacement DOCX.

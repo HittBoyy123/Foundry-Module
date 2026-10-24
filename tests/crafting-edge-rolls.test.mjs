@@ -55,7 +55,7 @@ test("critical success pauses for manual Edge confirmation and preserves the wor
   assert.deepEqual(context.formulas, []);
   assert.equal(context.rollCalls[0].modifiers[0].type, "circumstance");
   assert.equal(context.rollCalls[0].modifiers[0].modifier, 2);
-  assert.equal(context.rollCalls[0].dc.value, 19);
+  assert.equal(context.rollCalls[0].dc.value, 20);
   assert.equal(context.saved().nextWorkBonus, 2);
   assert.equal(context.rendered[0].craftingEdge.name, "Stable Integration");
   assert.equal(context.messages.at(-1).rolls.length, 0);

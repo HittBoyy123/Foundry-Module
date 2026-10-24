@@ -60,3 +60,9 @@ export function calculateCraftingDC(tier, adjustment = "normal") {
 export function listCraftingDifficultyAdjustments() {
   return Object.entries(CRAFTING_DIFFICULTY_ADJUSTMENTS).map(([id, value]) => ({ id, ...value }));
 }
+
+/** Work Blocks alone use the campaign's ten-per-tier scale. */
+export function calculateWorkBlockDC(tier, adjustment = "normal") {
+  const check = calculateCraftingDC(tier, adjustment);
+  return check ? { ...check, baseDC: check.tier * 10, dc: check.tier * 10 + check.modifier } : null;
+}

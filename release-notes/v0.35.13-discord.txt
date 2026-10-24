@@ -1,6 +1,8 @@
 **Wrathmaker v0.35.13**
 
 **Faster crafting**
+- Crafting Work Block DCs are now **10 × project tier**. Gathering and enchanting are unchanged.
+- The best applicable tool set grants **+5 × the tool’s own tier**: Tier 3 tools give +15, regardless of project tier. GMs configure tools on their Details tab.
 - New projects take another one-third less base time, rounded up, minimum 1 day. Existing projects keep their recorded duration.
 - GMs can set a custom project DC. Workbench DC readouts are GM-only.
 

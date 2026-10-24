@@ -2,6 +2,7 @@ import { insertFocusSlotControl } from "./spell-focus.js";
 import { materialRuneSlots } from "./property-runes.js";
 import { insertMasterstrokeControls } from "./masterstrokes.js";
 import { insertMasterstrokeEditor } from "./masterstroke-editor.js";
+import { insertCraftingToolEditor } from "./crafting-tools.js";
 import { installCraftingDescription } from "./crafting-description.js";
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
@@ -335,6 +336,7 @@ export function injectItemSheet(application, html, getConfig) {
   if (!item || !root || root.querySelector('[data-cmt-sheet-controls="true"]')) return;
 
   const config = getConfig();
+  insertCraftingToolEditor(item, root);
   const craftingItemType = getCraftingItemType(item);
   if (!itemTypeIsSupported(config, craftingItemType)) return;
   insertControls(application, item, root, config, craftingItemType);
