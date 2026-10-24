@@ -193,6 +193,7 @@ export function normalizeCraftingProject(source) {
     recipe,
     coreMaterialId: text(source.coreMaterialId),
     coreTier: integer(source.coreTier, recipe.tier, 1, 6),
+    dcOverride: Number.isSafeInteger(source.dcOverride) && source.dcOverride >= 0 ? source.dcOverride : null,
     leadArtisanUuid: text(source.leadArtisanUuid),
     leadArtisanName: text(source.leadArtisanName),
     contributors,
@@ -208,6 +209,7 @@ export function normalizeCraftingProject(source) {
     masterstrokes: normalizeMasterstrokes(source.masterstrokes),
     conservationCredits: Array.isArray(source.conservationCredits) ? clone(source.conservationCredits) : [],
     nextWorkBonus: source.nextWorkBonus === 2 ? 2 : 0,
+    pendingCraftingTables: source.pendingCraftingTables && typeof source.pendingCraftingTables === "object" ? clone(source.pendingCraftingTables) : null,
     teamworkRemainder: Math.min(0.75, Math.max(0, Number(source.teamworkRemainder) || 0)),
     downtimeSpent: integer(source.downtimeSpent, 0, 0),
     workBlocks: (Array.isArray(source.workBlocks) ? source.workBlocks : []).map(normalizeWorkBlock),
@@ -244,6 +246,16 @@ export function normalizeCraftingWorkbench(source) {
     }
   }
   return { schemaVersion: CRAFTING_WORKBENCH_SCHEMA_VERSION, projects };
+}
+
+export function setProjectDC(source, value, user = {}) {
+  if (!user.isGM) throw new Error("Only a GM can change the crafting DC.");
+  const project = normalizeCraftingProject(source);
+  if (!["draft", "reserved", "active"].includes(project.status)) throw new Error("This project is no longer accepting Work Blocks.");
+  const dc = value === "" || value === null ? null : Number(value);
+  if (dc !== null && (!Number.isSafeInteger(dc) || dc < 0)) throw new Error("Enter a whole-number DC of zero or higher, or leave blank for the recipe DC.");
+  return audit({ ...project, dcOverride: dc }, "dc-changed", dc === null ? "GM restored the recipe DC." : `GM set the crafting DC to ${dc}.`, user,
+    { previous: project.dcOverride, dcOverride: dc });
 }
 
 function audit(project, action, message, user = {}, details = {}) {

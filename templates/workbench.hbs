@@ -225,7 +225,7 @@
                 </li>
               {{/each}}
             </ul>
-            <p>DC {{preview.check.dc}} · Days required: {{estimatedDays}}</p>
+            <p>{{#if isGM}}DC {{preview.check.dc}} · {{/if}}Days required: {{estimatedDays}}</p>
             <p class="cmt-crafting-duration-hint">Based on successful checks by the selected team. Critical successes can shorten this; failed checks can extend it.</p>
             <strong>{{#if preview.craftable}}{{localize "CMT.Workbench.ReadyToReserve"}}{{else}}{{localize "CMT.Workbench.MissingResources"}}{{/if}}</strong>
           {{else}}
@@ -354,6 +354,7 @@
 
           </div>
           {{#if teamworkBonus}}<p><strong>Artisan teamwork:</strong> +{{teamworkBonus}} to Work Block rolls.</p>{{/if}}
+          {{#if canSetDC}}<div class="cmt-project-dc"><span><strong>Crafting DC:</strong> {{dcLabel}} (Recipe DC {{recipeDC}})</span><button type="button" class="cmt-project-accent-button" data-cmt-project-action="set-dc"><i class="fa-solid fa-pen" aria-hidden="true"></i> Set DC</button></div>{{/if}}
           {{#if nextWorkBonus}}<p><strong>Stable Integration:</strong> +2 circumstance bonus to the next Work Block.</p>{{/if}}
           {{#if masterstrokes.length}}<details open><summary>Masterstrokes</summary><ul>
             {{#each masterstrokes}}<li><span><strong>{{name}}</strong> — {{description}}</span></li>{{/each}}
@@ -374,6 +375,7 @@
             </details>
           {{/if}}
           {{#if canWork}}
+          {{!-- Pending table results must be resolved before another Work Block. --}}
             <div class="cmt-workbench-work-block">
               <label>
                 <span>{{localize "CMT.Workbench.WorkBlock"}}</span>
@@ -392,6 +394,8 @@
             </div>
           {{/if}}
           <footer>
+            {{#if pendingCraftingTables}}<p class="cmt-pending-tables-notice">Critical success saved — awaiting Crafting Edge / Masterstroke results.</p>{{/if}}
+            {{#if canResolveTables}}<button type="button" class="cmt-project-accent-button" data-cmt-project-action="resolve-tables" title="Resolve crafting tables" aria-label="Complete Craft — Resolve crafting tables"><i class="fa-solid fa-dice" aria-hidden="true"></i> Complete Craft</button>{{/if}}
             {{#if canRecover}}
               <button type="button" data-cmt-project-action="recover"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Recover Missing Item</button>
             {{/if}}

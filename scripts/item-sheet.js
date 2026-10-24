@@ -1,6 +1,7 @@
 import { insertFocusSlotControl } from "./spell-focus.js";
 import { materialRuneSlots } from "./property-runes.js";
 import { insertMasterstrokeControls } from "./masterstrokes.js";
+import { insertMasterstrokeEditor } from "./masterstroke-editor.js";
 import { installCraftingDescription } from "./crafting-description.js";
 import { DEFAULT_ITEM_FLAGS, MODULE_ID } from "./constants.js";
 import { markFormulaContext, resolveMarkText } from "./mark-formulas.js";
@@ -339,6 +340,7 @@ export function injectItemSheet(application, html, getConfig) {
   insertControls(application, item, root, config, craftingItemType);
   insertFocusSlotControl(item, root);
   insertMasterstrokeControls(item, root);
+  insertMasterstrokeEditor(item, root);
 }
 
 export function registerItemSheetHooks(getConfig) {

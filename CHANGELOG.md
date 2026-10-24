@@ -1,3 +1,35 @@
+# v0.35.13 — 24 October 2026
+
+**Wrathmaker v0.35.13**
+
+**Faster crafting**
+- New projects take another one-third less base time, rounded up, minimum 1 day. Existing projects keep their recorded duration.
+- GMs can set a custom project DC. Workbench DC readouts are GM-only.
+
+**Crafting Edges & Masterstrokes**
+- Critical successes now pause for manual table rolls. Your crafting check is saved while you decide.
+- Spend 1 Hero Point on the lead crafter's sheet to reroll either table and choose either result. Deduct the point manually.
+- The lead crafter's owner or GM uses **Complete Craft** to confirm the final results. Progress and Masterstrokes apply once.
+- Opening either table keeps the results window open and preserves your selections.
+- GMs and assistant GMs can add, replace or remove a compatible Masterstroke in an item's Details tab. Replacing it resets its limited uses.
+
+**Nephilim Bonds**
+- Each shared party Nephilim point grants each member one bond slot. Character level no longer unlocks bonds.
+- Repeat choices stack. Losing points suspends excess bonds; choices return when the points do.
+- Five bonds unlock at 2 points: **Ao's Communion, Ao's Pincer, Nephilim Charge, Valor of Ao and Ao's Stamina**.
+- Ally bonds work with another active holder in the party, without a distance limit.
+- Charge: move 20 feet before your next melee Strike on the same turn, then enable the toggle for +3 to hit. The toggle clears afterward.
+- Stamina adds one prepared/spontaneous slot at each accessible rank per selection.
+
+**Workbench polish**
+- Red-and-gold controls, clearer GM DC information, and a narrower results dialog with better text wrapping.
+
+Playtest rules remain subject to change based on feedback and gameplay.
+
+Validation: 465 automated tests passed. Local installation files were backed up and verified. Recent UI changes have not yet been visually verified in a running Foundry world.
+
+Download the Discord text and rulebook review attached to this release.
+
 # v0.35.12 — 11 October 2026
 
 **Wrathmaker v0.35.12**

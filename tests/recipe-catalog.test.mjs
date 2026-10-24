@@ -33,7 +33,7 @@ test("a broad recipe becomes a tier-specific recipe for the dropped PF2e item", 
   assert.equal(recipe.ingredientSets[0].groups[0].options[0].tierMode, "exact");
   assert.equal(recipe.ingredientSets[0].groups[1].options[0].tierMode, "minimum");
   assert.equal(recipe.ingredientSets[0].groups[1].options[0].tier, 2);
-  assert.equal(defaultProjectProgress(recipe), 4);
+  assert.equal(defaultProjectProgress(recipe), 3);
 });
 
 test("compatible recipe selection follows the actual PF2e item category", () => {
@@ -46,10 +46,10 @@ test("compatible recipe selection follows the actual PF2e item category", () => 
   }), /not compatible/iu);
 });
 
-test("base crafting days are reduced by twenty percent, rounded up to at least one", () => {
+test("current crafting days receive a further one-third reduction, rounded up to at least one", () => {
   const recipe = buildCraftingRecipeFromBand("weapon-sword", { targetItem: sword, tier: 2 });
   recipe.ingredientSets[0].groups = [recipe.ingredientSets[0].groups[0]];
-  for (const [units, days] of [[1,1], [3,3], [5,4], [10,8], [15,12], [19,16]]) {
+  for (const [units, days] of [[1,1], [2,2], [3,2], [5,3], [10,6], [15,8], [19,11]]) {
     recipe.ingredientSets[0].groups[0].options[0].units = units;
     assert.equal(defaultProjectProgress(recipe), days);
     assert.equal(recipe.ingredientSets[0].groups[0].options[0].units, units);

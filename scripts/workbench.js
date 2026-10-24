@@ -6,8 +6,8 @@ import { openEnchanting, runeSummary } from "./enchanting.js";
 import { materialBenefits } from "./material-benefits.js";
 import { retireProjectMarks } from "./retired-marks.js";
 import { artisanSlotChoices, availableArtisanProfiles, canControlArtisan, resolveDroppedArtisan, slotAllowsArtisan, requestArtisanAssignment, installArtisanAssignmentSocket } from "./artisan-selection.js";
-import { craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
-import { eligibleMasterstroke, masterstrokeCategory } from "./masterstroke-rules.js";
+import { CRAFTING_EDGES, craftingEdgeDie, workYield, normalizeMasterstrokes } from "./crafting-edges.js";
+import { eligibleMasterstroke, masterstrokeCategory, masterstrokeTable } from "./masterstroke-rules.js";
 import { projectDayPips } from "./project-day-pips.js";
 import { itemTraitSummary } from "./item-trait-summary.js";
 import { EQUIPMENT_SIZES, normalizeEquipmentSize, scaleEquipmentRecipe } from "./equipment-size.js";
@@ -28,6 +28,7 @@ import { getCraftingResourceData } from "./crafting-categories.js";
 import { evaluateCraftingRecipe } from "./crafting-recipes.js";
 import {
   advanceCraftingProject,
+  setProjectDC,
   projectArtisanCount,
   projectWorkRate,
   buildConsumptionPlan,
@@ -395,7 +396,11 @@ async function workbenchContext(application) {
       teamworkBonus: projectArtisanCount(project) - 1,
       estimatedDays: Math.ceil((project.requiredProgress - project.currentProgress - project.teamworkRemainder) / projectWorkRate(project)),
       markCount: project.artisanMarks.length,
-      canWork: craftingEnabled && canEdit && leadPermissions.get(project.leadArtisanUuid) === true && ["reserved", "active"].includes(project.status),
+      canWork: craftingEnabled && canEdit && !project.pendingCraftingTables && leadPermissions.get(project.leadArtisanUuid) === true && ["reserved", "active"].includes(project.status),
+      canResolveTables: craftingEnabled && canEdit && Boolean(project.pendingCraftingTables) && leadPermissions.get(project.leadArtisanUuid) === true && ["reserved", "active"].includes(project.status),
+      canSetDC: game.user.isGM && canEdit && ["draft", "reserved", "active"].includes(project.status),
+      dcLabel: project.dcOverride === null ? "Recipe default" : String(project.dcOverride),
+      recipeDC: game.user.isGM ? evaluateCraftingRecipe(project.recipe).check.dc : null,
       canComplete: craftingEnabled && canEdit && project.status === "ready",
       canManage: canEdit,
       expanded: application.workbenchState.expandedProjectIds?.includes(project.id) === true,
@@ -441,6 +446,7 @@ async function workbenchContext(application) {
   return {
     party,
     selectedProject,
+    isGM: game.user.isGM === true,
     disassemblyQueue, disassemblyTotals: [...totals.values()], upgradeError,
     disassemblyQueueCount: disassemblyQueue.length,
     equipmentSizes: EQUIPMENT_SIZES.map(size => ({ ...size, selected: size.id === normalizeEquipmentSize(application.workbenchState.tab === "upgrade" ? baseItem?.system?.size : application.workbenchState.equipmentSize) })),
@@ -671,20 +677,81 @@ async function createAndReserve(application) {
   ui.notifications.info(format("CMT.Workbench.ProjectCreated", { project: project.name }, `${project.name} was created and its resources were reserved.`));
 }
 
-export async function rollWorkBlock(application, projectId, days, event) {
+export async function editProjectDC(application, projectId) {
+  if (!game.user.isGM) throw new Error("Only a GM can change the crafting DC.");
+  const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
+  if (!canEditParty(party)) throw new Error(localize("CMT.Workbench.NotEditable"));
+  const project = projectState(party).projects.find(entry => entry.id === projectId);
+  if (!project) throw new Error(localize("CMT.Workbench.ProjectMissing"));
+  const value = await foundry.applications.api.DialogV2.prompt({
+    window: { title: "GM — Crafting DC" },
+    content: `<p>Applies to future Work Blocks for this project. Leave blank to restore the normal recipe DC. Previous rolls are unchanged.</p><label>Custom DC <input type="number" name="dc" min="0" step="1" value="${project.dcOverride ?? ""}" placeholder="Recipe default"></label>`,
+    ok: { label: "Save DC", callback: (_event, button) => ({ value: button.form.elements.dc.value }) }, rejectClose: false,
+  });
+  if (!value || typeof value !== "object") return;
+  const latest = projectState(party);
+  const current = latest.projects.find(entry => entry.id === projectId);
+  if (!current) throw new Error(localize("CMT.Workbench.ProjectMissing"));
+  if (!game.user.isGM || !canEditParty(party)) throw new Error("Only a GM can change the crafting DC.");
+  await saveWorkbench(party, replaceProject(latest, setProjectDC(current, value.value, { ...userAuditIdentity(), isGM: true })));
+}
+
+export async function resolveCraftingTables(application, projectId) {
+  const party = partyActors().find(entry => entry.id === application.workbenchState.partyId);
+  const project = projectState(party).projects.find(entry => entry.id === projectId);
+  if (!project?.pendingCraftingTables) throw new Error("There is no pending table result for this project.");
+  const artisan = await fromUuid(project.leadArtisanUuid);
+  if (!canEditParty(party) || !canControlArtisan(artisan, game.user)) throw new Error("Only the lead crafter's owner or a GM can resolve these results.");
+  const item = await resolveBaseItem(project.baseItemUuid);
+  if (!item) throw new Error("The original item is unavailable.");
+  const die = craftingEdgeDie(project, project.pendingCraftingTables.days);
+  const category = masterstrokeCategory(item);
+  const canMasterstroke = die === 4 && project.currentProgress + workYield(project, project.pendingCraftingTables.days) >= project.requiredProgress
+    && item.type !== "consumable" && !isAmmunition(item) && !isAlchemicalBomb(item) && !project.masterstrokes.length
+    && !(project.upgrade && item.flags?.[MODULE_ID]?.crafting?.masterstrokes?.length);
+  const content = `<p>Your critical success is saved.</p><p>Roll <strong>Crafting Edge (d${die})</strong> in Rollable Tables, then select the final result below.</p><p>If a finishing Masterstroke Opportunity is eligible, roll <strong>Masterstroke — ${category === "weapon" ? "Weapons" : "Equipment"}</strong> and select that result too.</p>
+    <p><strong>Hero Points:</strong> spend 1 on the lead crafter's character sheet before rerolling either table. Choose either result.</p><p>These manual rolls and Hero Point spending are not deducted by this form.</p>
+    <label>Final Crafting Edge <select name="edge"><option value="">Select your result</option>${CRAFTING_EDGES.slice(0, die).map((entry,index) => `<option value="${index+1}">${index+1} — ${escapeHtml(entry.name)}</option>`).join("")}</select></label>
+    ${canMasterstroke ? `<label>Final Masterstroke (only for Edge 4) <select name="masterstroke"><option value="">Select your result</option>${masterstrokeTable(category).map((entry,index) => eligibleMasterstroke(item,index+1) ? `<option value="${index+1}">${index+1} — ${escapeHtml(entry.name)}</option>` : "").join("")}</select></label>` : "<p>No Masterstroke can be added for this block. An ineligible Opportunity uses Accelerated Work.</p>"}
+    <label>Conserved resource (only for Edge 2) <select name="resource">${project.reservations.filter(entry => entry.units > 0).map(entry => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.itemName)}</option>`).join("")}</select></label>`;
+  const tableButtons = '<div class="cmt-resolve-table-links"><button type="button" data-cmt-open-table="wmCraftEdge00001">Open Edge Table</button>' + (canMasterstroke ? '<button type="button" data-cmt-open-table="' + (category === "weapon" ? "wmMasterstroke01" : "wmMasterstroke02") + '">Open Masterstroke Table</button>' : '') + '</div>';
+  while (true) {
+    const result = await foundry.applications.api.DialogV2.wait({ window: { title: "Resolve Crafting Tables" }, classes: ["dialog", "cmt-resolve-crafting"], position: { width: 560 }, content: content + tableButtons,
+      render: (_event, dialog) => {
+        dialog.element.querySelectorAll("[data-cmt-open-table]").forEach(button => button.addEventListener("click", async event => {
+          event.preventDefault(); event.stopPropagation();
+          const table = Array.from(game.tables ?? []).find(table => table.flags?.[MODULE_ID]?.craftingTable === button.dataset.cmtOpenTable);
+          if (!table) return ui.notifications.error("The crafting table is missing. Ask the GM to refresh the module tables.");
+          try { await table.sheet.render(true); }
+          catch (error) { ui.notifications.error(error.message); }
+        }));
+      },
+      buttons: [
+        { action: "apply", label: "Apply Final Results", callback: (_event,button) => ({ result: Number(button.form.elements.edge.value), masterstrokeResult: Number(button.form.elements.masterstroke?.value), reservationId: button.form.elements.resource.value }) },
+        { action: "later", label: "Later", callback: () => null }], rejectClose: false });
+    if (!result) return;
+    await rollWorkBlock(application, projectId, project.pendingCraftingTables.days, undefined, result);
+    return;
+  }
+}
+
+export async function rollWorkBlock(application, projectId, days, event, manualEdge = null) {
   const key = application.workbenchState.partyId;
   if (workRollLocks.has(key)) throw new Error("A Work Block is already being rolled for this party.");
   workRollLocks.add(key);
-  try { return await resolveWorkBlock(application, projectId, days, event); }
+  try { return await resolveWorkBlock(application, projectId, days, event, manualEdge); }
   finally { workRollLocks.delete(key); }
 }
 
-async function resolveWorkBlock(application, projectId, days, event) {
+async function resolveWorkBlock(application, projectId, days, event, manualEdge) {
   requireWorkbench();
   const party = partyActors().find((entry) => entry.id === application.workbenchState.partyId);
   const workbench = projectState(party);
   const project = workbench.projects.find((entry) => entry.id === projectId);
   if (!project) throw new Error(localize("CMT.Workbench.ProjectMissing"));
+  if (project.pendingCraftingTables && !manualEdge) throw new Error("Resolve the pending Crafting Tables before rolling another Work Block.");
+  if (manualEdge && !project.pendingCraftingTables) throw new Error("There is no pending table result to apply.");
+  if (project.pendingCraftingTables) days = project.pendingCraftingTables.days;
   if (!canEditParty(party)) throw new Error(localize("CMT.Workbench.NotEditable"));
   if (!["reserved", "active"].includes(project.status)) throw new Error("This project cannot receive another Work Block.");
   const artisan = await fromUuid(project.leadArtisanUuid);
@@ -695,7 +762,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
     ...project.reservations.map(reservation => reservation.materialId)].filter(Boolean))];
   const choices = professionSkillChoices(artisan, "crafting", materialIds, roleProfessions);
   let selectedSkill = choices[0]?.id ?? "crafting";
-  if (choices.length > 1) {
+  if (choices.length > 1 && !project.pendingCraftingTables) {
     selectedSkill = await foundry.applications.api.DialogV2.prompt({
       window: { title: "Work Block Skill" },
       content: `<label>Skill <select name="workSkill">${choices.map(choice =>
@@ -706,10 +773,10 @@ async function resolveWorkBlock(application, projectId, days, event) {
     if (!selectedSkill) return;
   }
   const { statistic, label: skillLabel } = resolveProfessionStatistic(artisan, "crafting", materialIds, selectedSkill, roleProfessions);
-  const dc = project.recipe.check ? evaluateCraftingRecipe(project.recipe, {
+  const dc = project.pendingCraftingTables ? project.pendingCraftingTables.dc : project.dcOverride ?? (project.recipe.check ? evaluateCraftingRecipe(project.recipe, {
     targetItem: await resolveBaseItem(project.baseItemUuid),
     inventoryItems: party.items,
-  }).check.dc : null;
+  }).check.dc : null);
   const progressBefore = project.currentProgress;
   const upgradeItem = project.upgrade && project.workBlocks.length === 0 ? await resolveBaseItem(project.baseItemUuid) : null;
   if (upgradeItem && project.upgrade.originalSnapshot && upgradeSnapshot(upgradeItem) !== project.upgrade.originalSnapshot)
@@ -722,7 +789,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
   if (teamworkBonus) modifiers.push(new game.pf2e.Modifier({ label: "Artisan teamwork", modifier: teamworkBonus, type: "untyped" }));
   if (project.nextWorkBonus) modifiers.push(new game.pf2e.Modifier({ label: "Stable Integration", modifier: 2, type: "circumstance" }));
   if (openedChannels.length) modifiers.push(new game.pf2e.Modifier({ label: "Opened Channel", modifier: 2, type: "circumstance" }));
-  const roll = await statistic.roll({
+  const roll = project.pendingCraftingTables ? { total: project.pendingCraftingTables.rollTotal, degreeOfSuccess: 3 } : await statistic.roll({
     modifiers,
     event,
     dc: dc === null ? null : { value: dc },
@@ -735,38 +802,23 @@ async function resolveWorkBlock(application, projectId, days, event) {
   const tableRolls = [];
   let craftingEdge = null;
   if (degree === "criticalSuccess") {
-    const edgeRoll = await new Roll(`1d${craftingEdgeDie(project, days)}`).evaluate();
-    tableRolls.push(edgeRoll);
-    craftingEdge = { result: Number(edgeRoll.total) };
-    if (craftingEdge.result === 2) {
-      const resources = project.reservations.filter(entry => entry.units > 0);
-      const selected = resources.length > 1 ? await foundry.applications.api.DialogV2.prompt({
-        window: { title: "Material Conservation" },
-        content: `<p>Record a non-sellable workshop credit worth up to 10% of one Resource Unit. No stash items are created.</p><label>Resource <select name="resource">${resources.map(entry => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.itemName)} · Tier ${entry.tier}</option>`).join("")}</select></label>`,
-        ok: { label: "Record Credit", callback: (_event, button) => button.form.elements.resource.value },
-        rejectClose: false,
-      }) : resources[0]?.id;
-      craftingEdge.reservationId = selected || resources[0]?.id;
+    if (!project.pendingCraftingTables) {
+      const fresh = projectState(party);
+      if (JSON.stringify(fresh.projects.find(entry => entry.id === projectId)) !== JSON.stringify(project))
+        throw new Error("This project changed during the roll. Refresh before continuing.");
+      if (!canControlArtisan(artisan, game.user)) throw new Error("You no longer control the lead artisan.");
+      const pending = { ...project, pendingCraftingTables: { days, rollTotal: Number(roll.total), dc, skillLabel }, updatedAt: Date.now() };
+      await saveWorkbench(party, replaceProject(fresh, pending));
+      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: artisan }), content: `<p><strong>${escapeHtml(project.name)} — Critical Success</strong></p><p>Roll the Crafting Edge table using 1d${craftingEdgeDie(project, days)}. You may spend 1 Hero Point to reroll and choose either result. Record Hero Point spending on the lead crafter's sheet. Then use <strong>Resolve Crafting Tables</strong> in the Workbench. Progress is saved after confirmation.</p>` });
+      return;
     }
-    if (craftingEdge.result === 4 && project.currentProgress + workYield(project, days) >= project.requiredProgress) {
-      const baseItem = await resolveBaseItem(project.baseItemUuid);
-      if (!baseItem) throw new Error("The original item is unavailable; restore it before rolling a Masterstroke.");
-      craftingEdge.hasMasterstroke = (baseItem.type === "consumable" || isAmmunition(baseItem) || isAlchemicalBomb(baseItem)) || Boolean(project.masterstrokes?.length || (project.upgrade && baseItem.flags?.[MODULE_ID]?.crafting?.masterstrokes?.length));
-      if (!craftingEdge.hasMasterstroke) {
-        craftingEdge.masterstrokeCategory = masterstrokeCategory(baseItem);
-        if (![1,2,3,4,5,6,7,8].some(result => eligibleMasterstroke(baseItem, result))) throw new Error("No Masterstroke is compatible with this item.");
-        // Rejected dice remain visible in the crafting chat roll list.
-        for (let attempt = 0; attempt < 100; attempt++) {
-          const masterstrokeRoll = await new Roll("1d8").evaluate();
-          tableRolls.push(masterstrokeRoll);
-          if (eligibleMasterstroke(baseItem, Number(masterstrokeRoll.total))) {
-            craftingEdge.masterstrokeResult = Number(masterstrokeRoll.total);
-            break;
-          }
-        }
-        if (!craftingEdge.masterstrokeResult) throw new Error("No compatible Masterstroke was rolled; the project was not advanced. Retry the block.");
-      }
-    }
+    craftingEdge = { ...manualEdge };
+    const baseItem = await resolveBaseItem(project.baseItemUuid);
+    if (!baseItem) throw new Error("The original item is unavailable.");
+    craftingEdge.hasMasterstroke = (baseItem.type === "consumable" || isAmmunition(baseItem) || isAlchemicalBomb(baseItem)) || Boolean(project.masterstrokes?.length || (project.upgrade && baseItem.flags?.[MODULE_ID]?.crafting?.masterstrokes?.length));
+    craftingEdge.masterstrokeCategory = masterstrokeCategory(baseItem);
+    if (craftingEdge.result === 4 && project.currentProgress + workYield(project, days) >= project.requiredProgress && !craftingEdge.hasMasterstroke
+      && !eligibleMasterstroke(baseItem, craftingEdge.masterstrokeResult)) throw new Error("Choose a compatible Masterstroke from your final table result.");
   }
   const updated = advanceCraftingProject(project, {
     craftingEdge,
@@ -778,6 +830,7 @@ async function resolveWorkBlock(application, projectId, days, event) {
     artisanName: artisan.name,
     user: userAuditIdentity(),
   });
+  updated.pendingCraftingTables = null;
   const freshWorkbench = projectState(party);
   if (!canControlArtisan(artisan, game.user)) throw new Error("You no longer have permission to roll for the lead artisan.");
   const freshProject = freshWorkbench.projects.find(entry => entry.id === projectId);
@@ -1763,6 +1816,14 @@ export function createWorkbenchApplication() {
             await this.render({ force: true });
           } catch (error) { ui.notifications.error(error.message); }
           finally { button.disabled = false; }
+        });
+        card.querySelector('[data-cmt-project-action="set-dc"]')?.addEventListener("click", async () => {
+          try { await editProjectDC(this, projectId); await this.render({ force: true }); }
+          catch (error) { ui.notifications.error(error.message); }
+        });
+        card.querySelector('[data-cmt-project-action="resolve-tables"]')?.addEventListener("click", async () => {
+          try { await resolveCraftingTables(this, projectId); await this.render({ force: true }); }
+          catch (error) { ui.notifications.error(error.message); }
         });
         card.querySelector('[data-cmt-project-action="roll-work"]')?.addEventListener("click", async (event) => {
           try {

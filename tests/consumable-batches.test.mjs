@@ -33,7 +33,7 @@ test("batches multiply all resources but preserve duration and ignore equipment 
     const recipe=buildCraftingRecipeFromBand("consumable-potion", {targetItem:potion(6),tier:3,batchQuantity});
     assert.equal(recipe.result.quantity,batchQuantity);
     assert.deepEqual(recipe.ingredientSets[0].groups.map(g=>g.options[0].units),[batchQuantity,batchQuantity,batchQuantity]);
-    assert.equal(defaultProjectProgress(recipe),3);
+    assert.equal(defaultProjectProgress(recipe),2);
     assert.deepEqual(scaleEquipmentRecipe(recipe,"tiny"),recipe);
     assert.equal(recipe.ingredientSets[0].groups[1].options[0].tier,1);
   }

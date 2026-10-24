@@ -110,7 +110,8 @@ export function buildCraftingRecipeFromBand(bandId, {
 export function defaultProjectProgress(recipe) {
   const normalized = normalizeCraftingRecipe(recipe);
   const firstSet = normalized.ingredientSets[0];
-  return Math.max(1, Math.ceil(0.8 * firstSet.groups.reduce((total, group) => (
+  const previousDays = Math.max(1, Math.ceil(0.8 * firstSet.groups.reduce((total, group) => (
     total + Math.min(...group.options.map((option) => option.units)) / (normalized.categoryId === "ammunition" ? normalized.result.quantity / 10 : normalized.categoryId.startsWith("consumable.") ? normalized.result.quantity : 1)
   ), 0)));
+  return Math.max(1, Math.ceil(previousDays * 2 / 3));
 }

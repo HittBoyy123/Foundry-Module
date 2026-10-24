@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   advanceCraftingProject,
+  setProjectDC,
   buildConsumptionPlan,
   completeCraftingProject,
   createCraftingProject,
@@ -55,6 +56,21 @@ function swordProject() {
     requiredProgress: 6,
   }, { id: "player", name: "Player" });
 }
+
+test("GM DC overrides validate, persist and reset without changing existing work", () => {
+  const project = swordProject();
+  assert.equal(project.dcOverride, null);
+  assert.throws(() => setProjectDC(project, 22, { isGM: false }), /Only a GM/);
+  for (const value of [-1, 2.5, 'abc', Infinity]) assert.throws(() => setProjectDC(project, value, { isGM: true }), /whole-number/);
+  const changed = setProjectDC(project, '22', { isGM: true, id: 'gm' });
+  assert.equal(changed.dcOverride, 22);
+  assert.equal(normalizeCraftingWorkbench({ projects: [changed] }).projects[0].dcOverride, 22);
+  assert.deepEqual(changed.workBlocks, project.workBlocks);
+  assert.equal(changed.audit.at(-1).action, 'dc-changed');
+  assert.equal(setProjectDC(changed, '', { isGM: true }).dcOverride, null);
+  assert.equal(setProjectDC(changed, 0, { isGM: true }).dcOverride, 0);
+  assert.throws(() => setProjectDC({ ...project, status: 'completed' }, 10, { isGM: true }), /no longer/);
+});
 
 test("Work Blocks follow the 1–5 day progress table", () => {
   assert.equal(progressForWorkBlock(5, "criticalSuccess"), 8);

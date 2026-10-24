@@ -6,6 +6,12 @@ export async function ensureCraftingRollTables({ game: world = globalThis.game, 
   if (!world?.user?.isGM || world.system?.id !== "pf2e") return [];
   const primary = Array.from(world.users ?? []).filter(user => user.active && user.isGM).sort((a, b) => a.id.localeCompare(b.id))[0];
   if (primary?.id !== world.user.id) return [];
+  // Correct the former automatic-workflow instructions without replacing results or ownership.
+  for (const table of Array.from(world.tables ?? [])) {
+    const source = CRAFTING_ROLL_TABLES.find(source => source._id === table.flags?.[MODULE_ID]?.craftingTable);
+    if (source && /Workbench (?:already resolves|rolls attach|rolls select)/.test(table.description ?? ""))
+      await table.update({ description: source.description });
+  }
   const existing = new Set(Array.from(world.tables ?? []).map(table => table.flags?.[MODULE_ID]?.craftingTable));
   const missing = CRAFTING_ROLL_TABLES.filter(source => !existing.has(source._id)).map(source => {
     const copy = structuredClone(source);

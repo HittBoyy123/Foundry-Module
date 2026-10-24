@@ -597,7 +597,21 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 .pf2e-crafting-material-tiers .cmt-workbench-project details ul { margin-bottom: 0; padding-left: 1rem; }
 .pf2e-crafting-material-tiers .cmt-workbench-project details li { display: flex; justify-content: space-between; gap: 1rem; }
 .pf2e-crafting-material-tiers .cmt-workbench-work-block { display: grid; grid-template-columns: minmax(8rem, 1fr) auto; gap: 0.5rem; align-items: end; margin-top: 0.55rem; }
-.pf2e-crafting-material-tiers .cmt-workbench-project footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.55rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-project footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.5rem; margin-top: 0.55rem; }
+.cmt-workbench-project .cmt-pending-tables-notice { flex: 1 1 100%; min-width: 0; }
+.cmt-workbench-project .cmt-project-dc { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-block: 0.6rem; }
+.pf2e-crafting-material-tiers .cmt-workbench-project button.cmt-project-accent-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  flex: 0 0 auto; width: auto; max-width: 100%; height: auto; min-height: 34px;
+  padding: 0.45rem 0.7rem; line-height: 1.25; white-space: normal; overflow-wrap: anywhere;
+  background: var(--cmt-workbench-red, #5e0000); color: #e9d7a1;
+  border: 1px solid #b18b36; border-radius: 5px;
+}
+.pf2e-crafting-material-tiers .cmt-workbench-project button.cmt-project-accent-button i { color: inherit; flex-shrink: 0; }
+.pf2e-crafting-material-tiers .cmt-workbench-project button.cmt-project-accent-button:hover:not(:disabled),
+.pf2e-crafting-material-tiers .cmt-workbench-project button.cmt-project-accent-button:focus-visible {
+  background: #790000; color: #f6e5b3; border-color: #e9d7a1;
+}
 
 .pf2e-crafting-material-tiers .cmt-workbench-gather-link,
 .pf2e-crafting-material-tiers .cmt-workbench-empty {
@@ -2904,6 +2918,13 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
 
 .cmt-edge-table-controls { display: flex; gap: 0.5rem; padding: 0.5rem; }
 .cmt-edge-table-controls button { background: #e9d7a1; color: #5e0000; border: 1px solid #9f8036; border-radius: 5px; }
+.cmt-resolve-crafting { max-width: calc(100vw - 32px); }
+.cmt-resolve-crafting .dialog-content { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.cmt-resolve-crafting .dialog-content p { margin: 0 0 0.7rem; line-height: 1.4; }
+.cmt-resolve-crafting .dialog-content label { display: flex; flex-direction: column; gap: 0.3rem; margin-block: 0.75rem; }
+.cmt-resolve-crafting select { width: 100%; min-width: 0; }
+.cmt-resolve-table-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 0.75rem; }
+.cmt-resolve-table-links button { flex: 1 1 180px; height: auto; min-height: 36px; padding: 0.45rem; white-space: normal; line-height: 1.3; }
 
 .cmt-artisan-select-label { display: grid; gap: 0.2rem; margin: 0.5rem 0; font-weight: 600; }
 .cmt-artisan-select-label select { width: 100%; min-width: 0; }

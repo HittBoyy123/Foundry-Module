@@ -32,21 +32,40 @@ function setup({ degree = 3, dice = [3], required = 20, bonus = 0, upgrade = fal
   globalThis.Roll = class { constructor(formula) { this.formula = formula; formulas.push(formula); } async evaluate() { this.total = dice.shift(); return this; } };
   return { app: { workbenchState: { partyId: "party" } }, saved: () => saved.projects[0], messages, rendered, formulas, rollCalls, item, party };
 }
-test("critical success rolls the Edge table and applies an existing circumstance bonus", async () => {
+test("work rolls and their history use the GM DC override, including zero", async () => {
+  for (const dc of [27, 0]) {
+    const context = setup({ degree: 2 });
+    context.saved().dcOverride = dc;
+    await rollWorkBlock(context.app, 'project', 1);
+    assert.equal(context.rollCalls[0].dc.value, dc);
+    assert.equal(context.saved().workBlocks[0].dc, dc);
+    assert.equal(context.saved().dcOverride, dc);
+  }
+});
+
+test("critical success pauses for manual Edge confirmation and preserves the work roll", async () => {
   const context = setup({ dice: [3], bonus: 2 });
   await rollWorkBlock(context.app, "project", 5);
-  assert.deepEqual(context.formulas, ["1d3"]);
+  assert.equal(context.saved().currentProgress, 0);
+  assert.ok(context.saved().pendingCraftingTables);
+  await assert.rejects(rollWorkBlock(context.app, "project", 1), /Resolve the pending/);
+  await rollWorkBlock(context.app, "project", 1, undefined, { result: 3 });
+  assert.equal(context.rollCalls.length, 1);
+  assert.equal(context.saved().pendingCraftingTables, null);
+  assert.deepEqual(context.formulas, []);
   assert.equal(context.rollCalls[0].modifiers[0].type, "circumstance");
   assert.equal(context.rollCalls[0].modifiers[0].modifier, 2);
   assert.equal(context.rollCalls[0].dc.value, 19);
   assert.equal(context.saved().nextWorkBonus, 2);
   assert.equal(context.rendered[0].craftingEdge.name, "Stable Integration");
-  assert.equal(context.messages[0].rolls.length, 1);
+  assert.equal(context.messages.at(-1).rolls.length, 0);
 });
-test("final opportunity automatically rolls d8 and puts the Masterstroke in chat and project", async () => {
+test("confirmed final opportunity attaches the manually chosen Masterstroke once", async () => {
   const context = setup({ dice: [4, 5], required: 5 });
   await rollWorkBlock(context.app, "project", 5);
-  assert.deepEqual(context.formulas, ["1d4", "1d8"]);
+  await rollWorkBlock(context.app, "project", 5, undefined, { result: 4, masterstrokeResult: 5 });
+  assert.deepEqual(context.formulas, []);
+  await assert.rejects(rollWorkBlock(context.app, "project", 5, undefined, { result: 4, masterstrokeResult: 5 }), /no pending/);
   assert.equal(context.saved().masterstrokes[0].result, 5);
   assert.equal(context.rendered[0].masterstroke.name, "Guardian’s Weapon");
   assert.equal(context.saved().currentProgress, 5);
@@ -54,13 +73,15 @@ test("final opportunity automatically rolls d8 and puts the Masterstroke in chat
 test("opportunity fallback accelerates without rolling d8", async () => {
   const context = setup({ dice: [4], required: 8 });
   await rollWorkBlock(context.app, "project", 5);
-  assert.deepEqual(context.formulas, ["1d4"]);
+  await rollWorkBlock(context.app, "project", 5, undefined, { result: 4 });
+  assert.deepEqual(context.formulas, []);
   assert.equal(context.saved().currentProgress, 8);
   assert.equal(context.saved().masterstrokes.length, 0);
 });
 test("conservation records credit and ordinary success never rolls a table", async () => {
   const context = setup({ dice: [2] });
   await rollWorkBlock(context.app, "project", 5);
+  await rollWorkBlock(context.app, "project", 5, undefined, { result: 2, reservationId: "stock" });
   assert.equal(context.saved().currentProgress, 5);
   assert.equal(context.saved().conservationCredits[0].itemName, "Steel");
   const ordinary = setup({ degree: 2 });
@@ -116,4 +137,31 @@ test("creating a project does not grant lead artisan roll permissions", async ()
   game.user.isGM = true;
   await rollWorkBlock(context.app, "project", 1);
   assert.equal(context.rollCalls.length, 1);
+});
+
+test("pending results survive normalization and only the lead owner or GM may confirm", async () => {
+  const context = setup();
+  await rollWorkBlock(context.app, 'project', 2);
+  assert.equal(context.saved().pendingCraftingTables.days, 2);
+  game.user = { id: 'other' };
+  await assert.rejects(rollWorkBlock(context.app, 'project', 5, undefined, {result:1}), /Only the lead/);
+  assert.equal(context.saved().currentProgress, 0);
+  game.user.isGM = true;
+  await rollWorkBlock(context.app, 'project', 5, undefined, {result:1});
+  assert.equal(context.saved().workBlocks[0].days, 2);
+  assert.equal(context.saved().currentProgress, 3);
+  assert.equal(context.rollCalls.length, 1);
+});
+
+test("invalid manual results preserve the pending critical success", async () => {
+  const context = setup();
+  await rollWorkBlock(context.app, 'project', 1);
+  for (const result of [0,4,9]) await assert.rejects(rollWorkBlock(context.app,'project',1,undefined,{result}), /Invalid Crafting Edge/);
+  assert.equal(context.saved().workBlocks.length, 0);
+  assert.ok(context.saved().pendingCraftingTables);
+  const final = setup({required:5});
+  await rollWorkBlock(final.app,'project',5);
+  await assert.rejects(rollWorkBlock(final.app,'project',5,undefined,{result:4,masterstrokeResult:99}), /compatible Masterstroke/);
+  assert.equal(final.saved().masterstrokes.length,0);
+  assert.ok(final.saved().pendingCraftingTables);
 });
