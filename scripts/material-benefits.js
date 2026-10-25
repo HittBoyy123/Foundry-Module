@@ -24,7 +24,7 @@ export function materialBenefits(item, material, tier, config, dragonScale = nul
   }
   if (itemType === "shield" && result.coreProgression.attack > 0) lines.push(`+${result.coreProgression.attack * 3} Hardness and +${result.coreProgression.attack * 30} maximum HP.`);
   if (!lines.length) lines.push("No numerical Core bonus at this tier.");
-  if (isKineticActuator(item)) lines.push("Only the strongest worn actuator applies. Its item bonus does not stack with other item bonuses to the same statistic. No Constitution or apex benefit.");
+  if (isKineticActuator(item)) lines.push("Only the strongest worn attenuator applies. Its item bonus does not stack with other item bonuses to the same statistic. No Constitution or apex benefit.");
   if (itemType === "weapon") lines.push("Extra weapon damage dice come from Striking runes.");
   if (material === "omnipotisium") {
     lines.push("Exceptionally rare. Awarded only by the GM; cannot be gathered and has no standard market or sale value.");

@@ -17,7 +17,7 @@ const CATEGORY_LIST = Object.freeze([
   Object.freeze({ id: "weapon.advanced", group: "weapon", itemType: "weapon", pf2eCategory: "advanced", label: "Advanced Weapon" }),
   Object.freeze({ id: "shield", group: "shield", itemType: "shield", pf2eCategory: null, label: "Shield" }),
   Object.freeze({ id: "spell-focus", group: "spellFocus", itemType: "equipment", pf2eCategory: null, label: "Spell Focus" }),
-  Object.freeze({ id: "kinetic-actuator", group: "spellFocus", itemType: "equipment", pf2eCategory: null, label: "Kineticist Actuator" }),
+  Object.freeze({ id: "kinetic-actuator", group: "spellFocus", itemType: "equipment", pf2eCategory: null, label: "Gate Attenuator" }),
   Object.freeze({ id: "equipment", group: "equipment", itemType: "equipment", pf2eCategory: null, label: "Equipment or Accessory" }),
 ]);
 

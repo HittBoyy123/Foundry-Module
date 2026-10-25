@@ -49,14 +49,14 @@ export const KINETIC_ACTUATOR_SOURCES = Object.freeze(Array.from({ length: 6 }, 
   const tier = index + 1;
   const item = structuredClone(BASE_CRAFTING_ITEM_SOURCES[0]);
   item._id = `WmActuator00000${tier}`;
-  item.name = `Kineticist Actuator (Tier ${tier})`;
+  item.name = `Gate Attenuator (Tier ${tier})`;
   item.img = "icons/equipment/wrist/bracer-armored-steel.webp";
   item.sort = (tier + 1) * 100000;
   item.system.slug = `kineticist-actuator-tier-${tier}`;
   item.system.level.value = [1,4,8,12,16,20][index];
   item.system.traits.otherTags = ["kinetic-actuator"];
   item.system.usage.value = "worn";
-  item.system.description.value = `<p>A crystal regulator steadies the flow of elemental power through your kinetic gate.</p><p>While worn, this actuator grants the configured spell-focus bonus for its tier to <strong>impulse attack rolls (including Elemental Blast) and impulse DCs</strong> instead of spells. The default Tier ${tier} bonus is <strong>+${index}</strong>. Only the strongest worn actuator applies. This is an item bonus and does not stack with another item bonus to the same statistic.</p><p>Craft with an Enchanting lead using 2 Mana Gem units at the core tier and 1 metal or wood frame unit at the normal structural tier. A qualified frame artisan supplies the support role.</p><p>This item grants no Constitution increase, apex benefit, additional impulse damage, or activated spell. A Constitution apex item is a separate item.</p>`;
+  item.system.description.value = `<p>A crystal regulator steadies the flow of elemental power through your kinetic gate.</p><p>While worn, this attenuator grants the configured spell-focus bonus for its tier to <strong>impulse attack rolls (including Elemental Blast) and impulse DCs</strong> instead of spells. The default Tier ${tier} bonus is <strong>+${index}</strong>. Only the strongest worn attenuator applies. This is an item bonus and does not stack with another item bonus to the same statistic.</p><p>Craft with an Enchanting lead using 2 Mana Gem units at the core tier and 1 metal or wood frame unit at the normal structural tier. A qualified frame artisan supplies the support role.</p><p>This item grants no Constitution increase, apex benefit, additional impulse damage, or activated spell. A Constitution apex item is a separate item.</p>`;
   item.flags[MODULE_ID].tier = tier;
   item.flags[MODULE_ID].crafting.core.tier = tier;
   return item;
