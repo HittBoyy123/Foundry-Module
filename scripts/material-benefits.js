@@ -1,4 +1,5 @@
 import { materialRuneSlots } from "./property-runes.js";
+import { isKineticActuator } from "./kinetic-actuator.js";
 import { calculateItemEffects, getCraftingItemType } from "./model.js";
 
 /** Describe the same configured effects that the finished item receives. */
@@ -14,7 +15,7 @@ export function materialBenefits(item, material, tier, config, dragonScale = nul
     if (rule.key === "Resistance") { lines.push(`${rule.value} resistance to ${rule.type} while equipped.`); continue; }
     if (rule.key !== "FlatModifier") continue;
     const selectors = rule.selector ?? [];
-    const target = selectors.some(s => s.includes("spell")) ? "spell attack rolls and spell DCs"
+    const target = selectors.some(s => s.includes("spell")) ? isKineticActuator(item) ? "impulse attack rolls and impulse DCs while worn" : "spell attack rolls and spell DCs"
       : selectors.includes("ac") ? "AC while worn"
       : selectors.some(s => s.includes("saving") || s === "all-saves" || ["fortitude", "reflex", "will"].includes(s)) ? "saving throws while worn"
       : itemType === "weapon" ? "attack rolls with this weapon" : rule.label;
@@ -23,6 +24,7 @@ export function materialBenefits(item, material, tier, config, dragonScale = nul
   }
   if (itemType === "shield" && result.coreProgression.attack > 0) lines.push(`+${result.coreProgression.attack * 3} Hardness and +${result.coreProgression.attack * 30} maximum HP.`);
   if (!lines.length) lines.push("No numerical Core bonus at this tier.");
+  if (isKineticActuator(item)) lines.push("Only the strongest worn actuator applies. Its item bonus does not stack with other item bonuses to the same statistic. No Constitution or apex benefit.");
   if (itemType === "weapon") lines.push("Extra weapon damage dice come from Striking runes.");
   if (material === "omnipotisium") {
     lines.push("Exceptionally rare. Awarded only by the GM; cannot be gathered and has no standard market or sale value.");

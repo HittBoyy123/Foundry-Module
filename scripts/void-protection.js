@@ -2,6 +2,7 @@ import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig } from "./config-store.js";
 import { getCraftingItemType } from "./model.js";
+import { isKineticActuator } from "./kinetic-actuator.js";
 import { isActiveSpellFocus, isPrimarySpellFocus } from "./integration.js";
 
 const items = actor => Array.from(actor?.items?.contents ?? actor?.items ?? []);
@@ -38,7 +39,7 @@ export function voidDamageAdjustment(target, { item, damage, final = false }, co
   const reasons = [];
   if (hasVoidProtection(target) && ["weapon", "melee", "spell"].includes(item?.type)) {
     const bypass = ["weapon", "melee"].includes(item.type) ? isOmnipotentium(item) : item.type === "spell" && items(source).some(focus =>
-      getCraftingItemType(focus) === "spellFocus" && isActiveSpellFocus(focus) && isPrimarySpellFocus(focus, config)
+      getCraftingItemType(focus) === "spellFocus" && !isKineticActuator(focus) && isActiveSpellFocus(focus) && isPrimarySpellFocus(focus, config)
       && (isOmnipotentium(focus) || hasOmnipotentiumFrame(focus)));
     if (!bypass) reasons.push("Void Protection: half damage");
   }

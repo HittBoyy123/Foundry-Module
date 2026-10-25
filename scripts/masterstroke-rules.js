@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.js";
+import { isKineticActuator } from "./kinetic-actuator.js";
 
 const entry = (id, name, description, types = null, frequency = null) => ({ id, name, description, types, frequency });
 export const WEAPON_MASTERSTROKES = Object.freeze([
@@ -23,6 +24,7 @@ export const EQUIPMENT_MASTERSTROKES = Object.freeze([
 ]);
 export const masterstrokeTable = category => category === "weapon" ? WEAPON_MASTERSTROKES : EQUIPMENT_MASTERSTROKES;
 export function masterstrokeKind(item) {
+  if (isKineticActuator(item)) return "equipment";
   return item?.flags?.[MODULE_ID]?.itemType === "spellFocus" || item?.flags?.[MODULE_ID]?.crafting?.itemType === "spellFocus"
     || item?.system?.traits?.otherTags?.includes?.("spell-focus") || item?.system?.slug === "spell-focus" ? "spellFocus" : item?.type;
 }

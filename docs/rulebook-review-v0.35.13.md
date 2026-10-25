@@ -1,6 +1,6 @@
 # Rulebook changes for Wrathmaker v0.35.13
 
-Reviewed 24 October 2026 against **Pathfinder 2e Ash's Rules (2).docx**, the latest supplied copy, using its extracted paragraphs and tables. Its opening identifies v0.35.12, while its closing scope and development tracker still refer to v0.35.8 and v0.35.11. This is not a review of subsequent edits to the live Google Doc. The original file has not been changed.
+Reviewed 25 October 2026 against **Pathfinder 2e Ash's Rules (2).docx**, the latest supplied copy, using its extracted paragraphs and tables. Its opening identifies v0.35.12, while its closing scope and development tracker still refer to v0.35.8 and v0.35.11. This is not a review of subsequent edits to the live Google Doc. The original file has not been changed.
 
 Keep the existing fonts, slate table headings, alternating grey rows and playtest disclaimer. Update the edition to **v0.35.13 — 24 October 2026**, the closing scope statement, development tracker and table of contents.
 
@@ -89,6 +89,27 @@ The lead crafter uses their best applicable carried tool set for a **+5 item bon
 
 GMs configure equipment under **Details → Crafting Tools — GM**, selecting a profession and tool tier. The set must be carried in the lead crafter's inventory and match their relevant profession. Unconfigured equipment does not automatically grant this bonus. Update crafting DC tables and worked examples accordingly, retaining existing gathering DC tables.
 
+## 9. Add kineticist actuators
+
+The latest supplied (2) document has no actuator section. Add the following to crafting and equipment, and mark kineticist actuators as implemented in the development tracker:
+
+Six craftable actuator tiers follow the configured spell-focus progression. Default bonuses to both impulse attack rolls (including Elemental Blast) and impulse DCs are **+0 / +1 / +2 / +3 / +4 / +5** for Tiers 1–6.
+
+Actuators must be worn. Only the strongest worn actuator applies. The bonus is an item bonus and does not stack with other item bonuses to that statistic. Actuators do not grant spell attack/DC bonuses, extra impulse damage or native gate-attenuator activated abilities. Even Tier 6 has no Constitution or apex benefit; a Constitution apex item remains separate.
+
+| Recipe component | Requirement |
+| --- | --- |
+| Lead | Enchanting |
+| Core | 2 Mana Gem units at the selected tier |
+| Frame | 1 Metal or Wood unit, minimum core tier minus two (minimum Tier 1) |
+| Named support | Blacksmithing for metal, Carpentry for wood |
+
+Use normal Work Block DCs, tool bonuses, teamwork, crafting progress and manual Edge/Masterstroke resolution. Compatible equipment Masterstrokes are allowed; spell-focus-specific benefits do not apply to actuators.
+
+The six entries are in **Wrathmaker Crafting Items**. Existing local installations can use **Refresh All** after reloading to add them. Drag an actuator into the Workbench and select its core tier before crafting.
+
+This hotfix remains v0.35.13. Existing users may need to reinstall the module before reloading and using Refresh All to add the compendium entries.
+
 ## Verification and limits
 
-468 automated tests pass for this release. Local files were installed with backups. Recent UI changes have not yet been visually verified in a running Foundry world. This review supplies edits and replacement wording; it does not claim to be a reformatted or rendered replacement DOCX.
+471 automated tests pass for this release. Local files were installed with backups. Recent UI changes have not yet been visually verified in a running Foundry world. This review supplies edits and replacement wording; it does not claim to be a reformatted or rendered replacement DOCX.

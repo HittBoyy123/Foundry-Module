@@ -1,3 +1,11 @@
+# v0.35.13 hotfix — 25 October 2026
+
+**Kineticist actuator hotfix — 25 October**
+- Six craftable tiers grant **+0 / +1 / +2 / +3 / +4 / +5** to impulse attacks, including Elemental Blast, and impulse DCs while worn.
+- Enchanting leads; craft with 2 Mana Gem units and 1 metal or wood frame unit. Blacksmithing or Carpentry supports the frame.
+- Only the strongest worn actuator applies. Item bonuses do not stack. **Tier 6 has no Constitution or apex benefit.**
+- Reload and use **Refresh All** to add the entries to **Wrathmaker Crafting Items**.
+
 # v0.35.13 — 24 October 2026
 
 **Wrathmaker v0.35.13**

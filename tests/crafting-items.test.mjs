@@ -10,7 +10,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const MODULE_ID = "pf2e-crafting-material-tiers";
 
 test("the crafting compendium provides one configurable held spell focus", () => {
-  assert.equal(CRAFTING_ITEM_SOURCES.length, 1);
+  assert.equal(CRAFTING_ITEM_SOURCES.filter(item => item.system.traits.otherTags.includes("spell-focus")).length, 1);
   const focus = CRAFTING_ITEM_SOURCES[0];
   assert.equal(focus._id, "WmSpellFocus0001");
   assert.equal(focus.name, "Spell Focus");

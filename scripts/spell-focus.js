@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.js";
+import { isKineticActuator } from "./kinetic-actuator.js";
 import { getCraftingItemType } from "./model.js";
 
 export const FOCUS_SLOTS = Object.freeze({ held: ["held-in-one-hand", "Held"], rings: ["wornring", "Ring"], neck: ["wornnecklace", "Necklace"], head: ["wornheadwear", "Headwear"], hands: ["worngloves", "Gloves"], waist: ["wornbelt", "Belt"], feet: ["wornshoes", "Footwear"], back: ["worncloak", "Cloak"], accessories: ["worn", "Other worn focus"] });
@@ -17,6 +18,7 @@ export async function setFocusSlot(item, slot) {
 }
 
 export function insertFocusSlotControl(item, root) {
+  if (isKineticActuator(item)) return;
   if (getCraftingItemType(item) !== "spellFocus" || root.querySelector(".cmt-focus-slot")) return;
   const tier = root.querySelector('[data-cmt-field="tier"]');
   const anchor = tier?.closest(".cmt-inline-field");

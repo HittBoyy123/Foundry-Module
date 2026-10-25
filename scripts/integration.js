@@ -1,4 +1,5 @@
 import { addItemHitPointBonus, preserveItemHitPointUpdate } from "./item-hit-points.js";
+import { isKineticActuator, actuatorRules } from "./kinetic-actuator.js";
 import { applyMasterstrokeBulk } from "./masterstrokes.js";
 import { applyMasterstrokeStats } from "./masterstroke-automation.js";
 import { MODULE_ID } from "./constants.js";
@@ -47,6 +48,7 @@ export function isPrimarySpellFocus(item, config) {
 
   const eligible = actorItems
     .filter((candidate) => getCraftingItemType(candidate) === "spellFocus" && isActiveSpellFocus(candidate))
+    .filter(candidate => isKineticActuator(candidate) === isKineticActuator(item))
     .map((candidate) => {
       const result = calculateItem(candidate, config);
       const focusEffect = result.previews.find((effect) => effect.id === "spell-focus-potency");
@@ -67,7 +69,7 @@ export function buildItemRuleElements(item, config) {
   if (["armor", "spellFocus"].includes(craftingItemType) && item.isEquipped === false) return [];
   if (craftingItemType === "spellFocus" && !isPrimarySpellFocus(item, config)) return [];
   const result = calculateItem(item, config);
-  return result.rules;
+  return isKineticActuator(item) ? actuatorRules(result.rules) : result.rules;
 }
 
 function suppressPf2eRuneProgression(item) {

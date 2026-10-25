@@ -739,8 +739,8 @@ export function getCraftingItemType(item) {
   if (item?.type !== "equipment") return item?.type ?? null;
   const otherTags = item.system?.traits?.otherTags;
   const isSpellFocus = Array.isArray(otherTags)
-    ? otherTags.includes("spell-focus")
-    : otherTags?.has?.("spell-focus") === true;
+    ? otherTags.includes("spell-focus") || otherTags.includes("kinetic-actuator")
+    : otherTags?.has?.("spell-focus") === true || otherTags?.has?.("kinetic-actuator") === true;
   return isSpellFocus ? "spellFocus" : item.type;
 }
 

@@ -17,6 +17,7 @@ const CATEGORY_LIST = Object.freeze([
   Object.freeze({ id: "weapon.advanced", group: "weapon", itemType: "weapon", pf2eCategory: "advanced", label: "Advanced Weapon" }),
   Object.freeze({ id: "shield", group: "shield", itemType: "shield", pf2eCategory: null, label: "Shield" }),
   Object.freeze({ id: "spell-focus", group: "spellFocus", itemType: "equipment", pf2eCategory: null, label: "Spell Focus" }),
+  Object.freeze({ id: "kinetic-actuator", group: "spellFocus", itemType: "equipment", pf2eCategory: null, label: "Kineticist Actuator" }),
   Object.freeze({ id: "equipment", group: "equipment", itemType: "equipment", pf2eCategory: null, label: "Equipment or Accessory" }),
 ]);
 
@@ -55,6 +56,7 @@ export function categorizeCraftableItem(item) {
 
   if (item.type === "shield") return clone(CRAFTING_CATEGORIES.shield);
 
+  if (item.type === "equipment" && itemOtherTags(item).includes("kinetic-actuator")) return clone(CRAFTING_CATEGORIES["kinetic-actuator"]);
   if (item.type === "equipment" && itemOtherTags(item).includes("spell-focus")) {
     return clone(CRAFTING_CATEGORIES["spell-focus"]);
   }

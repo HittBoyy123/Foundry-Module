@@ -45,6 +45,7 @@ function recipe(id, label, group, categoryIds, coreUnits, coreMaterialIds, secon
  * entry. A dropped base item supplies its normal PF2e data and category.
  */
 export const CRAFTING_RECIPE_BANDS = Object.freeze([
+  recipe("kinetic-actuator", "Kineticist Actuator", "spellFocus", ["kinetic-actuator"], 2, ["mana-crystals"], [secondary("frame", "Actuator frame", 1, ["metal", "wood"])]),
   recipe("consumable-scroll", "Spell Scroll", "consumable", ["consumable.scroll"], 1, ["wood"], [secondary("inscription", "Magical inscription", 1, ["mana-crystals"])]),
   recipe("ammo-arrows", "Arrows", "ammunition", ["ammunition"], 1, ["wood"], [secondary("tips", "Arrowheads", 1, ["metal"])]),
   recipe("ammo-bolts", "Bolts", "ammunition", ["ammunition"], 1, ["wood"], [secondary("tips", "Bolt heads", 1, ["metal"])]),

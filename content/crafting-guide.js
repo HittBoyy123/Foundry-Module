@@ -1,3 +1,4 @@
+import { KINETIC_ACTUATOR_GUIDE } from "./kinetic-actuator-guide.js";
 import { CRAFTING_EDGE_GUIDE } from "./crafting-edges-guide.js";
 import { ENCHANTING_GUIDE } from "./enchanting-guide.js";
 
@@ -13,7 +14,7 @@ export const CRAFTING_GUIDE = {
 <h2>Materials</h2><p>Tiers 1–6 correspond to levels 1, 4, 8, 12, 16 and 20. Material and recipe choices determine the requirements and DC shown in the Workbench. Weapon materials grant attack bonuses. Only Striking runes increase base weapon damage dice. Artisan Marks are retired and grant no automated benefits.</p>
 ${ENCHANTING_GUIDE}
 <h2>Reserve, work, confirm</h2><p>Create Project reserves resources so other projects cannot promise the same stock. Work Blocks advance progress without consuming that stock. At completion, review and confirm consumption and creation of the finished item. Cancelling releases unconsumed reservations. The GM can recover a missing completed output without paying again; this is not available after dismantling.</p>
-${CRAFTING_EDGE_GUIDE}
+${KINETIC_ACTUATOR_GUIDE}${CRAFTING_EDGE_GUIDE}
 <h2>Gather</h2><p>Use the Workbench Gather tab to select a character, environment and resource. Available resources may follow the configured region and Tier. The displayed skill, DC and results govern the attempt. The GM chooses whether rewards go to the Party Stash or gathering character.</p>
 <h2>Disassemble</h2><p>Drop an item with a Core material and tier from a character or Party Stash into Disassemble. Review the return before confirming destruction. Recorded items use the original consumption ledger; unrecorded items use a labelled standard-recipe estimate. Recovery is 50%, rounded up per material, Tier and variant. The source item is removed and returns enter the selected Party Stash. Dismantling is irreversible and cannot be repeated on the same item.</p>
 ` },
