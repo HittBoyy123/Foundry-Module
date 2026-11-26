@@ -20,8 +20,8 @@ function resourceData(item) {
 }
 
 test("the resource catalogue includes every base material tier and dragon color tier", () => {
-  assert.equal(CRAFTING_RESOURCE_SOURCES.length, 72);
-  assert.equal(new Set(CRAFTING_RESOURCE_SOURCES.map((item) => item._id)).size, 72);
+  assert.equal(CRAFTING_RESOURCE_SOURCES.length, 67);
+  assert.equal(new Set(CRAFTING_RESOURCE_SOURCES.map((item) => item._id)).size, 67);
 
   for (const item of CRAFTING_RESOURCE_SOURCES) {
     const resource = resourceData(item);
@@ -31,7 +31,7 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.ok(item.system.traits.value.includes("precious"));
     assert.equal(item.system.traits.otherTags.includes("wrathmaker-resource"), true);
     assert.equal(resource.schemaVersion, CRAFTING_RESOURCE_SCHEMA_VERSION);
-    assert.equal(resource.tier >= 1 && resource.tier <= 6, true);
+    assert.equal(resource.tier >= 1 && resource.tier <= 7, true);
     assert.equal(resource.unitsPerItem >= 1, true);
     const expectedPrice = resource.materialId === "omnipotisium" ? 0 : TIER_PRICES_GP[resource.tier - 1] * (resource.materialId === "dragon-scale" ? 1.5 : 1);
     assert.deepEqual(item.system.price.value, { gp: expectedPrice });
@@ -44,7 +44,7 @@ test("the resource catalogue includes every base material tier and dragon color 
     assert.equal(item.system.price.sizeSensitive, false);
     assert.equal(resource.pricePerUnitGp, expectedPrice);
     assert.equal(resource.bundleSize, 1);
-    assert.equal(item.system.level.value, TIER_LEVELS[resource.tier - 1]);
+    assert.equal(item.system.level.value, TIER_LEVELS[Math.min(6, resource.tier) - 1]);
     if (resource.materialId === "omnipotisium") assert.match(item.system.description.value, /GM-awarded.*no standard market or sale value/);
     else assert.match(item.system.description.value, new RegExp(`crafting DC is <strong>${TIER_DCS[resource.tier - 1]}</strong>`, "iu"));
   }
@@ -83,7 +83,7 @@ test("the generated resource pack and manifest match the catalogue", async () =>
   assert.deepEqual(entries, CRAFTING_RESOURCE_SOURCES.filter(item => resourceData(item).materialId !== "omnipotisium"));
   const omni = (await readFile(path.join(projectRoot, "packs", "omnipotisium-ingots.db"), "utf8")).trim().split(/\r?\n/u).map(JSON.parse);
   assert.deepEqual(omni, CRAFTING_RESOURCE_SOURCES.filter(item => resourceData(item).materialId === "omnipotisium"));
-  assert.equal(omni.length, 6);
+  assert.equal(omni.length, 1);
 
   const manifest = JSON.parse(await readFile(path.join(projectRoot, "module.json"), "utf8"));
   assert.deepEqual(manifest.packs.find((entry) => entry.name === "crafting-resources"), {

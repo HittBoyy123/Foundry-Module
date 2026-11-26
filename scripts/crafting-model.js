@@ -3,6 +3,7 @@ import { getArtisanMarkDefinition } from "../content/artisan-marks.js";
 export const CRAFTING_STATE_SCHEMA_VERSION = 2;
 
 export const CORE_TIER_PROGRESSION = Object.freeze({
+  7: Object.freeze({ attack: 6, weaponDice: 0, spellcasting: 6, armor: 6, saves: 6, capacity: 8 }),
   1: Object.freeze({ attack: 0, weaponDice: 0, spellcasting: 0, armor: 0, saves: 0, capacity: 1 }),
   2: Object.freeze({ attack: 1, weaponDice: 0, spellcasting: 1, armor: 1, saves: 1, capacity: 2 }),
   3: Object.freeze({ attack: 2, weaponDice: 0, spellcasting: 2, armor: 2, saves: 2, capacity: 3 }),
@@ -32,7 +33,7 @@ function text(value, fallback = "") {
 
 function tier(value, fallback = 1) {
   const normalized = Math.trunc(Number(value));
-  return Number.isInteger(normalized) ? Math.min(6, Math.max(1, normalized)) : fallback;
+  return Number.isInteger(normalized) ? Math.min(7, Math.max(1, normalized)) : fallback;
 }
 
 function stringArray(value) {
@@ -55,7 +56,7 @@ function normalizeComponent(source, index) {
     classification,
     slotType: text(source?.slotType, "component"),
     materialId: text(source?.materialId),
-    tier: tier(source?.tier),
+    tier: source?.materialId === "omnipotisium" ? 7 : tier(source?.tier),
     quantityRequired: Math.max(0, Math.trunc(Number(source?.quantityRequired) || 0)),
     quantityCommitted: Math.max(0, Math.trunc(Number(source?.quantityCommitted) || 0)),
     structural: source?.structural === true,

@@ -49,14 +49,14 @@ function normalizeResourceOption(source, path, recipeTier) {
   if (!source || typeof source !== "object") {
     throw new CraftingRecipeValidationError(`${path} must be an object.`);
   }
-  const tier = positiveInteger(source.tier ?? recipeTier, `${path}.tier`);
-  if (tier < 1 || tier > 6) throw new CraftingRecipeValidationError(`${path}.tier must be from 1 to 6.`);
+  const tier = positiveInteger(source.materialId === "omnipotisium" ? 7 : source.tier ?? recipeTier, `${path}.tier`);
+  if (tier < 1 || tier > (source.materialId === "omnipotisium" ? 7 : 6)) throw new CraftingRecipeValidationError(`${path}.tier must be from 1 to 6, or 7 for Omnipotentium.`);
   const tierMode = source.tierMode === "minimum" ? "minimum" : "exact";
-  if (tierMode === "exact" && tier !== recipeTier) {
+  if (tierMode === "exact" && tier !== recipeTier && !(recipeTier === 7 && tier <= 6)) {
     throw new CraftingRecipeValidationError(`${path}.tier must match the recipe tier.`);
   }
   const maximumTier = tierMode === "minimum"
-    ? Math.min(6, Math.max(tier, Math.trunc(Number(source.maximumTier ?? recipeTier) || recipeTier)))
+    ? Math.min(7, Math.max(tier, Math.trunc(Number(source.maximumTier ?? recipeTier) || recipeTier)))
     : tier;
 
   return {
@@ -113,8 +113,9 @@ export function normalizeCraftingRecipe(source) {
   if (!Object.hasOwn(CRAFTING_CATEGORIES, categoryId)) {
     throw new CraftingRecipeValidationError(`categoryId \"${categoryId}\" is not a supported crafting category.`);
   }
-  const tier = positiveInteger(source.tier, "tier");
-  if (tier < 1 || tier > 6) throw new CraftingRecipeValidationError("tier must be from 1 to 6.");
+  const omniCore = source.ingredientSets?.some(set => set.groups?.some(group => group.id === "core" && group.options?.some(option => option.materialId === "omnipotisium")));
+  const tier = positiveInteger(omniCore ? 7 : source.tier, "tier");
+  if (tier < 1 || tier > (omniCore ? 7 : 6)) throw new CraftingRecipeValidationError("tier must be from 1 to 6, or 7 for an Omnipotentium core.");
   const adjustment = Object.hasOwn(CRAFTING_DIFFICULTY_ADJUSTMENTS, source.check?.adjustment)
     ? source.check.adjustment
     : "normal";

@@ -31,7 +31,8 @@ test("resource tiers map to the requested item levels and PF2e level-based DCs",
   }
 
   assert.equal(calculateCraftingDC(0), null);
-  assert.equal(calculateCraftingDC(7), null);
+  assert.equal(calculateCraftingDC(7).tier, 7);
+  assert.equal(calculateCraftingDC(8), null);
 });
 
 test("the GM can apply PF2e difficulty adjustments without changing the resource", () => {

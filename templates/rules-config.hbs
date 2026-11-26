@@ -87,12 +87,16 @@
     </div>
   </section>
 
-  <section class="cmt-materials-section">
+  <nav class="cmt-config-actions" aria-label="Material categories">
+    <button type="button" data-action="showMaterials">Standard Materials</button>
+    <button type="button" data-action="showCustomOres">Custom Ores</button>
+  </nav>
+  <section class="cmt-materials-section" data-material-category="standard">
     <div class="cmt-section-heading">
       <h3><i class="fa-solid fa-gem" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Materials"}}</h3>
     </div>
     <div class="cmt-material-list">
-      {{#each materials}}
+      {{#each materials}}{{#unless customOre}}
         <article class="cmt-material-card {{#unless enabled}}is-disabled{{/unless}}">
           <div class="cmt-material-summary">
             <strong>{{label}}</strong><span>{{itemTypes}}</span><small>{{tiers}}</small>
@@ -101,8 +105,20 @@
             <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> {{localize "CMT.Settings.Dashboard.Edit"}}
           </button>
         </article>
-      {{/each}}
+      {{/unless}}{{/each}}
     </div>
+  </section>
+  <section class="cmt-materials-section" data-material-category="custom" hidden>
+    <h3>Custom Ores</h3>
+    <p>GM-awarded materials. Omnipotentium is the only Tier 7 ore.</p>
+    <button type="button" data-action="addCustomOre"><i class="fa-solid fa-plus"></i> Add Custom Ore</button>
+    {{#each materials}}{{#if customOre}}
+      <article class="cmt-material-card">
+        <div class="cmt-material-summary"><strong>{{label}}</strong><small>{{tiers}}</small></div>
+        <button type="button" data-action="editMaterial" data-material-id="{{id}}">Edit Properties</button>
+        <button type="button" data-action="createOreIngot" data-material-id="{{id}}">Add Ingot to Compendium</button>
+      </article>
+    {{/if}}{{/each}}
   </section>
 
   <footer class="cmt-config-actions cmt-two-actions">

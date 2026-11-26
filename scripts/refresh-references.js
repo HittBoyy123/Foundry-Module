@@ -23,7 +23,7 @@ export async function referenceRefreshPlan() {
     if (!pack) { plan.push({ name, error: "Compendium unavailable." }); continue; }
     try {
       const documents = await pack.getDocuments();
-      plan.push({ name, pack, entries: sources.map(source => ({ source, document: documents.find(document => document.id === source._id) })) });
+      plan.push({ name, pack, obsolete: name === "omnipotisium-ingots" ? documents.filter(document => document.flags?.[MODULE_ID]?.resource?.materialId === "omnipotisium" && /^WmCraftRes\d{6}$/.test(document.id) && !sources.some(source=>source._id === document.id)) : [], entries: sources.map(source => ({ source, document: documents.find(document => document.id === source._id) })) });
     } catch (error) { plan.push({ name, error: error.message }); }
   }
   return plan;
@@ -47,6 +47,10 @@ export async function refreshReferences(plan, report, differences) {
     const locked = row.pack.locked;
     try {
       if (locked) await row.pack.configure({ locked: false });
+      for (const document of row.obsolete ?? []) {
+        await document.delete();
+        report.push({ name: document.name, status: "Removed", changes: [{kind:"Removed",path:"Retired Omnipotentium tier reference"}] });
+      }
       for (const { source, document } of row.entries) {
         try {
           if (!document) {

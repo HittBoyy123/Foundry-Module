@@ -19,6 +19,7 @@ test("Core Tiers use the Wrathmaker progression and Artisan Capacity table", () 
     { attack: 3, weaponDice: 0, spellcasting: 3, armor: 3, saves: 3, capacity: 4 },
     { attack: 4, weaponDice: 0, spellcasting: 4, armor: 4, saves: 4, capacity: 6 },
     { attack: 5, weaponDice: 0, spellcasting: 5, armor: 5, saves: 5, capacity: 8 },
+    { attack: 6, weaponDice: 0, spellcasting: 6, armor: 6, saves: 6, capacity: 8 },
   ]);
   assert.equal(getCoreTierProgression(99).capacity, 8);
 });

@@ -1,3 +1,4 @@
+import { metalEquivalent } from "./custom-ores.js";
 import { getActorProfessions, getProfessionGrant } from "./professions.js";
 
 /** Only learned profession Lore associated with the actual materials is eligible.
@@ -6,7 +7,7 @@ import { getActorProfessions, getProfessionGrant } from "./professions.js";
 export function professionSkillChoices(actor, defaultSkill, materialIds = [], professionIds = []) {
   const choices = [{ id: defaultSkill, label: actor?.getStatistic?.(defaultSkill)?.label ?? defaultSkill }];
   const professions = getActorProfessions(actor).filter(profession =>
-    professionIds.includes(profession.id) || profession.materialIds.some(materialId => materialIds.map(id => id === "omnipotisium" ? "metal" : id).includes(materialId)));
+    professionIds.includes(profession.id) || profession.materialIds.some(materialId => materialIds.map(id => metalEquivalent(id)).includes(materialId)));
   for (const item of Array.from(actor?.items ?? [])) {
     const grant = getProfessionGrant(item);
     if (item.type !== "lore" || grant?.kind !== "lore"

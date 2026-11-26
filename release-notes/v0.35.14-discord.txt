@@ -1,0 +1,20 @@
+**Wrathmaker v0.35.14**
+
+**Custom Ores & Omnipotentium**
+- Omnipotentium is now **one Tier 7 ingot**, replacing the six previous Omni tiers.
+- Defaults to **+6 material bonus and +1 extra weapon damage die**. That die adds alongside **Striking**, without replacing it.
+- Find it in **Custom Ores**. GMs can add new ores, edit bonuses and extra dice, and create ingot references from the Control Panel.
+- **Voidborn** is an automated property; other tags are descriptive. Custom ores are GM-awarded, cannot be gathered and have no standard sale price.
+- Tier 7 crafting uses **DC 70**, with normal supporting materials capped at Tier 6.
+
+**Nephilim Bonds**
+- Improved matching-ally detection for **Ao's Communion, Ao's Pincer and Valor of Ao**.
+- New **Bond Aura** effects show whether a matching ally is available. These are party-wide, with **no distance limit**.
+- Roll modifiers now show just the gift's name.
+
+**Visual fixes**
+- More readable Custom Ores and material-editor headings.
+
+**GM update step:** restart the world and run **Refresh All**. Old Omnipotentium items move to Tier 7 while quantities and Striking runes are preserved.
+
+*Playtest rules and pricing remain subject to change based on feedback and gameplay.*

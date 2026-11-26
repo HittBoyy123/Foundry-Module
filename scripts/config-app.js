@@ -1,3 +1,4 @@
+import { newCustomOre, customOreResource } from "./custom-ores.js";
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig, resetRulesConfig, setRulesConfig } from "./config-store.js";
 import {
@@ -44,6 +45,7 @@ export function createRulesConfigApplication() {
     }
 
     static async submitMaterial(_event, _form, formData) {
+      if (!game.user.isGM) return;
       try {
         const updated = applyMaterialChanges(getRulesConfig(), this.materialId, formData.object);
         await setRulesConfig(updated);
@@ -116,6 +118,10 @@ export function createRulesConfigApplication() {
       },
       actions: {
         editMaterial: this.editMaterial,
+        addCustomOre: this.addCustomOre,
+        createOreIngot: this.createOreIngot,
+        showMaterials: this.showMaterials,
+        showCustomOres: this.showCustomOres,
         editProfession: this.editProfession,
         reset: this.resetRules,
       },
@@ -155,7 +161,38 @@ export function createRulesConfigApplication() {
       }
     }
 
+    static showMaterials() { this.element.querySelector('[data-material-category="standard"]').hidden = false; this.element.querySelector('[data-material-category="custom"]').hidden = true; }
+    static showCustomOres() { this.element.querySelector('[data-material-category="standard"]').hidden = true; this.element.querySelector('[data-material-category="custom"]').hidden = false; }
+    static async addCustomOre() {
+      if (!game.user.isGM) return;
+      const name = await DialogV2.prompt({ window:{title:"Add Custom Ore"}, content:'<label>Name <input name="oreName" required></label>', ok:{label:"Create",callback:(_e,button)=>button.form.elements.oreName.value} });
+      if (!name) return;
+      try {
+        const id = "custom-" + name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+        await setRulesConfig(newCustomOre(getRulesConfig(),name,id));
+        await this.render({force:true});
+        await this.constructor.editMaterial.call(this,null,{dataset:{materialId:id}});
+      } catch(error) { notifyError(error,"Could not add custom ore."); }
+    }
+    static async createOreIngot(_event,target) {
+      if (!game.user.isGM) return;
+      const id=target.dataset.materialId, material=getRulesConfig().materials[id];
+      if (!material?.customOre) return;
+      const pack=game.packs.get(MODULE_ID+".omnipotisium-ingots");
+      if (!pack) return ui.notifications.error("Custom Ores compendium is unavailable.");
+      const locked=pack.locked;
+      try {
+        if(locked) await pack.configure({locked:false});
+        const source=customOreResource(id,material);
+        const existing=(await pack.getDocuments()).find(item=>item.flags?.[MODULE_ID]?.resource?.materialId===id);
+        if(existing) await existing.update(source);
+        else await pack.documentClass.createDocuments([source],{pack:pack.collection});
+        ui.notifications.info("Ingot saved to Custom Ores.");
+      } catch(error) { notifyError(error,"Could not save ingot."); }
+      finally { if(locked) await pack.configure({locked:true}); }
+    }
     static async editMaterial(_event, target) {
+      if (!game.user.isGM) return;
       const materialId = target?.dataset.materialId;
       if (!materialId || !getRulesConfig().materials[materialId]) return;
       const application = new MaterialRulesConfig();

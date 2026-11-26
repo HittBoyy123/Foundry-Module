@@ -190,9 +190,9 @@ test("base crafting materials support armor and apply Core AC and save effects",
     });
     assert.equal(itemTypeIsSupported(config, "armor"), true);
     assert.equal(result.rules.length, 2);
-    assert.equal(result.rules[0].value, 2);
+    assert.equal(result.rules[0].value, material === "omnipotisium" ? 6 : 2);
     assert.deepEqual(result.rules[0].selector, ["ac"]);
-    assert.equal(result.rules[1].value, 2);
+    assert.equal(result.rules[1].value, material === "omnipotisium" ? 6 : 2);
     assert.deepEqual(result.rules[1].selector, ["fortitude", "reflex", "will"]);
   }
 });

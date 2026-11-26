@@ -1,3 +1,4 @@
+import { materialTiers } from "./custom-ores.js";
 import { isAlchemicalBomb } from "./alchemical-crafting.js";
 import { calculateWorkBlockDC } from "./crafting-dc.js";
 import { bestCraftingTool } from "./crafting-tools.js";
@@ -312,8 +313,8 @@ async function workbenchContext(application) {
   application.workbenchState.materialId = selectedBand?.coreMaterialIds.includes(application.workbenchState.materialId)
     ? application.workbenchState.materialId
     : selectedBand?.coreMaterialIds[0] ?? "";
-  const tier = isAmmunition(baseItem) && !isMagicalAmmunition(baseItem) ? 1 : Math.min(6, Math.max(consumableMinimumTier(baseItem), Math.trunc(Number(application.workbenchState.tier) || 1)));
-  application.workbenchState.tier = isAmmunition(baseItem) && !isMagicalAmmunition(baseItem) ? 1 : Math.max(consumableMinimumTier(baseItem), Number(application.workbenchState.tier) || 1);
+  const tier = config.materials[application.workbenchState.materialId]?.customOre ? config.materials[application.workbenchState.materialId].oreTier : isAmmunition(baseItem) && !isMagicalAmmunition(baseItem) ? 1 : Math.min(6, Math.max(consumableMinimumTier(baseItem), Math.trunc(Number(application.workbenchState.tier) || 1)));
+  application.workbenchState.tier = tier;
   application.workbenchState.artisanSlots ??= Array.from({ length: 6 }, (_, i) => application.workbenchState.contributorUuids?.[i] ?? "");
   application.workbenchState.contributorUuids = application.workbenchState.artisanSlots.filter(Boolean);
   const profiles = await contributorProfiles(application);
@@ -518,7 +519,7 @@ async function workbenchContext(application) {
       label: config.materials?.[materialId]?.label ?? materialId,
       selected: materialId === application.workbenchState.materialId,
     })),
-    tiers: [1, 2, 3, 4, 5, 6].filter(value => value >= consumableMinimumTier(baseItem) && (!isAmmunition(baseItem) || isMagicalAmmunition(baseItem) || value === 1)).map((value) => ({
+    tiers: materialTiers(config, application.workbenchState.materialId).filter(value => value >= consumableMinimumTier(baseItem) && (!isAmmunition(baseItem) || isMagicalAmmunition(baseItem) || value === 1)).map((value) => ({
       value,
       label: config.materials?.[application.workbenchState.materialId]?.tierLabels?.[value]
         ?? config.tierLabels?.[value]

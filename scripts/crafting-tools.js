@@ -1,9 +1,10 @@
+import { metalEquivalent } from "./custom-ores.js";
 import { MODULE_ID } from "./constants.js";
 import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 import { getActorProfessions } from "./professions.js";
 
 export function bestCraftingTool(actor, materialId, professionIds = []) {
-  const core = materialId === "omnipotisium" ? "metal" : materialId;
+  const core = metalEquivalent(materialId);
   const eligible = getActorProfessions(actor).filter(profession => professionIds.length
     ? professionIds.includes(profession.id) : profession.materialIds.includes(core)).map(p => p.id);
   return Array.from(actor?.items?.contents ?? actor?.items ?? []).filter(item => {

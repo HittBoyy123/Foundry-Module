@@ -1,3 +1,4 @@
+import { materialTiers, oreConfig } from "./custom-ores.js";
 import { isAlchemicalBomb } from "./alchemical-crafting.js";
 import { isAmmunition, isMagicalAmmunition, ammunitionForms } from "./ammunition.js";
 import { getCraftingRecipeBand, listCraftingRecipeBands } from "../content/crafting-recipes.js";
@@ -48,13 +49,16 @@ export function buildCraftingRecipeFromBand(bandId, {
     throw new Error(`${band.label} is not compatible with this base item.`);
   }
   const ammo = isAmmunition(targetItem);
-  const coreTier = ammo && !isMagicalAmmunition(targetItem) ? 1 : Math.min(6, Math.max(1, Math.trunc(Number(tier) || 1)));
+  let coreTier = ammo && !isMagicalAmmunition(targetItem) ? 1 : Math.min(7, Math.max(1, Math.trunc(Number(tier) || 1)));
   if (coreTier < consumableMinimumTier(targetItem)) throw new Error("Choose materials meeting the consumable's minimum tier.");
   const quantity = ["consumable", "ammunition"].includes(category.group) ? Number(batchQuantity) : 1;
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 4) throw new Error("Choose a batch of one to four identical consumables.");
   const materialId = band.coreMaterialIds.includes(coreMaterialId)
     ? coreMaterialId
     : band.coreMaterialIds[0];
+  const config = oreConfig();
+  if (config.materials[materialId]?.customOre) coreTier = config.materials[materialId].oreTier;
+  else coreTier = Math.min(6, coreTier);
   const structuralFloor = Math.max(1, coreTier - 2);
   const groups = [{
     id: "core",
@@ -72,11 +76,11 @@ export function buildCraftingRecipeFromBand(bandId, {
     groups.push({
       id: slug(component.id),
       label: component.label,
-      options: component.materialIds.map((secondaryMaterialId) => ({
+      options: component.materialIds.filter(id => !config.materials[id]?.customOre || config.materials[id].oreTier >= structuralFloor).map((secondaryMaterialId) => ({
         materialId: secondaryMaterialId,
-        tier: component.id === "inscription" ? coreTier : structuralFloor,
+        tier: config.materials[secondaryMaterialId]?.customOre ? config.materials[secondaryMaterialId].oreTier : component.id === "inscription" ? Math.min(6, coreTier) : structuralFloor,
         tierMode: "minimum",
-        maximumTier: coreTier,
+        maximumTier: config.materials[secondaryMaterialId]?.customOre ? config.materials[secondaryMaterialId].oreTier : Math.min(6, coreTier),
         units: component.units,
       })),
     });
@@ -89,7 +93,7 @@ export function buildCraftingRecipeFromBand(bandId, {
     const hasMana = groups.some((group) => group.options.every((option) => option.materialId === "mana-crystals"));
     if (!hasMana) groups.push({
       id: "magic-catalyst", label: "Mandatory Mana Catalyst",
-      options: [{ materialId: "mana-crystals", tier: coreTier, tierMode: "exact", units: ["weapon", "armor", "shield"].includes(category.group) ? 2 : ammo ? 10 : 1 }],
+      options: [{ materialId: "mana-crystals", tier: Math.min(6, coreTier), tierMode: "exact", units: ["weapon", "armor", "shield"].includes(category.group) ? 2 : ammo ? 10 : 1 }],
     });
   }
 

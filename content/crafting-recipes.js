@@ -1,3 +1,4 @@
+import { oreConfig } from "../scripts/custom-ores.js";
 const WEAPON_CATEGORIES = Object.freeze(["weapon.simple", "weapon.martial", "weapon.advanced"]);
 
 const secondary = (id, label, units, materialIds, options = {}) => Object.freeze({
@@ -156,8 +157,8 @@ export const CRAFTING_RECIPE_BANDS = Object.freeze([
 
 function withUniqueMetal(entry) {
   const copy = JSON.parse(JSON.stringify(entry));
-  if (["weapon", "armor"].includes(copy.group) || copy.coreMaterialIds.includes("metal")) copy.coreMaterialIds.push("omnipotisium");
-  for (const part of copy.secondaries) if (part.materialIds.includes("metal")) part.materialIds.push("omnipotisium");
+  if (["weapon", "armor"].includes(copy.group) || copy.coreMaterialIds.includes("metal")) copy.coreMaterialIds.push(...Object.entries(oreConfig().materials).filter(([,m]) => m.customOre && m.enabled).map(([id])=>id));
+  for (const part of copy.secondaries) if (part.materialIds.includes("metal")) part.materialIds.push(...Object.entries(oreConfig().materials).filter(([,m]) => m.customOre && m.enabled).map(([id])=>id));
   return copy;
 }
 export function listCraftingRecipeBands(group = "") {

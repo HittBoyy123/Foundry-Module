@@ -920,6 +920,16 @@ button[data-cmt-mark-detail] small { display: block; font-size: 0.75em; line-hei
   color: inherit;
 }
 
+/* Keep settings headings readable against their own panel backgrounds. */
+.cmt-rules-config .cmt-config-header > h2,
+.cmt-rules-config [data-material-category="custom"] > h3 {
+  color: var(--cmt-crimson);
+}
+
+.cmt-rules-config .cmt-panel > h3 {
+  color: var(--cmt-gold-light);
+}
+
 .cmt-dashboard-select {
   align-items: center;
   display: grid;

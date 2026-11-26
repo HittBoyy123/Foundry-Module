@@ -112,7 +112,7 @@ function normalizeTierLabels(source, path, { partial = false } = {}) {
     throw new ConfigValidationError(`${path} must be an object.`);
   }
   const labels = {};
-  for (let tier = 1; tier <= 6; tier += 1) {
+  for (let tier = 1; tier <= (partial && source[7] !== undefined ? 7 : 6); tier += 1) {
     if (source[tier] === undefined && partial) continue;
     labels[tier] = nonBlankString(source[tier], `${path}.${tier}`);
   }
@@ -124,7 +124,7 @@ function normalizeTierBonuses(source, path, { partial = false } = {}) {
     throw new ConfigValidationError(`${path} must be an object.`);
   }
   const bonuses = {};
-  for (let tier = 1; tier <= 6; tier += 1) {
+  for (let tier = 1; tier <= (partial && source[7] !== undefined ? 7 : 6); tier += 1) {
     if (source[tier] === undefined && partial) continue;
     bonuses[tier] = finiteNumber(source[tier], `${path}.${tier}`);
   }
@@ -136,7 +136,7 @@ function normalizeTierPrices(source, path, { partial = false } = {}) {
     throw new ConfigValidationError(`${path} must be an object.`);
   }
   const prices = {};
-  for (let tier = 1; tier <= 6; tier += 1) {
+  for (let tier = 1; tier <= (partial && source[7] !== undefined ? 7 : 6); tier += 1) {
     if (source[tier] === undefined && partial) continue;
     prices[tier] = nonNegativePrice(source[tier], `${path}.${tier}`);
   }
@@ -148,7 +148,7 @@ function normalizeTierRarities(source, path, { partial = false } = {}) {
     throw new ConfigValidationError(`${path} must be an object.`);
   }
   const rarities = {};
-  for (let tier = 1; tier <= 6; tier += 1) {
+  for (let tier = 1; tier <= (partial && source[7] !== undefined ? 7 : 6); tier += 1) {
     if (source[tier] === undefined && partial) continue;
     const rarity = nonBlankString(source[tier], `${path}.${tier}`).toLowerCase();
     if (!RARITIES.has(rarity)) {
@@ -505,11 +505,10 @@ export function normalizeRulesConfig(input) {
       throw new ConfigValidationError(`materials.${materialId} must be an object.`);
     }
     if (materialId === "omnipotisium") {
-      material = { ...material,
-        tierPricesGp: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
-        label: ["Omnipotisium", "Omnipotassium"].includes(material.label) ? "Omnipotentium" : material.label,
-        tierLabels: Object.fromEntries(Object.entries(material.tierLabels ?? {}).map(([tier, label]) => [tier, ["Omnipotisium", "Omnipotassium"].includes(label) ? DEFAULT_RULES_CONFIG.materials.omnipotisium.tierLabels[tier] : label])),
-      };
+      material = { ...material, customOre: true, oreTier: 7,
+        extraDamageDice: material.extraDamageDice ?? 1, propertyTags: material.propertyTags ?? ["voidborn"],
+        tierPricesGp: { 7: 0 }, tierLabels: { 7: "Omnipotentium" }, tierRarities: { 7: "unique" },
+        tierBonuses: { 7: material.tierBonuses?.[7] ?? 6 }, label: "Omnipotentium" };
     }
     const originalItemTypes = normalizeItemTypes(material.itemTypes, `materials.${materialId}.itemTypes`);
     const defaultMaterial = DEFAULT_RULES_CONFIG.materials[materialId];
@@ -659,6 +658,14 @@ export function normalizeRulesConfig(input) {
       ...(Object.keys(tierPriceOverrides).length > 0 ? { tierPricesGp: tierPriceOverrides } : {}),
       ...(Object.keys(tierRarityOverrides).length > 0 ? { tierRarities: tierRarityOverrides } : {}),
     };
+    if (material.customOre === true) {
+      const oreTier = finiteNumber(material.oreTier, "Custom ore tier", { integer: true });
+      if (oreTier < 1 || oreTier > 7 || (oreTier === 7 && materialId !== "omnipotisium")) throw new ConfigValidationError("Only Omnipotentium can be Tier 7; other custom ores use Tiers 1–6.");
+      const extraDamageDice = finiteNumber(material.extraDamageDice ?? 0, "Extra damage dice", { integer: true });
+      if (extraDamageDice < 0 || extraDamageDice > 20) throw new ConfigValidationError("Extra damage dice must be between 0 and 20.");
+      Object.assign(normalizedMaterial, { customOre: true, oreTier, extraDamageDice, tierPricesGp: { [oreTier]: 0 },
+        propertyTags: [...new Set((material.propertyTags ?? []).map(tag => String(tag).trim().toLowerCase()).filter(Boolean))] });
+    }
     if (augmentation) {
       normalizedMaterial.augmentation = true;
       normalizedMaterial.allowedBaseMaterials = normalizeMaterialIds(
@@ -692,11 +699,14 @@ export function normalizeItemFlags(input, config = null) {
   const source = isPlainObject(input) ? input : {};
   const legacyCore = isPlainObject(source.crafting?.core) ? source.crafting.core : {};
   const tierNumber = Number(source.tier ?? legacyCore.tier ?? DEFAULT_ITEM_FLAGS.tier);
-  const tier = Number.isInteger(tierNumber) ? Math.min(6, Math.max(1, tierNumber)) : DEFAULT_ITEM_FLAGS.tier;
+  let tier = Number.isInteger(tierNumber) ? Math.min(7, Math.max(1, tierNumber)) : DEFAULT_ITEM_FLAGS.tier;
   const selectedMaterial = source.material ?? legacyCore.materialId;
   const material = typeof selectedMaterial === "string" && selectedMaterial.trim()
     ? selectedMaterial.trim()
     : DEFAULT_ITEM_FLAGS.material;
+  if (material === "omnipotisium") tier = 7;
+  else if (config?.materials?.[material]?.customOre) tier = config.materials[material].oreTier;
+  else tier = Math.min(6, tier);
   const dragonScaleSource = isPlainObject(source.dragonScale) ? source.dragonScale : {};
   const dragonScaleTierNumber = Number(dragonScaleSource.tier ?? DEFAULT_ITEM_FLAGS.dragonScale.tier);
   const dragonScaleTier = Number.isInteger(dragonScaleTierNumber)
@@ -745,7 +755,7 @@ export function getCraftingItemType(item) {
 }
 
 export function getTierPresentation(config, materialId, tier) {
-  const normalizedTier = Math.min(6, Math.max(1, Number(tier) || 1));
+  const normalizedTier = Math.min(7, Math.max(1, Number(tier) || 1));
   const material = config.materials[materialId] ?? null;
   return {
     label: material?.tierLabels?.[normalizedTier] ?? config.tierLabels[normalizedTier],
@@ -834,7 +844,9 @@ export function calculateItemEffects({ itemType, itemId, itemName, flags, config
     };
   }
 
-  const previews = material.effects
+  const effectSources = [...material.effects];
+  if (material.customOre && material.extraDamageDice > 0 && itemType === "weapon") effectSources.push({ id: "custom-ore-damage", enabled: true, kind: "damageDice", label: "{material} extra damage", selectors: ["{item|_id}-damage"], value: { mode: "fixed", value: material.extraDamageDice } });
+  const previews = effectSources
     .filter((effect) => effect.enabled && (!effect.itemTypes || effect.itemTypes.includes(itemType)))
     .filter((effect) => itemType !== "shield" || !effect.selectors?.includes("ac"))
     .map((effect) => {

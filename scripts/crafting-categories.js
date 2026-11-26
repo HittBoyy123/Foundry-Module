@@ -78,9 +78,9 @@ export function getCraftingResourceData(item) {
   if (!source || typeof source !== "object") return null;
 
   const materialId = typeof source.materialId === "string" ? source.materialId.trim() : "";
-  const tier = Number(source.tier);
+  const tier = materialId === "omnipotisium" ? 7 : Number(source.tier);
   const unitsPerItem = Number(source.unitsPerItem);
-  if (!materialId || !Number.isInteger(tier) || tier < 1 || tier > 6) return null;
+  if (!materialId || !Number.isInteger(tier) || tier < 1 || tier > (materialId === "omnipotisium" ? 7 : 6)) return null;
   if (!Number.isInteger(unitsPerItem) || unitsPerItem < 1) return null;
   const craftingDC = calculateCraftingDC(tier);
 
@@ -107,7 +107,7 @@ export function getCraftingRecipeKey(item, { materialId, tier } = {}) {
   const category = categorizeCraftableItem(item);
   const normalizedMaterial = typeof materialId === "string" ? materialId.trim() : "";
   const normalizedTier = Number(tier);
-  if (!category || !normalizedMaterial || !Number.isInteger(normalizedTier) || normalizedTier < 1 || normalizedTier > 6) {
+  if (!category || !normalizedMaterial || !Number.isInteger(normalizedTier) || normalizedTier < 1 || normalizedTier > (normalizedMaterial === "omnipotisium" ? 7 : 6)) {
     return null;
   }
   return `${category.id}:${normalizedMaterial}:tier-${normalizedTier}`;

@@ -18,7 +18,7 @@ export const NEPHILIM_BONDS = Object.freeze([
   { id: "stamina", name: "Ao's Stamina", minimumPoints: 2, description: "One additional spell slot at every accessible ranked spell level, per selection. Uses normal preparation, casting and rest. Cantrips and focus spells do not gain slots." },
 ]);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const items = actor => Array.from(actor.items?.contents ?? actor.items ?? []);
+const items = actor => Array.from(actor?.items?.contents ?? actor?.items ?? []);
 const bond = item => item?.flags?.[MODULE_ID]?.nephilimBond;
 const slotOf = item => bond(item)?.slot ?? (LEGACY_LEVELS.indexOf(bond(item)?.milestone) + 1);
 export function isActiveBond(item, actor = item?.actor ?? item?.parent) {
@@ -28,16 +28,35 @@ export function isActiveBond(item, actor = item?.actor ?? item?.parent) {
     && bondAllowance(actor) >= (definition.minimumPoints ?? 1)
     && items(actor).find(candidate => bond(candidate) && slotOf(candidate) === slot) === item);
 }
-export function hasBondAlly(actor, id) {
-  return Array.from(actor?.parties?.values?.() ?? actor?.parties ?? []).some(party =>
-    Array.from(party.members?.values?.() ?? party.members ?? []).some(ally =>
-      ally !== actor && (!actor.id || ally.id !== actor.id)
-      && items(ally).some(item => bond(item)?.id === id && isActiveBond(item, ally))));
+const collectionValues = collection => Array.from(collection?.contents ?? collection?.values?.() ?? collection ?? []);
+const sameActor = (a, b) => a === b || Boolean(a?.id && a.id === b?.id);
+function partyMembers(party) {
+  const saved = party.system?.details?.members ?? party._source?.system?.details?.members;
+  if (!Array.isArray(saved)) return collectionValues(party.members);
+  const world = collectionValues(globalThis.game?.actors);
+  return saved.map(entry => world.find(actor => actor.uuid === entry.uuid || entry.uuid === `Actor.${actor.id}`)
+    ?? collectionValues(party.members).find(actor => actor.uuid === entry.uuid)).filter(Boolean);
 }
+export function bondParties(actor) {
+  const candidates = new Set([...collectionValues(actor?.parties), ...collectionValues(globalThis.game?.actors).filter(a => a.type === "party")]);
+  return [...candidates].filter(party => {
+    const saved = party.system?.details?.members ?? party._source?.system?.details?.members;
+    return Array.isArray(saved) ? saved.some(entry => entry.uuid === actor?.uuid || entry.uuid === `Actor.${actor?.id}`)
+      : collectionValues(actor?.parties).includes(party);
+  });
+}
+export function matchingBondAllies(actor, id) {
+  const allies = new Map();
+  for (const party of bondParties(actor)) for (const ally of partyMembers(party)) {
+    if (sameActor(ally, actor) || !items(ally).some(item => bond(item)?.id === id && isActiveBond(item, ally))) continue;
+    allies.set(ally.uuid ?? ally.id ?? ally, ally);
+  }
+  return [...allies.values()];
+}
+export function hasBondAlly(actor, id) { return matchingBondAllies(actor, id).length > 0; }
 export function bondAllowance(actor) {
-  const parties = Array.from(actor?.parties?.values?.() ?? actor?.parties ?? []);
-  // Never sum separate party pools. No party means no active bonds.
-  return Math.max(0, ...parties.map(party => getPartyNephilimPoints(party).value));
+  // Never sum separate party pools. Saved membership also works during preparation.
+  return Math.max(0, ...bondParties(actor).map(party => getPartyNephilimPoints(party).value));
 }
 export function validateBondSelection(selection, existing, allowance) {
   const definition = NEPHILIM_BONDS.find(b => b.id === selection.id);
@@ -58,7 +77,7 @@ export function createBondSource(selection) {
   // PF2e's closed modifier-type enum uses an additive carrier. The source label
   // identifies the independent Nephilim Gift category without changing core types.
   const flat = (selector, value) => ({ key: "FlatModifier", selector, value, type: "untyped",
-    slug: `nephilim-bond-${selection.id}-${selection.slot}`, label: `${definition.name} — Nephilim Gift ${selection.slot}`, predicate });
+    slug: `nephilim-bond-${selection.id}-${selection.slot}`, label: definition.name, predicate });
   const rules = {
     toughness: [flat("hp-per-level", 8)], will: [flat(selection.choice, 3)],
     skin: [flat("ac", 2)], wisdom: [flat(["spell-attack", "spell-dc"], 2)],
@@ -69,7 +88,7 @@ export function createBondSource(selection) {
       { ...flat("strike-attack-roll", 3), predicate: ["nephilim-charge", "item:melee"] }],
     stamina: [], // Native spell-slot updates are reconciled separately.
     form: [{ key: "ActiveEffectLike", mode: "add", path: `system.abilities.${selection.choice}.mod`,
-      label: `${definition.name} — Nephilim Gift`, value: 1, phase: "beforeDerived", predicate }],
+      label: definition.name, value: 1, phase: "beforeDerived", predicate }],
   }[selection.id];
   return { name: definition.name, type: "feat", img: "icons/magic/light/beam-rays-yellow-blue-large.webp",
     flags: { [MODULE_ID]: { nephilimBond: { id: selection.id, slot: selection.slot, schemaVersion: 2, choice: selection.choice ?? "" } } },
@@ -254,6 +273,42 @@ export function staminaSlotUpdates(actor) {
   });
 }
 
+/** Party-wide aura indicators; each selected bond remains the sole bonus source. */
+export function bondAuraSources(actor) {
+  return NEPHILIM_BONDS.filter(definition => definition.ally && items(actor).some(item => bond(item)?.id === definition.id && isActiveBond(item, actor))).map(definition => {
+    const allies = matchingBondAllies(actor, definition.id);
+    const active = allies.length > 0;
+    return { name: `${definition.name} — Bond Aura`, type: "effect", img: "icons/magic/light/beam-rays-yellow-blue-large.webp",
+      flags: { [MODULE_ID]: { nephilimAura: { id: definition.id, active, allies: allies.map(a => a.uuid ?? a.id ?? a.name ?? "Ally") } } },
+      system: { slug: `nephilim-aura-${definition.id}`, level: { value: 1 }, tokenIcon: { show: true },
+        duration: { value: -1, unit: "unlimited", expiry: null, sustained: false },
+        traits: { value: [], rarity: "unique" },
+        description: { value: `<p><strong>Party-wide aura</strong> · No distance limit.</p><p><strong>${active ? "Active" : "Waiting for a matching ally"}</strong></p><p>${escape(definition.description)}</p>`
+          + (active ? `<p>Linked allies: ${allies.map(a => escape(a.name ?? "Ally")).join(", ")}.</p>` : "<p>Another member of your party must have the same active bond.</p>")
+          + "<p>Bonuses come from your selected bonds. Repeated selections stack; additional allies do not multiply the bonus.</p>" },
+        rules: [] } };
+  });
+}
+export async function syncBondAuras(actor) {
+  const wanted = bondAuraSources(actor);
+  const existing = items(actor).filter(item => item.flags?.[MODULE_ID]?.nephilimAura);
+  const used = new Set();
+  const remove = [], update = [], create = [];
+  for (const item of existing) {
+    const id = item.flags[MODULE_ID].nephilimAura.id;
+    const source = wanted.find(source => source.flags[MODULE_ID].nephilimAura.id === id);
+    if (!source || used.has(id)) { remove.push(item.id); continue; }
+    used.add(id);
+    if (item.name !== source.name || JSON.stringify(item.flags[MODULE_ID].nephilimAura) !== JSON.stringify(source.flags[MODULE_ID].nephilimAura)
+      || item.system?.description?.value !== source.system.description.value || item.system?.rules?.length) update.push({ _id: item.id, ...source });
+  }
+  for (const source of wanted) if (!used.has(source.flags[MODULE_ID].nephilimAura.id)) create.push(source);
+  const options = { nephilimSync: true };
+  if (remove.length) await actor.deleteEmbeddedDocuments("Item", remove, options);
+  if (update.length) await actor.updateEmbeddedDocuments("Item", update, options);
+  if (create.length) await actor.createEmbeddedDocuments("Item", create, options);
+}
+
 let refreshTimer;
 async function clearCharge(actor) {
   const updates = items(actor).filter(item => bond(item)?.id === "charge" && item.system.rules?.some(rule => rule.key === "RollOption" && rule.value === true))
@@ -263,11 +318,12 @@ async function clearCharge(actor) {
 function scheduleBondRefresh() {
   clearTimeout(refreshTimer);
   refreshTimer = setTimeout(async () => {
-    try { for (const actor of game.actors ?? []) {
+    try { for (const actor of new Set([...collectionValues(game.actors), ...(globalThis.canvas?.tokens?.placeables ?? []).map(token => token.actor).filter(Boolean)])) {
       if (actor.type !== "character") continue;
       actor.reset();
       const updater = game.users?.activeGM ?? actor.primaryUpdater;
       if (updater?.id === game.user.id) {
+        await syncBondAuras(actor);
         const updates = staminaSlotUpdates(actor);
         if (updates.length) await actor.updateEmbeddedDocuments("Item", updates, { nephilimSync: true });
       }
@@ -295,12 +351,16 @@ export function installBondRules() {
 export function registerNephilimBonds() {
   installBondRules();
   // A shared pool update must re-prepare characters on every connected client.
-  Hooks.on("updateActor", actor => { if (actor.type === "party") scheduleBondRefresh(); });
+  Hooks.on("updateActor", (actor, _changes, options = {}) => { if (!options.nephilimSync && ["party", "character"].includes(actor.type)) scheduleBondRefresh(); });
+  Hooks.on("createActor", scheduleBondRefresh);
+  Hooks.on("deleteActor", scheduleBondRefresh);
+  Hooks.on("canvasReady", scheduleBondRefresh);
+  Hooks.on("createToken", scheduleBondRefresh);
   Hooks.once("ready", scheduleBondRefresh);
-  Hooks.on("createItem", (item, options) => { if (!options.nephilimSync && (bond(item) || item.type === "spellcastingEntry")) scheduleBondRefresh(); });
-  Hooks.on("deleteItem", (item, options) => { if (!options.nephilimSync && (bond(item) || item.type === "spellcastingEntry")) scheduleBondRefresh(); });
+  Hooks.on("createItem", (item, options) => { if (!options.nephilimSync && (bond(item) || item.flags?.[MODULE_ID]?.nephilimAura || item.type === "spellcastingEntry")) scheduleBondRefresh(); });
+  Hooks.on("deleteItem", (item, options) => { if (!options.nephilimSync && (bond(item) || item.flags?.[MODULE_ID]?.nephilimAura || item.type === "spellcastingEntry")) scheduleBondRefresh(); });
   Hooks.on("updateItem", (item, changes, options) => {
-    if (!options.nephilimSync && (bond(item) || item.type === "spellcastingEntry")) scheduleBondRefresh();
+    if (!options.nephilimSync && (bond(item) || item.flags?.[MODULE_ID]?.nephilimAura || item.type === "spellcastingEntry")) scheduleBondRefresh();
   });
   Hooks.on("createChatMessage", async (message, options, userId) => {
     if (userId !== game.user.id) return;

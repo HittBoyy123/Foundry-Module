@@ -1,3 +1,4 @@
+import { oreHasProperty } from "./custom-ores.js";
 import { materialRuneSlots } from "./property-runes.js";
 import { isKineticActuator } from "./kinetic-actuator.js";
 import { calculateItemEffects, getCraftingItemType } from "./model.js";
@@ -13,6 +14,7 @@ export function materialBenefits(item, material, tier, config, dragonScale = nul
   if (["weapon", "armor"].includes(itemType)) lines.push(`${slots} property-rune ${slots === 1 ? "slot" : "slots"} from this material (maximum 3).`);
   for (const rule of result.rules) {
     if (rule.key === "Resistance") { lines.push(`${rule.value} resistance to ${rule.type} while equipped.`); continue; }
+    if (rule.key === "DamageDice") { lines.push(`+${rule.diceNumber} weapon damage dice, added alongside Striking runes.`); continue; }
     if (rule.key !== "FlatModifier") continue;
     const selectors = rule.selector ?? [];
     const target = selectors.some(s => s.includes("spell")) ? isKineticActuator(item) ? "impulse attack rolls and impulse DCs while worn" : "spell attack rolls and spell DCs"
@@ -25,12 +27,13 @@ export function materialBenefits(item, material, tier, config, dragonScale = nul
   if (itemType === "shield" && result.coreProgression.attack > 0) lines.push(`+${result.coreProgression.attack * 3} Hardness and +${result.coreProgression.attack * 30} maximum HP.`);
   if (!lines.length) lines.push("No numerical Core bonus at this tier.");
   if (isKineticActuator(item)) lines.push("Only the strongest worn attenuator applies. Its item bonus does not stack with other item bonuses to the same statistic. No Constitution or apex benefit.");
-  if (itemType === "weapon") lines.push("Extra weapon damage dice come from Striking runes.");
-  if (material === "omnipotisium") {
+  if (itemType === "weapon" && !result.material.customOre) lines.push("Extra weapon damage dice come from Striking runes.");
+  if (oreHasProperty(material, "voidborn", config)) {
     lines.push("Exceptionally rare. Awarded only by the GM; cannot be gathered and has no standard market or sale value.");
     if (itemType === "weapon") lines.push("Deals full damage against Voidborn creatures, bypassing their half-damage protection. Other resistances and immunities still apply.");
     if (itemType === "armor") lines.push("While worn, halves damage received from Voidborn attackers.");
     if (itemType === "spellFocus") lines.push("While this is your active focus, your spells bypass Voidborn half-damage protection.");
   }
+  for (const tag of result.material.propertyTags ?? []) if (tag !== "voidborn") lines.push(`Property: ${tag}.`);
   return { title: `${result.presentation.label} · Tier ${tier}`, lines };
 }

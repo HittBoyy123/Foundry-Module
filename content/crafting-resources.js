@@ -229,12 +229,8 @@ function buildResourceSources() {
     }
   }
 
-  for (let tier = 1; tier <= 6; tier++) {
-    // Preserve the original Tier 6 compendium ID for existing references.
-    sources.push(createResourceSource({ index: tier === 6 ? index : index + tier, materialId: "omnipotisium", tier,
-      name: `${DEFAULT_RULES_CONFIG.materials.omnipotisium.tierLabels[tier]} Ingots`,
-      img: RESOURCE_FAMILIES.metal.icons[tier - 1], unit: "ingot", unitsPerItem: 1 }));
-  }
+  sources.push(createResourceSource({ index, materialId: "omnipotisium", tier: 7,
+    name: "Omnipotentium Ingots", img: RESOURCE_FAMILIES.metal.icons[5], unit: "ingot", unitsPerItem: 1 }));
   return sources;
 }
 

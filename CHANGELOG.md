@@ -1,3 +1,29 @@
+# v0.35.14 — 26 November 2026
+
+**Wrathmaker v0.35.14 — 26 November 2026**
+
+**Custom Ores and Omnipotentium**
+- Omnipotentium is now one Tier 7 ingot, replacing the six previous Omni tiers. Find it in the Custom Ores compendium.
+- Default bonuses: +6 material bonus and +1 additional weapon damage die. The extra die adds alongside Striking and does not replace its dice.
+- GMs can add custom ores in Control Panel → Custom Ores, edit their bonuses and extra weapon dice, and create their ingot references. Other custom ores use one tier from 1–6.
+- The Voidborn property automates protection and bypass. Other tags are descriptive. Custom ores are GM-awarded, cannot be gathered and have no standard market price.
+- Tier 7 Work Blocks use DC 70. Normal structural materials remain Tier 5–6; mandatory Mana Gem catalysts use Tier 6.
+- Refresh All converts old Omnipotentium resources and equipment to Tier 7, retaining quantities and Striking runes, and removes retired stock tier references from the compendium.
+
+**Nephilim Bonds**
+- Communion, Pincer and Valor check saved party membership as well as prepared actors, with refreshes for character and token changes.
+- Visible party-wide Bond Aura effects show Active or Waiting for a matching ally. There is no distance limit. Bonuses come from the selected bonds; aura indicators do not duplicate them.
+- Roll modifiers show only the gift name, such as Ao's Pincer.
+
+**Readability**
+- Custom Ores and Edit Material headings are red; grey panel headings use pale gold text.
+
+**After updating:** restart the world and run Refresh All with a GM connected. Existing selections are retained.
+
+Validation: 480 automated tests passed; content packs rebuilt successfully. Live Foundry verification remains pending; the local server was unavailable.
+
+Attached: Discord-ready text and rulebook review against the latest supplied document. Playtest rules remain subject to change.
+
 # v0.35.13 hotfix — 25 October 2026
 
 **Gate Attenuator hotfix — 25 October**

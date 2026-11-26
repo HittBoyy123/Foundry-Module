@@ -47,6 +47,18 @@
     {{/if}}
   </section>
 
+  {{#if customOre}}
+    <section class="cmt-panel">
+      <h3>Custom Ore Properties</h3>
+      <label>Tier <input type="number" name="oreTier" value="{{oreTier}}" min="1" max="{{#if fixedOreTier}}7{{else}}6{{/if}}" step="1" {{#if fixedOreTier}}readonly{{/if}}></label>
+      <label>Extra weapon damage dice <input type="number" name="extraDamageDice" value="{{extraDamageDice}}" min="0" max="20" step="1"></label>
+      <p class="hint">Extra dice use the weapon's damage die and add to Striking. The bonus below controls attack, armour and focus modifiers using the normal material rules.</p>
+      <label><input type="checkbox" name="voidborn" {{#if voidborn}}checked{{/if}}> Voidborn protection and bypass</label>
+      <p class="hint">Weapons and active spell focuses bypass Voidborn half damage; worn armour halves damage from Voidborn attackers.</p>
+      <label>Other descriptive tags <input type="text" name="descriptiveTags" value="{{descriptiveTags}}" placeholder="Comma-separated tags"></label>
+      <p class="hint">Other tags are descriptive only. Custom ores are GM-awarded; no gathering or standard sale price.</p>
+    </section>
+  {{/if}}
   {{#if isDragonScale}}
     <section class="cmt-panel cmt-dragon-colors">
       <h3><i class="fa-solid fa-dragon" aria-hidden="true"></i> {{localize "CMT.Settings.Material.DragonColors"}}</h3>
@@ -84,7 +96,7 @@
         <input type="text" name="tiers.{{tier}}.label" value="{{label}}" aria-label="Tier {{tier}} crafted name" required>
         <input type="number" name="tiers.{{tier}}.bonus" value="{{bonus}}" {{#if ../isDragonScale}}min="0"{{/if}} step="any" aria-label="Tier {{tier}} {{#if ../isDragonScale}}resistance{{else}}bonus{{/if}}" required>
         <div class="cmt-price-input">
-          <input type="number" name="tiers.{{tier}}.priceGp" value="{{priceGp}}" min="0" step="0.01" aria-label="Tier {{tier}} price" required>
+          <input type="number" name="tiers.{{tier}}.priceGp" value="{{priceGp}}" {{#if ../customOre}}readonly{{/if}} min="0" step="0.01" aria-label="Tier {{tier}} price" required>
           <span>gp</span>
         </div>
         <select name="tiers.{{tier}}.rarity" aria-label="Tier {{tier}} PF2e rarity">

@@ -1,3 +1,4 @@
+import { materialTiers } from "./custom-ores.js";
 import { ConfigValidationError, getTierPresentation } from "./model.js";
 import { GATHERING_ENVIRONMENT_SOURCES } from "../content/gathering-presets.js";
 import { GATHERING_REWARD_DESTINATIONS } from "./gathering-destination.js";
@@ -116,6 +117,7 @@ export function buildDashboardContext(config) {
     }),
     materials: Object.entries(config.materials).map(([id, material]) => ({
       id,
+      customOre: material.customOre === true,
       label: material.label,
       enabled: material.enabled,
       itemTypes: material.augmentation
@@ -123,8 +125,7 @@ export function buildDashboardContext(config) {
         : formatList(material.itemTypes
           .filter((type) => ITEM_TYPE_LABELS[type])
           .map((type) => ITEM_TYPE_LABELS[type])),
-      tiers: Array.from({ length: 6 }, (_unused, index) => {
-        const tier = index + 1;
+      tiers: materialTiers(config, id).map(tier => {
         return `${tier}: ${getTierPresentation(config, id, tier).label}`;
       }).join(" · "),
     })),
@@ -225,6 +226,12 @@ export function buildMaterialEditorContext(config, materialId) {
   if (!material) throw new ConfigValidationError(`Material "${materialId}" does not exist.`);
   return {
     materialId,
+    customOre: material.customOre === true,
+    oreTier: material.oreTier,
+    fixedOreTier: materialId === "omnipotisium",
+    extraDamageDice: material.extraDamageDice ?? 0,
+    voidborn: material.propertyTags?.includes("voidborn"),
+    descriptiveTags: (material.propertyTags ?? []).filter(tag => tag !== "voidborn").join(", "),
     label: material.label,
     enabled: material.enabled,
     supportsWeapon: material.itemTypes.includes("weapon"),
@@ -244,8 +251,7 @@ export function buildMaterialEditorContext(config, materialId) {
         selected: damageType === color.damageType,
       })),
     })),
-    tiers: Array.from({ length: 6 }, (_unused, index) => {
-      const tier = index + 1;
+    tiers: materialTiers(config, materialId).map(tier => {
       const presentation = getTierPresentation(config, materialId, tier);
       return {
         tier,
@@ -296,12 +302,18 @@ export function applyMaterialChanges(config, materialId, form) {
       : effect);
   }
 
+  const oldTier = material.oreTier;
+  if (material.customOre) {
+    material.oreTier = materialId === "omnipotisium" ? 7 : Number(form.oreTier);
+    material.extraDamageDice = Number(form.extraDamageDice);
+    material.propertyTags = [...String(form.descriptiveTags ?? "").split(",").map(s=>s.trim()).filter(s=>s && s !== "voidborn"), ...(checked(form.voidborn) ? ["voidborn"] : [])];
+  }
   material.tierLabels = {};
   material.tierBonuses = {};
   material.tierPricesGp = {};
   material.tierRarities = {};
-  for (let tier = 1; tier <= 6; tier += 1) {
-    const tierForm = form.tiers?.[tier] ?? {};
+  for (const tier of materialTiers(updated, materialId)) {
+    const tierForm = form.tiers?.[material.customOre ? oldTier : tier] ?? {};
     material.tierLabels[tier] = String(tierForm.label ?? "").trim();
     material.tierBonuses[tier] = number(tierForm.bonus, Number.NaN);
     material.tierPricesGp[tier] = number(tierForm.priceGp, Number.NaN);

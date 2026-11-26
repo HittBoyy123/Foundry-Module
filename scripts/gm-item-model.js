@@ -9,16 +9,16 @@ export function gmItemPlan(base, state, config, { legacyDisassembly = false } = 
   const bands = compatibleRecipeBands(base);
   const band = bands.find(entry => entry.id === state.bandId) ?? bands[0];
   if (!band) throw new Error("Drop a weapon, armor, shield, or Spell Focus.");
-  const tier = Number(state.tier);
-  if (!Number.isInteger(tier) || tier < 1 || tier > 6) throw new Error("Choose a Tier from 1 to 6.");
+  const tier = config.materials[state.materialId]?.customOre ? config.materials[state.materialId].oreTier : Number(state.tier);
+  if (!Number.isInteger(tier) || tier < 1 || tier > (state.materialId === "omnipotisium" ? 7 : 6)) throw new Error("Choose a Tier from 1 to 6, or Tier 7 Omnipotentium.");
   const materialId = state.materialId || band.coreMaterialIds[0];
   if (!band.coreMaterialIds.includes(materialId)) throw new Error("Choose a compatible Core Material.");
   const recipe = buildCraftingRecipeFromBand(band.id, { targetItem: base, tier, coreMaterialId: materialId });
   for (const group of recipe.ingredientSets[0].groups.filter(entry => entry.id !== "core")) {
     const choice = state.components?.[group.id];
     const selected = group.options.find(entry => entry.materialId === (choice?.materialId ?? group.options[0].materialId));
-    const selectedTier = Number(choice?.tier ?? tier);
-    if (!selected || !Number.isInteger(selectedTier) || selectedTier < Math.max(1, tier - 2) || selectedTier > tier) {
+    const selectedTier = config.materials[selected?.materialId]?.customOre ? config.materials[selected.materialId].oreTier : Number(choice?.tier ?? Math.min(6,tier));
+    if (!selected || !Number.isInteger(selectedTier) || selectedTier < Math.max(1, tier - 2) || selectedTier > (config.materials[selected?.materialId]?.customOre ? config.materials[selected.materialId].oreTier : Math.min(6,tier))) {
       throw new Error("Secondary materials must match the recipe and be between Core Tier − 2 and Core Tier.");
     }
     group.options = [{ ...selected, tier: selectedTier, maximumTier: selectedTier, tierMode: "exact" }];

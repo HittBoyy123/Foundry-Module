@@ -1,3 +1,4 @@
+import { oreHasProperty } from "./custom-ores.js";
 import { CRAFTING_RESOURCE_SOURCES } from "../content/crafting-resources.js";
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig } from "./config-store.js";
@@ -21,14 +22,14 @@ export function hasVoidProtection(actor) {
   if (traits.includes?.(VOIDBORN_TRAIT) || traits.has?.(VOIDBORN_TRAIT)) return true;
   return items(actor).some(item => item.type === "effect" && flags(item).voidProtection === true && !item.system?.expired && !item.isExpired);
 }
-export function isOmnipotentium(item) {
+export function isOmnipotentium(item, config) {
   const data = flags(item);
-  return (data.material === "omnipotisium" && Number(data.tier) >= 1 && Number(data.tier) <= 6)
-    || (data.crafting?.core?.materialId === "omnipotisium" && Number(data.crafting.core.tier) >= 1 && Number(data.crafting.core.tier) <= 6);
+  return (oreHasProperty(data.material, "voidborn", config) && Number(data.tier) >= 1 && Number(data.tier) <= 7)
+    || (oreHasProperty(data.crafting?.core?.materialId, "voidborn", config) && Number(data.crafting.core.tier) >= 1 && Number(data.crafting.core.tier) <= 7);
 }
-export function hasOmnipotentiumFrame(item) {
-  return flags(item).crafting?.omnipotisiumFrame === true || flags(item).crafting?.components?.some(component => component.materialId === "omnipotisium"
-    && Number(component.tier) >= 1 && Number(component.tier) <= 6 && Number(component.quantityCommitted) > 0
+export function hasOmnipotentiumFrame(item, config) {
+  return (flags(item).crafting?.omnipotisiumFrame === true && oreHasProperty("omnipotisium", "voidborn", config)) || flags(item).crafting?.components?.some(component => oreHasProperty(component.materialId, "voidborn", config)
+    && Number(component.tier) >= 1 && Number(component.tier) <= 7 && Number(component.quantityCommitted) > 0
     && component.classification === "required-secondary" && /frame/.test(component.slotType || component.id));
 }
 
@@ -38,12 +39,12 @@ export function voidDamageAdjustment(target, { item, damage, final = false }, co
   const source = item?.actor ?? item?.parent;
   const reasons = [];
   if (hasVoidProtection(target) && ["weapon", "melee", "spell"].includes(item?.type)) {
-    const bypass = ["weapon", "melee"].includes(item.type) ? isOmnipotentium(item) : item.type === "spell" && items(source).some(focus =>
+    const bypass = ["weapon", "melee"].includes(item.type) ? isOmnipotentium(item, config) : item.type === "spell" && items(source).some(focus =>
       getCraftingItemType(focus) === "spellFocus" && !isKineticActuator(focus) && isActiveSpellFocus(focus) && isPrimarySpellFocus(focus, config)
-      && (isOmnipotentium(focus) || hasOmnipotentiumFrame(focus)));
+      && (isOmnipotentium(focus, config) || hasOmnipotentiumFrame(focus, config)));
     if (!bypass) reasons.push("Void Protection: half damage");
   }
-  if (hasVoidProtection(source) && items(target).some(armor => armor.type === "armor" && armor.isEquipped === true && isOmnipotentium(armor))) {
+  if (hasVoidProtection(source) && items(target).some(armor => armor.type === "armor" && armor.isEquipped === true && isOmnipotentium(armor, config))) {
     reasons.push("Omnipotentium armour: half damage from a void creature");
   }
   return reasons;

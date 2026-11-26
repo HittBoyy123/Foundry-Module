@@ -1,3 +1,4 @@
+import { materialTiers } from "./custom-ores.js";
 import { MODULE_ID } from "./constants.js";
 import { getRulesConfig } from "./config-store.js";
 import { gmItemPlan, buildGMItemSource } from "./gm-item-model.js";
@@ -45,11 +46,11 @@ export function registerGMItemCreator() {
         const plan = gmItemPlan(this.base, this.draft, config);
         context.plan = plan;
         context.materials = plan.band.coreMaterialIds.map(id => ({ id, label: config.materials[id]?.label ?? id, selected: id === plan.materialId }));
-        context.tiers = [1,2,3,4,5,6].map(value => ({ value, label: config.materials[plan.materialId]?.tierLabels[value] ?? "Tier " + value, selected: value === plan.tier }));
+        context.tiers = materialTiers(config, plan.materialId).map(value => ({ value, label: config.materials[plan.materialId]?.tierLabels[value] ?? "Tier " + value, selected: value === plan.tier }));
         context.components = plan.band.secondaries.filter(group => !group.optional).map(group => ({
           ...group,
           materials: group.materialIds.map(id => ({ id, label: config.materials[id]?.label ?? id, selected: id === (this.draft.components[group.id]?.materialId ?? group.materialIds[0]) })),
-          tiers: [1,2,3,4,5,6].filter(value => value >= Math.max(1, plan.tier - 2) && value <= plan.tier).map(value => ({ value, selected: value === Number(this.draft.components[group.id]?.tier ?? plan.tier) })),
+          tiers: materialTiers(config, this.draft.components[group.id]?.materialId ?? group.materialIds[0]).filter(value => value >= Math.max(1, plan.tier - 2) && value <= (config.materials[this.draft.components[group.id]?.materialId ?? group.materialIds[0]]?.customOre ? 7 : Math.min(6,plan.tier))).map(value => ({ value, selected: value === Number(this.draft.components[group.id]?.tier ?? Math.min(6,plan.tier)) })),
         }));
         context.marks = plan.assignments.map((mark, index) => ({ ...mark, index, makerName: this.draft.marks[index].maker }));
       } catch (error) { context.error = error.message; }

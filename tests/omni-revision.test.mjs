@@ -14,7 +14,7 @@ test("all weapon and armour recipes accept the Omni family, including wood and l
     assert.ok(band.coreMaterialIds.includes("omnipotisium"), band.id);
   }
   assert.deepEqual(CRAFTING_RESOURCE_SOURCES.filter(item => item.flags[MODULE_ID].resource.materialId === "omnipotisium").map(item => item.name),
-    ["Omni Iron Ingots", "Omni Steel Ingots", "Creation Steel Ingots", "Fate Steel Ingots", "Eternal Steel Ingots", "Iron's Blood Ingots"]);
+    ["Omnipotentium Ingots"]);
 });
 
 test("each Omni tier bypasses Voidborn protection and protects its wearer", () => {

@@ -59,19 +59,19 @@ test("damage bridge preserves typed rolls, native IWR and shield options without
  assert.equal(bypass.damage, roll);
 });
 
-test("Omni resources support every tier while preserving Dark Iron and metal professions", () => {
- const resource = CRAFTING_RESOURCE_SOURCES.find(item => item.name === "Iron's Blood Ingots");
+test("Omnipotentium uses only Tier 7 while preserving Dark Iron and metal professions", () => {
+ const resource = CRAFTING_RESOURCE_SOURCES.find(item => item.name === "Omnipotentium Ingots");
  assert.equal(resource.system.traits.rarity, "unique");
- assert.equal(resource.flags[MODULE_ID].resource.tier, 6);
+ assert.equal(resource.flags[MODULE_ID].resource.tier, 7);
  assert.equal(config.materials.metal.tierLabels[6], "Dark Iron");
- assert.equal(normalizeItemFlags({ material: "omnipotisium", tier: 1 }, config).tier, 1);
+ assert.equal(normalizeItemFlags({ material: "omnipotisium", tier: 1 }, config).tier, 7);
  const targetItem = { type: "weapon", system: { category: "martial", group: "sword", traits: { value: [] } } };
  const recipe = buildCraftingRecipeFromBand("weapon-sword", { targetItem, tier: 6, coreMaterialId: "omnipotisium" });
  assert.equal(recipe.ingredientSets[0].groups[0].options[0].materialId, "omnipotisium");
  assert.ok(buildArtisanSlots(recipe)[0].materialIds.includes("metal"));
  for (let tier = 1; tier <= 6; tier++) {
   assert.ok(buildCraftingRecipeFromBand("weapon-sword", { targetItem, tier, coreMaterialId: "omnipotisium" }));
-  assert.ok(CRAFTING_RESOURCE_SOURCES.some(item => item.flags[MODULE_ID].resource.materialId === "omnipotisium" && item.flags[MODULE_ID].resource.tier === tier));
+  assert.ok(CRAFTING_RESOURCE_SOURCES.some(item => item.flags[MODULE_ID].resource.materialId === "omnipotisium" && item.flags[MODULE_ID].resource.tier === 7));
  }
 });
 
@@ -93,7 +93,7 @@ test("Voidborn is a selectable distinct trait driving both damage directions", (
 });
 
 
-test("Omnipotentium ingots reserve and consume as a separate Tier 6 weapon core", async () => {
+test("Omnipotentium ingots reserve and consume as a separate Tier 7 weapon core", async () => {
  const { createCraftingProject, reserveCraftingProject, advanceCraftingProject, buildConsumptionPlan } = await import("../scripts/crafting-projects.js");
  const { buildCompletedItemSource } = await import("../scripts/workbench.js");
  const base = { name: "Longsword", type: "weapon", system: { category: "martial", group: "sword", traits: { value: [] } } };
@@ -110,6 +110,6 @@ test("Omnipotentium ingots reserve and consume as a separate Tier 6 weapon core"
  assert.ok(!consumption.some(row => row.itemId === "dark"));
  const output = buildCompletedItemSource(reserved, base, config);
  assert.equal(output.flags[MODULE_ID].material, "omnipotisium");
- assert.equal(output.flags[MODULE_ID].tier, 6);
+ assert.equal(output.flags[MODULE_ID].tier, 7);
  assert.equal(voidDamageAdjustment(protectedActor(), { item: output, damage: 20 }, config).length, 0);
 });

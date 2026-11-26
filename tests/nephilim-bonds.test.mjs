@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MODULE_ID } from '../scripts/constants.js';
-import { NEPHILIM_BONDS, createBondSource, validateBondSelection, bondAllowance, bondMilestones, preparedBondRules, chooseBond, installBondRules, staminaSlotUpdates } from '../scripts/nephilim-bonds.js';
+import { NEPHILIM_BONDS, createBondSource, validateBondSelection, bondAllowance, bondMilestones, preparedBondRules, chooseBond, installBondRules, staminaSlotUpdates, bondAuraSources, syncBondAuras } from '../scripts/nephilim-bonds.js';
 const party=value=>({flags:{[MODULE_ID]:{nephilimPoints:{value}}}});
 const actor=(points=2)=>({type:'character',level:1,isOwner:true,parties:[party(points)],items:[]});
 test('new gifts require two points even when placed in the first slot',()=>{
@@ -77,4 +77,47 @@ test('native rule preparation uses current points and restores saved source rule
 test('point loss during the chooser prevents saving a newly locked bond',async()=>{
  const old=globalThis.foundry,a=actor();globalThis.foundry={applications:{api:{DialogV2:{wait:async()=>{a.parties=[party(1)];return {id:'skin',slot:2};}}}}};
  try{await assert.rejects(chooseBond(a,2),/shared Nephilim points/);}finally{globalThis.foundry=old;}
+});
+
+
+test('saved membership activates matching bonds even before prepared party caches exist',()=>{
+ const previous=globalThis.game;
+ const a=actor(),b=actor(),p=party(2);
+ Object.assign(a,{id:'a',uuid:'Actor.a',parties:new Set()});Object.assign(b,{id:'b',uuid:'Actor.b',parties:new Set()});
+ Object.assign(p,{id:'party',type:'party',system:{details:{members:[{uuid:a.uuid},{uuid:b.uuid}]}},members:[]});
+ globalThis.game={actors:{contents:[a,b,p]}};
+ try {
+  const own=add(a,'pincer',1);add(b,'pincer',1);
+  assert.equal(preparedBondRules(own)[0].value,3);
+  assert.equal(bondAuraSources(a)[0].flags[MODULE_ID].nephilimAura.active,true);
+  p.system.details.members=[{uuid:a.uuid}];p.members=[a,b];a.parties=new Set([p]);b.parties=new Set([p]);
+  assert.deepEqual(preparedBondRules(own),[]);
+  assert.equal(bondAuraSources(a)[0].flags[MODULE_ID].nephilimAura.active,false);
+ } finally {globalThis.game=previous;}
+});
+
+test('a synthetic copy cannot use its own world actor as a matching ally',()=>{
+ const previous=globalThis.game,a=actor(),p=party(2);
+ Object.assign(a,{id:'a',uuid:'Actor.a',parties:[]});add(a,'communion',1);
+ Object.assign(p,{type:'party',system:{details:{members:[{uuid:a.uuid}]}},members:[a]});
+ const token={...a,uuid:'Scene.s.Token.t.Actor.a',items:[]};const own=add(token,'communion',1);
+ globalThis.game={actors:{contents:[a,p]}};
+ try {assert.equal(bondAllowance(token),2);assert.deepEqual(preparedBondRules(own),[]);}
+ finally {globalThis.game=previous;}
+});
+
+test('bond aura synchronization is idempotent and removes indicators when points are lost',async()=>{
+ const a=actor(),b=actor(),p=a.parties[0];b.parties=[p];p.members=[a,b];
+ add(a,'communion',1);add(b,'communion',1);
+ let writes=0;
+ a.createEmbeddedDocuments=async(_type,sources,options)=>{assert.equal(options.nephilimSync,true);writes++;a.items.push(...sources.map((s,i)=>({...s,id:'aura'+i})));};
+ a.updateEmbeddedDocuments=async(_type,updates)=>{writes++;for(const u of updates)Object.assign(a.items.find(i=>i.id===u._id),u);};
+ a.deleteEmbeddedDocuments=async(_type,ids)=>{writes++;a.items=a.items.filter(i=>!ids.includes(i.id));};
+ await syncBondAuras(a);assert.equal(writes,1);
+ assert.equal(a.items.find(i=>i.type==='effect').system.rules.length,0);
+ await syncBondAuras(a);assert.equal(writes,1);
+ b.items=[];await syncBondAuras(a);assert.equal(writes,2);
+ assert.match(a.items.find(i=>i.type==='effect').system.description.value,/Waiting/);
+ p.flags[MODULE_ID].nephilimPoints.value=1;
+ await syncBondAuras(a);assert.equal(writes,3);assert.ok(!a.items.some(i=>i.type==='effect'));
 });

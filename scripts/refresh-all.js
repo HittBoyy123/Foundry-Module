@@ -49,10 +49,11 @@ export function itemRefreshPatch(source, config) {
   if (flags.resource) {
     const stock = CRAFTING_RESOURCE_SOURCES.find(item => {
       const resource = item.flags[MODULE_ID].resource;
-      return resource.materialId === flags.resource.materialId && resource.tier === flags.resource.tier && (resource.variantId || "") === (flags.resource.variantId || "");
+      return resource.materialId === flags.resource.materialId && resource.tier === (flags.resource.materialId === "omnipotisium" ? 7 : flags.resource.tier) && (resource.variantId || "") === (flags.resource.variantId || "");
     });
     if (stock) {
       patch[`flags.${MODULE_ID}.resource`] = stock.flags[MODULE_ID].resource;
+      if (flags.resource.materialId === "omnipotisium" && /^(Omni Iron|Omni Steel|Creation Steel|Fate Steel|Eternal Steel|Iron's Blood|Omnipotisium|Omnipotassium)( Ingots?)?$/.test(source.name)) patch.name = "Omnipotentium Ingots";
       for (const path of ["system.description.value", "system.price", "system.level", "system.traits", "system.rules"]) patch[path] = get(stock, path);
     }
   }
@@ -64,6 +65,8 @@ export function itemRefreshPatch(source, config) {
   if (flags.material || flags.crafting?.core) {
     const normalized = normalizeItemFlags(flags, config);
     for (const key of ["schemaVersion", "material", "tier", "dragonScale"]) patch[`flags.${MODULE_ID}.${key}`] = normalized[key];
+    patch[`flags.${MODULE_ID}.crafting.core`] = normalized.crafting.core;
+    patch[`flags.${MODULE_ID}.crafting.components`] = normalized.crafting.components;
     patch[`flags.${MODULE_ID}.crafting.artisanMarks`] = [];
     patch[`flags.${MODULE_ID}.crafting.synergies`] = [];
     // Generated material rules now come from the preparation bridge, not stored copies.

@@ -2,7 +2,7 @@ import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
 export const MODULE_ID = "pf2e-crafting-material-tiers";
 export const MODULE_TITLE = "Wrathmaker";
-export const RULES_SCHEMA_VERSION = 19;
+export const RULES_SCHEMA_VERSION = 20;
 export const ITEM_SCHEMA_VERSION = 4;
 export const HEXPLORATION_PLAN_SCHEMA_VERSION = 4;
 
@@ -276,9 +276,9 @@ export const DEFAULT_RULES_CONFIG = Object.freeze({
       label: "Omnipotentium", enabled: true,
       itemTypes: Object.freeze(["weapon", "armor", "shield", "spellFocus"]),
       effects: defaultEffects(),
-      tierLabels: Object.freeze({ 1: "Omni Iron", 2: "Omni Steel", 3: "Creation Steel", 4: "Fate Steel", 5: "Eternal Steel", 6: "Iron's Blood" }),
-      tierRarities: Object.freeze(Object.fromEntries([1,2,3,4,5,6].map(t => [t, "unique"]))),
-      tierPricesGp: Object.freeze({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }),
+      customOre: true, oreTier: 7, extraDamageDice: 1, propertyTags: Object.freeze(["voidborn"]),
+      tierBonuses: Object.freeze({ 7: 6 }), tierLabels: Object.freeze({ 7: "Omnipotentium" }),
+      tierRarities: Object.freeze({ 7: "unique" }), tierPricesGp: Object.freeze({ 7: 0 }),
     }),
     wood: Object.freeze({
       label: "Wood",

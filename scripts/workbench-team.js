@@ -1,3 +1,4 @@
+import { metalEquivalent } from "./custom-ores.js";
 import { specializationsEnabled } from "./profession-options.js";
 import { PROFESSION_DEFINITIONS } from "../content/professions.js";
 
@@ -16,7 +17,7 @@ export function buildArtisanSlots(recipe, slotUuids = [], profiles = [], { armor
   const wyrmIndex = leatherGroupIndex >= 0 ? leatherGroupIndex : Math.min(5, Math.max(2, supports.length + 1));
   return Array.from({ length: 6 }, (_, index) => {
     const group = index === 0 ? core : supports[index - 1] ?? null;
-    const materialIds = [...new Set(group?.options?.map((option) => option.materialId === "omnipotisium" ? "metal" : option.materialId) ?? [])];
+    const materialIds = [...new Set(group?.options?.map((option) => metalEquivalent(option.materialId)) ?? [])];
     const profile = profiles.find((entry) => entry.actorUuid === slotUuids[index]);
     const wyrmSlot = armor && dragonResistance && index === wyrmIndex;
     const professionIds = recipe?.categoryId === "consumable.scroll" && index === 0 ? ["bookmaking"] : consumable && index === 0 ? ["alchemy"] : consumable && group?.id === "container" ? ["glassmaking"] : [];

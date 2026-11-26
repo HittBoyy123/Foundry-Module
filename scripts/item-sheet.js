@@ -1,3 +1,4 @@
+import { materialTiers } from "./custom-ores.js";
 import { insertFocusSlotControl } from "./spell-focus.js";
 import { materialRuneSlots } from "./property-runes.js";
 import { insertMasterstrokeControls } from "./masterstrokes.js";
@@ -71,7 +72,7 @@ function matchNativeSelect(control, reference) {
 
 function populateTierOptions(control, materialId, selectedTier, config) {
   control.replaceChildren();
-  for (let tier = 1; tier <= 6; tier += 1) {
+  for (const tier of materialTiers(config, materialId)) {
     const presentation = getTierPresentation(config, materialId, tier);
     control.append(option(tier, `${tier} — ${presentation.label}`, selectedTier));
   }

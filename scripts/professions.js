@@ -1,3 +1,4 @@
+import { metalEquivalent } from "./custom-ores.js";
 import { specializationsEnabled } from "./profession-options.js";
 import {
   PF2E_PROFESSION_FEAT_UUIDS,
@@ -355,7 +356,7 @@ export async function synchronizeProfessionFeatHierarchy(actor) {
 }
 
 export function professionCheckRollOptions(actor, { materialId = "" } = {}) {
-  const material = materialId === "omnipotisium" ? "metal" : String(materialId).trim();
+  const material = metalEquivalent(String(materialId).trim());
   if (!material) return [];
   return getActorProfessions(actor)
     .filter((profession) => profession.materialIds.includes(material))
